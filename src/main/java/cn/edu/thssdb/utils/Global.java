@@ -18,4 +18,7 @@ public class Global {
   public static final String QUIT = "quit;";
 
   public static final String S_URL_INTERNAL = "jdbc:default:connection";
+
+  // Disk Manager Constants
+  public static final int PAGE_SIZE = 4096;
 }
