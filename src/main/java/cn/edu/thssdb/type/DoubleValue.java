@@ -36,6 +36,10 @@ public class DoubleValue extends Value{
     buffer.putDouble(offset, value_).rewind();
   }
 
+  public static DoubleValue deserialize(ByteBuffer buffer, int offset) {
+    return new DoubleValue(buffer.getDouble(offset));
+  }
+
   @Override
   public Value add(Value lhs, Value rhs) {
     if(lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {

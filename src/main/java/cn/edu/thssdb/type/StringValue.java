@@ -32,6 +32,10 @@ public class StringValue extends Value{
     buffer.position(offset).put(value_.getBytes()).rewind();
   }
 
+  public static StringValue deserialize(ByteBuffer buffer, int offset) {
+    return new StringValue(new String(buffer.array(), offset, buffer.array().length - offset));
+  }
+
   @Override
   public Value add(Value lhs, Value rhs) {
     if (lhs.getTypeId() == Type.STRING && rhs.getTypeId() == Type.STRING) {

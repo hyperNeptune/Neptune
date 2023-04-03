@@ -34,6 +34,10 @@ public class FloatValue extends Value{
     buffer.putFloat(offset, value_).rewind();
   }
 
+  public static FloatValue deserialize(ByteBuffer buffer, int offset) {
+    return new FloatValue(buffer.getFloat(offset));
+  }
+
   @Override
   public Value add(Value lhs, Value rhs) {
     if (lhs.getTypeId() == Type.FLOAT && rhs.getTypeId() == Type.FLOAT) {

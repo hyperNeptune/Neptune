@@ -23,6 +23,22 @@ public abstract class Value implements Serializable, Cloneable, Comparable<Value
   // write to byte buffer
   public abstract void serialize(ByteBuffer buffer, int offset);
   
+  public static Value deserialize(ByteBuffer buffer, int offset, Type typeId) {
+    switch (typeId) {
+      case INT:
+        return IntValue.deserialize(buffer, offset);
+      case LONG:
+        return LongValue.deserialize(buffer, offset);
+      case FLOAT:
+        return FloatValue.deserialize(buffer, offset);
+      case DOUBLE:
+        return DoubleValue.deserialize(buffer, offset);
+      case STRING:
+        return StringValue.deserialize(buffer, offset);
+      default:
+        throw new UnsupportedOperationException("Unimplemented method 'deserialize'");
+    }
+  }
   // arithmetic operations
   public abstract Value add(Value lhs, Value rhs);
   public abstract Value sub(Value lhs, Value rhs);

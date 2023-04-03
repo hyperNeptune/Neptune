@@ -34,6 +34,10 @@ public class LongValue extends Value{
     buffer.putLong(offset, value_).rewind();
   }
 
+  public static LongValue deserialize(ByteBuffer buffer, int offset) {
+    return new LongValue(buffer.getLong(offset));
+  }
+
   @Override
   public Value add(Value lhs, Value rhs) {
     if (lhs.getTypeId() == Type.LONG && rhs.getTypeId() == Type.LONG) {

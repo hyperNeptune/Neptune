@@ -1,4 +1,4 @@
-package cn.edu.thssdb.exception;
+package cn.edu.thssdb.utils.exception;
 
 public class KeyNotExistException extends RuntimeException {
   @Override

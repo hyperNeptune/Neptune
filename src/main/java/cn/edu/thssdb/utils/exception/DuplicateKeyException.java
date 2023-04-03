@@ -1,4 +1,4 @@
-package cn.edu.thssdb.exception;
+package cn.edu.thssdb.utils.exception;
 
 public class DuplicateKeyException extends RuntimeException {
   @Override

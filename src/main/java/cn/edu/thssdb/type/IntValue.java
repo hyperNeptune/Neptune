@@ -75,6 +75,10 @@ public class IntValue extends Value{
     buffer.putInt(offset, value_).rewind();
   }
 
+  public static IntValue deserialize(ByteBuffer buffer, int offset) {
+    return new IntValue(buffer.getInt(offset));
+  }
+
 	@Override
 	public int getSize() {
 		return Global.INT_SIZE;
