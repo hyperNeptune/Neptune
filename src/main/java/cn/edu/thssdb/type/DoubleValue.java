@@ -1,10 +1,10 @@
 package cn.edu.thssdb.type;
 
-import java.nio.ByteBuffer;
-
 import cn.edu.thssdb.utils.Global;
 
-public class DoubleValue extends Value{
+import java.nio.ByteBuffer;
+
+public class DoubleValue extends Value {
   private double value_;
 
   // constructor
@@ -20,8 +20,8 @@ public class DoubleValue extends Value{
 
   @Override
   public int compareTo(Value arg0) {
-    if(arg0.getTypeId() == Type.DOUBLE) {
-      return Double.compare(value_, ((DoubleValue)arg0).getDouble());
+    if (arg0.getTypeId() == Type.DOUBLE) {
+      return Double.compare(value_, ((DoubleValue) arg0).getDouble());
     }
     throw new UnsupportedOperationException("Unimplemented method 'compareTo'");
   }
@@ -42,8 +42,8 @@ public class DoubleValue extends Value{
 
   @Override
   public Value add(Value lhs, Value rhs) {
-    if(lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
-      double result = ((DoubleValue)lhs).getDouble() + ((DoubleValue)rhs).getDouble();
+    if (lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
+      double result = ((DoubleValue) lhs).getDouble() + ((DoubleValue) rhs).getDouble();
       return new DoubleValue(result);
     }
     throw new UnsupportedOperationException("Unimplemented method 'add'");
@@ -51,8 +51,8 @@ public class DoubleValue extends Value{
 
   @Override
   public Value sub(Value lhs, Value rhs) {
-    if(lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
-      double result = ((DoubleValue)lhs).getDouble() - ((DoubleValue)rhs).getDouble();
+    if (lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
+      double result = ((DoubleValue) lhs).getDouble() - ((DoubleValue) rhs).getDouble();
       return new DoubleValue(result);
     }
     throw new UnsupportedOperationException("Unimplemented method 'sub'");
@@ -60,8 +60,8 @@ public class DoubleValue extends Value{
 
   @Override
   public Value mul(Value lhs, Value rhs) {
-    if(lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
-      double result = ((DoubleValue)lhs).getDouble() * ((DoubleValue)rhs).getDouble();
+    if (lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
+      double result = ((DoubleValue) lhs).getDouble() * ((DoubleValue) rhs).getDouble();
       return new DoubleValue(result);
     }
     throw new UnsupportedOperationException("Unimplemented method 'mul'");
@@ -69,8 +69,8 @@ public class DoubleValue extends Value{
 
   @Override
   public Value div(Value lhs, Value rhs) {
-    if(lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
-      double result = ((DoubleValue)lhs).getDouble() / ((DoubleValue)rhs).getDouble();
+    if (lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
+      double result = ((DoubleValue) lhs).getDouble() / ((DoubleValue) rhs).getDouble();
       return new DoubleValue(result);
     }
     throw new UnsupportedOperationException("Unimplemented method 'div'");
@@ -78,11 +78,10 @@ public class DoubleValue extends Value{
 
   @Override
   public Value mod(Value lhs, Value rhs) {
-    if(lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
-      double result = ((DoubleValue)lhs).getDouble() % ((DoubleValue)rhs).getDouble();
+    if (lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
+      double result = ((DoubleValue) lhs).getDouble() % ((DoubleValue) rhs).getDouble();
       return new DoubleValue(result);
     }
     throw new UnsupportedOperationException("Unimplemented method 'mod'");
   }
-  
 }

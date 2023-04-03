@@ -2,8 +2,12 @@ package cn.edu.thssdb.type;
 
 // THE CANANICAL NAME OF THESE TYPES ARE:
 // INTEGER, BIGINT, DECIMAL, VARCHAR
-public enum Type{
-  INT, LONG, FLOAT, DOUBLE, STRING;
+public enum Type {
+  INT,
+  LONG,
+  FLOAT,
+  DOUBLE,
+  STRING;
   // toString
   @Override
   public String toString() {

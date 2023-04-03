@@ -22,7 +22,7 @@ public abstract class Value implements Serializable, Cloneable, Comparable<Value
 
   // write to byte buffer
   public abstract void serialize(ByteBuffer buffer, int offset);
-  
+
   public static Value deserialize(ByteBuffer buffer, int offset, Type typeId) {
     switch (typeId) {
       case INT:
@@ -41,26 +41,33 @@ public abstract class Value implements Serializable, Cloneable, Comparable<Value
   }
   // arithmetic operations
   public abstract Value add(Value lhs, Value rhs);
+
   public abstract Value sub(Value lhs, Value rhs);
+
   public abstract Value mul(Value lhs, Value rhs);
+
   public abstract Value div(Value lhs, Value rhs);
+
   public abstract Value mod(Value lhs, Value rhs);
 
   // arithmetic for self and other
   public Value add(Value other) {
     return add(this, other);
   }
+
   public Value sub(Value other) {
     return sub(this, other);
   }
+
   public Value mul(Value other) {
     return mul(this, other);
   }
+
   public Value div(Value other) {
     return div(this, other);
   }
+
   public Value mod(Value other) {
     return mod(this, other);
   }
-
 }

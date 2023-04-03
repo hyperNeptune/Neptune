@@ -1,15 +1,14 @@
 package cn.edu.thssdb.type;
 
-import org.junit.Before;
+import cn.edu.thssdb.storage.*;
+import cn.edu.thssdb.utils.Global;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-import cn.edu.thssdb.utils.Global;
-import cn.edu.thssdb.storage.*;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
-
-import java.nio.file.Paths;
 
 public class ValueTest {
   private DiskManager diskManager;
@@ -57,6 +56,4 @@ public class ValueTest {
   public void tearDown() throws Exception {
     java.nio.file.Files.delete(Paths.get("test.db"));
   }
-
-
 }

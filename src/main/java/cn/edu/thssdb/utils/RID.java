@@ -1,6 +1,6 @@
 package cn.edu.thssdb.utils;
 
-public class RID implements java.io.Serializable{
+public class RID implements java.io.Serializable {
   private int pageId_ = -1;
   private int slotId_ = -1;
 
@@ -36,10 +36,9 @@ public class RID implements java.io.Serializable{
   public int hashCode() {
     return pageId_ * 31 + slotId_;
   }
-  
+
   @Override
   public String toString() {
     return String.format("RID(%d, %d)", pageId_, slotId_);
   }
-
 }

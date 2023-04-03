@@ -1,11 +1,10 @@
 package cn.edu.thssdb.storage;
 
+import cn.edu.thssdb.utils.Global;
+
 import java.io.IOException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
-import java.util.Set;
-
-import cn.edu.thssdb.utils.Global;
 
 // this class manages the disk
 public class DiskManager {
@@ -18,8 +17,9 @@ public class DiskManager {
     // open the file named filename, create it if not exists.
     // if cannot create it, thorw an exception.
     // it needs to be a binary mode file.
-    Set<OpenOption> options = Set.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
-    file_ = Files.newByteChannel(path, options);
+    file_ =
+        Files.newByteChannel(
+            path, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
   }
 
   // read one page from file_ with page_id to Page p
@@ -54,5 +54,4 @@ public class DiskManager {
     file_.write(p.GetData());
     return p;
   }
-
 }

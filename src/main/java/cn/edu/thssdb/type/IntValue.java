@@ -1,10 +1,10 @@
 package cn.edu.thssdb.type;
 
-import java.nio.ByteBuffer;
-
 import cn.edu.thssdb.utils.Global;
 
-public class IntValue extends Value{
+import java.nio.ByteBuffer;
+
+public class IntValue extends Value {
   private int value_;
 
   public IntValue(int value) {
@@ -19,8 +19,8 @@ public class IntValue extends Value{
   // arithmetic
   @Override
   public Value add(Value lhs, Value rhs) {
-    if(lhs.getTypeId() == Type.INT && rhs.getTypeId() == Type.INT) {
-      int result = ((IntValue)lhs).getInt() + ((IntValue)rhs).getInt();
+    if (lhs.getTypeId() == Type.INT && rhs.getTypeId() == Type.INT) {
+      int result = ((IntValue) lhs).getInt() + ((IntValue) rhs).getInt();
       return new IntValue(result);
     }
     throw new UnsupportedOperationException("Unimplemented method 'add'");
@@ -28,8 +28,8 @@ public class IntValue extends Value{
 
   @Override
   public Value sub(Value lhs, Value rhs) {
-    if(lhs.getTypeId() == Type.INT && rhs.getTypeId() == Type.INT) {
-      int result = ((IntValue)lhs).getInt() - ((IntValue)rhs).getInt();
+    if (lhs.getTypeId() == Type.INT && rhs.getTypeId() == Type.INT) {
+      int result = ((IntValue) lhs).getInt() - ((IntValue) rhs).getInt();
       return new IntValue(result);
     }
     throw new UnsupportedOperationException("Unimplemented method 'sub'");
@@ -37,8 +37,8 @@ public class IntValue extends Value{
 
   @Override
   public Value mul(Value lhs, Value rhs) {
-    if(lhs.getTypeId() == Type.INT && rhs.getTypeId() == Type.INT) {
-      int result = ((IntValue)lhs).getInt() * ((IntValue)rhs).getInt();
+    if (lhs.getTypeId() == Type.INT && rhs.getTypeId() == Type.INT) {
+      int result = ((IntValue) lhs).getInt() * ((IntValue) rhs).getInt();
       return new IntValue(result);
     }
     throw new UnsupportedOperationException("Unimplemented method 'mul'");
@@ -46,8 +46,8 @@ public class IntValue extends Value{
 
   @Override
   public Value div(Value lhs, Value rhs) {
-    if(lhs.getTypeId() == Type.INT && rhs.getTypeId() == Type.INT) {
-      int result = ((IntValue)lhs).getInt() / ((IntValue)rhs).getInt();
+    if (lhs.getTypeId() == Type.INT && rhs.getTypeId() == Type.INT) {
+      int result = ((IntValue) lhs).getInt() / ((IntValue) rhs).getInt();
       return new IntValue(result);
     }
     throw new UnsupportedOperationException("Unimplemented method 'div'");
@@ -55,8 +55,8 @@ public class IntValue extends Value{
 
   @Override
   public Value mod(Value lhs, Value rhs) {
-    if(lhs.getTypeId() == Type.INT && rhs.getTypeId() == Type.INT) {
-      int result = ((IntValue)lhs).getInt() % ((IntValue)rhs).getInt();
+    if (lhs.getTypeId() == Type.INT && rhs.getTypeId() == Type.INT) {
+      int result = ((IntValue) lhs).getInt() % ((IntValue) rhs).getInt();
       return new IntValue(result);
     }
     throw new UnsupportedOperationException("Unimplemented method 'mod'");
@@ -64,8 +64,8 @@ public class IntValue extends Value{
 
   @Override
   public int compareTo(Value arg0) {
-    if(arg0.getTypeId() == Type.INT) {
-      return Integer.compare(this.value_, ((IntValue)arg0).getInt());
+    if (arg0.getTypeId() == Type.INT) {
+      return Integer.compare(this.value_, ((IntValue) arg0).getInt());
     }
     throw new UnsupportedOperationException("Unimplemented method 'compareTo'");
   }
@@ -79,9 +79,8 @@ public class IntValue extends Value{
     return new IntValue(buffer.getInt(offset));
   }
 
-	@Override
-	public int getSize() {
-		return Global.INT_SIZE;
-	}
-
+  @Override
+  public int getSize() {
+    return Global.INT_SIZE;
+  }
 }

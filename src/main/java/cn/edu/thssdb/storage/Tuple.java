@@ -1,11 +1,11 @@
 package cn.edu.thssdb.storage;
 
-import java.nio.ByteBuffer;
-
 import cn.edu.thssdb.schema.Column;
 import cn.edu.thssdb.schema.Schema;
 import cn.edu.thssdb.type.*;
 import cn.edu.thssdb.utils.RID;
+
+import java.nio.ByteBuffer;
 
 // Fixed-length tuple
 public class Tuple {
@@ -24,7 +24,7 @@ public class Tuple {
   // constructor by values and schema
   public Tuple(Value[] values, Schema schema) {
     size_ = schema.getSize();
-    data_ = ByteBuffer.allocate(size_).clear();
+    data_ = ByteBuffer.allocate(size_);
 
     for (int i = 0; i < values.length; i++) {
       values[i].serialize(data_, schema.getColumn(i).getOffset());
@@ -39,18 +39,15 @@ public class Tuple {
 
   // serialize
   public void serialize(ByteBuffer buffer, int offset) {
-    buffer.rewind()
-          .put(data_.array(), 0, size_)
-          .rewind();
+    buffer.put(data_.array(), 0, size_).rewind();
   }
 
   // deserialize
   public static Tuple deserialize(ByteBuffer buffer, int offset, Schema schema) {
     Tuple tuple = new Tuple();
     tuple.size_ = schema.getSize();
-    tuple.data_ = ByteBuffer.allocate(tuple.size_).clear();
+    tuple.data_ = ByteBuffer.allocate(tuple.size_);
     tuple.data_.put(buffer.array(), offset, tuple.size_).rewind();
     return tuple;
   }
-
 }

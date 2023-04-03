@@ -25,7 +25,17 @@ public class Column implements Comparable<Column> {
   }
 
   public String toString() {
-    return name_ + ',' + type_ + ',' + primary_ + ',' + nullable_ + ',' + maxLength_ + ',' + offset_;
+    return name_
+        + ','
+        + type_
+        + ','
+        + primary_
+        + ','
+        + nullable_
+        + ','
+        + maxLength_
+        + ','
+        + offset_;
   }
 
   // getters
@@ -52,5 +62,4 @@ public class Column implements Comparable<Column> {
   public int getOffset() {
     return offset_;
   }
-
 }

@@ -3,7 +3,7 @@ package cn.edu.thssdb.schema;
 import java.io.Serializable;
 
 // assume all columns are inlined
-public class Schema implements Serializable{
+public class Schema implements Serializable {
   private Column[] columns_;
   private int size_;
 
@@ -61,5 +61,4 @@ public class Schema implements Serializable{
     }
     return sb.toString();
   }
-
 }

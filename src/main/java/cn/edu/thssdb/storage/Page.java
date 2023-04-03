@@ -1,8 +1,8 @@
 package cn.edu.thssdb.storage;
 
-import java.nio.ByteBuffer;
-
 import cn.edu.thssdb.utils.Global;
+
+import java.nio.ByteBuffer;
 
 // this class represents a page in disk and in the database management system
 // it is a byte array of size PAGE_SIZE
@@ -25,7 +25,7 @@ public class Page {
     return page_id_;
   }
 
-  public ByteBuffer GetData(){
+  public ByteBuffer GetData() {
     return data_;
   }
 
@@ -33,5 +33,4 @@ public class Page {
   public void SetData(byte[] data) {
     data_ = ByteBuffer.wrap(data);
   }
-  
 }
