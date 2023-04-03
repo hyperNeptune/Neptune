@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 public abstract class Value implements Serializable, Cloneable, Comparable<Value> {
   Type typeId_;
 
-  // trival constructor
+  // trivial constructor
   public Value(Type typeId) {
     typeId_ = typeId;
   }
@@ -69,5 +69,16 @@ public abstract class Value implements Serializable, Cloneable, Comparable<Value
 
   public Value mod(Value other) {
     return mod(this, other);
+  }
+
+  @Override
+  public Value clone() {
+    try {
+      Value clone = (Value) super.clone();
+      // TODO: 复制此处的可变状态，这样此克隆就不能更改初始克隆的内部项
+      return clone;
+    } catch (CloneNotSupportedException e) {
+      throw new AssertionError();
+    }
   }
 }

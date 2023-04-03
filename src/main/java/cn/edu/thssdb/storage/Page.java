@@ -5,7 +5,7 @@ import cn.edu.thssdb.utils.Global;
 import java.nio.ByteBuffer;
 
 // this class represents a page in disk and in the database management system
-// it is a byte array of size PAGE_SIZE
+// it is a byte array of size PAGE_SIZE,
 // and we may need some bookkeeping information about this page
 public class Page {
   private int page_id_;
@@ -33,4 +33,6 @@ public class Page {
   public void SetData(byte[] data) {
     data_ = ByteBuffer.wrap(data);
   }
+
+  public void SetPageId(int page){ page_id_ = page; }
 }

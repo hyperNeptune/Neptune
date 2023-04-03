@@ -4,6 +4,8 @@ public class RID implements java.io.Serializable {
   private int pageId_ = -1;
   private int slotId_ = -1;
 
+  public RID () {}
+
   public RID(int pageId, int slotId) {
     pageId_ = pageId;
     slotId_ = slotId;

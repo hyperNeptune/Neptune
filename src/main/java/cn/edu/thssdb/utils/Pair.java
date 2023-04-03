@@ -22,7 +22,7 @@ import java.io.Serializable;
 
 /**
  * Pair is a template class to represent a couple of values. It also override the Object basic
- * methods like hasnCode, equals and toString.
+ * methods like hashCode, equals and toString.
  *
  * @param <L> L type
  * @param <R> R type

@@ -1,6 +1,6 @@
 package cn.edu.thssdb.type;
 
-// THE CANANICAL NAME OF THESE TYPES ARE:
+// THE CANONICAL NAME OF THESE TYPES ARE:
 // INTEGER, BIGINT, DECIMAL, VARCHAR
 public enum Type {
   INT,
@@ -26,4 +26,4 @@ public enum Type {
         return "UNKNOWN";
     }
   }
-};
+}

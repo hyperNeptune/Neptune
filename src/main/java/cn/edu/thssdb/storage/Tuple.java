@@ -39,7 +39,7 @@ public class Tuple {
 
   // serialize
   public void serialize(ByteBuffer buffer, int offset) {
-    buffer.put(data_.array(), 0, size_).rewind();
+    buffer.put(data_.array(), offset, size_).rewind();
   }
 
   // deserialize

@@ -15,7 +15,7 @@ public class DiskManager {
   public DiskManager(Path path) throws IOException {
     path_ = path;
     // open the file named filename, create it if not exists.
-    // if cannot create it, thorw an exception.
+    // if you cannot create it, throw an exception.
     // it needs to be a binary mode file.
     file_ =
         Files.newByteChannel(
@@ -24,14 +24,14 @@ public class DiskManager {
 
   // read one page from file_ with page_id to Page p
   // if page_id is invalid, throw an exception
-  // if cannot read, throw an exception
+  // if you cannot read, throw an exception
   // return the page
   // params: int page_id, Page p
   public Page readPage(int page_id, Page p) throws IOException {
     if (page_id < 0) {
       throw new IOException("Invalid page id " + page_id);
     }
-    long offset = page_id * Global.PAGE_SIZE;
+    long offset = (long) page_id * Global.PAGE_SIZE;
     if (offset >= file_.size()) {
       throw new IOException("file size is " + file_.size() + ", but offset is " + offset);
     }
@@ -42,14 +42,14 @@ public class DiskManager {
 
   // write one page from Page p to file_ with page_id
   // if page_id is invalid, throw an exception
-  // if cannot write, throw an exception
+  // if you cannot write, throw an exception
   // return the page
   // params: int page_id, Page p
   public Page writePage(int page_id, Page p) throws IOException {
     if (page_id < 0) {
       throw new IOException("Invalid page id " + page_id);
     }
-    long offset = page_id * Global.PAGE_SIZE;
+    long offset = (long) page_id * Global.PAGE_SIZE;
     file_.position(offset);
     file_.write(p.GetData());
     return p;
