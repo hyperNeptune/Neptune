@@ -5,7 +5,7 @@ import cn.edu.thssdb.utils.Global;
 import java.nio.ByteBuffer;
 
 public class DoubleValue extends Value {
-  private double value_;
+  private final double value_;
 
   // constructor
   public DoubleValue(double value) {
@@ -33,7 +33,7 @@ public class DoubleValue extends Value {
 
   @Override
   public void serialize(ByteBuffer buffer, int offset) {
-    buffer.putDouble(offset, value_).rewind();
+    buffer.putDouble(offset, value_);
   }
 
   public static DoubleValue deserialize(ByteBuffer buffer, int offset) {

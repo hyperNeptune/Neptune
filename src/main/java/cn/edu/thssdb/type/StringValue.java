@@ -3,7 +3,7 @@ package cn.edu.thssdb.type;
 import java.nio.ByteBuffer;
 
 public class StringValue extends Value {
-  private String value_;
+  private final String value_;
 
   public StringValue(String value) {
     super(Type.STRING);
@@ -29,7 +29,7 @@ public class StringValue extends Value {
 
   @Override
   public void serialize(ByteBuffer buffer, int offset) {
-    ((ByteBuffer) buffer.position(offset)).put(value_.getBytes()).rewind();
+    ((ByteBuffer) buffer.position(offset)).put(value_.getBytes());
   }
 
   public static StringValue deserialize(ByteBuffer buffer, int offset) {

@@ -51,6 +51,25 @@ public class ValueTest {
     }
   }
 
+  @Test
+  public void BufferTest() throws Exception {
+    page = new Page(5);
+    assertEquals(0, page.GetData().position());
+    page.GetData().putInt(0, 5);
+    assertEquals(0, page.GetData().position());
+    page.GetData().putInt(4, 2);
+    assertEquals(0, page.GetData().position());
+    diskManager.writePage(5, page);
+
+    Page page2 = new Page(5);
+    diskManager.readPage(5, page2);
+    assertEquals(Global.PAGE_SIZE, page2.GetData().limit());
+    assertEquals(Global.PAGE_SIZE, page2.GetData().position());
+    assertEquals(2, page2.GetData().getInt(4));
+    assertEquals(5, page2.GetData().getInt(0));
+    assertEquals(Global.PAGE_SIZE, page2.GetData().position());
+  }
+
   // after test, delete the test.db file
   @After
   public void tearDown() throws Exception {

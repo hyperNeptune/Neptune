@@ -74,9 +74,8 @@ public abstract class Value implements Serializable, Cloneable, Comparable<Value
   @Override
   public Value clone() {
     try {
-      Value clone = (Value) super.clone();
       // TODO: 复制此处的可变状态，这样此克隆就不能更改初始克隆的内部项
-      return clone;
+      return (Value) super.clone();
     } catch (CloneNotSupportedException e) {
       throw new AssertionError();
     }

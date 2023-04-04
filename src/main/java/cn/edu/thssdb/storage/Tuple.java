@@ -39,7 +39,7 @@ public class Tuple {
 
   // serialize
   public void serialize(ByteBuffer buffer, int offset) {
-    buffer.put(data_.array(), offset, size_).rewind();
+    buffer.put(data_.array(), offset, size_);
   }
 
   // deserialize
@@ -47,7 +47,7 @@ public class Tuple {
     Tuple tuple = new Tuple();
     tuple.size_ = schema.getSize();
     tuple.data_ = ByteBuffer.allocate(tuple.size_);
-    tuple.data_.put(buffer.array(), offset, tuple.size_).rewind();
+    tuple.data_.put(buffer.array(), offset, tuple.size_);
     return tuple;
   }
 }

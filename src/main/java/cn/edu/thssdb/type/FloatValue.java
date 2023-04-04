@@ -5,7 +5,7 @@ import cn.edu.thssdb.utils.Global;
 import java.nio.ByteBuffer;
 
 public class FloatValue extends Value {
-  private float value_;
+  private final float value_;
 
   public FloatValue(float value) {
     super(Type.FLOAT);
@@ -31,7 +31,7 @@ public class FloatValue extends Value {
 
   @Override
   public void serialize(ByteBuffer buffer, int offset) {
-    buffer.putFloat(offset, value_).rewind();
+    buffer.putFloat(offset, value_);
   }
 
   public static FloatValue deserialize(ByteBuffer buffer, int offset) {

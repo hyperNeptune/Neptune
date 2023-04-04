@@ -5,7 +5,7 @@ import cn.edu.thssdb.utils.Global;
 import java.nio.ByteBuffer;
 
 public class LongValue extends Value {
-  private long value_;
+  private final long value_;
 
   public LongValue(long value) {
     super(Type.LONG);
@@ -31,7 +31,7 @@ public class LongValue extends Value {
 
   @Override
   public void serialize(ByteBuffer buffer, int offset) {
-    buffer.putLong(offset, value_).rewind();
+    buffer.putLong(offset, value_);
   }
 
   public static LongValue deserialize(ByteBuffer buffer, int offset) {

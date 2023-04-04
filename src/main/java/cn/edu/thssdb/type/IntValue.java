@@ -5,7 +5,7 @@ import cn.edu.thssdb.utils.Global;
 import java.nio.ByteBuffer;
 
 public class IntValue extends Value {
-  private int value_;
+  private final int value_;
 
   public IntValue(int value) {
     super(Type.INT);
@@ -72,7 +72,7 @@ public class IntValue extends Value {
 
   @Override
   public void serialize(ByteBuffer buffer, int offset) {
-    buffer.putInt(offset, value_).rewind();
+    buffer.putInt(offset, value_);
   }
 
   public static IntValue deserialize(ByteBuffer buffer, int offset) {
