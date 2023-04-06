@@ -1,8 +1,14 @@
 package cn.edu.thssdb.schema;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 // assume all columns are inlined
+// schema is a list of columns
+// |---------|---------|---------|-----|
+// | column1 | column2 | column3 | ... |
+// |---------|---------|---------|-----|
+// columns are separated by semicolon, so column name can't contain semicolon
 public class Schema implements Serializable {
   private Column[] columns_;
   private int size_;
@@ -50,6 +56,10 @@ public class Schema implements Serializable {
     return -1;
   }
 
+  // difference between toString and serialize:
+  // toString is used for printing & debugging, and is human-readable
+  // serialize is used for storage, it is compressed and can only decode by machine
+
   // toString
   @Override
   public String toString() {
@@ -60,5 +70,18 @@ public class Schema implements Serializable {
       sb.append("'\n ");
     }
     return sb.toString();
+  }
+
+  public void serialize(ByteBuffer buffer, int offset) {
+    for (Column column : columns_) {
+      byte[] bytes = column.toString().getBytes();
+      buffer.put(bytes, offset, bytes.length);
+      offset += bytes.length;
+    }
+  }
+
+  public static Schema deserialize(ByteBuffer buffer, int offset) {
+    // TODO
+    return null;
   }
 }

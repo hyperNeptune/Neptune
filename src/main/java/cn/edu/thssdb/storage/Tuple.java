@@ -34,7 +34,7 @@ public class Tuple {
   // get value by schema and column index
   public Value getValue(Schema schema, int index) {
     Column column = schema.getColumn(index);
-    return Value.deserialize(data_, column.getOffset(), column.getType());
+    return column.getType().deserializeValue(data_, column.getOffset());
   }
 
   // serialize

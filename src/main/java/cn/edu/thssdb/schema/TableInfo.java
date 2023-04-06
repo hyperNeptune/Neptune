@@ -1,5 +1,7 @@
 package cn.edu.thssdb.schema;
 
+import java.nio.ByteBuffer;
+
 // Represents meta information about our table
 // TableInfo aggregates to our database Catalog Table
 // The Catalog Table is a table that stores information about all the tables in our database
@@ -14,16 +16,36 @@ package cn.edu.thssdb.schema;
 public class TableInfo {
 
   private final String tableName_;
-  private Schema schema_;
-  private int firstPageId_;
+  private final Schema schema_;
+  private final int firstPageId_;
 
-  public TableInfo(String tableName, Schema schema) {
+  public TableInfo(String tableName, Schema schema, int firstPageId) {
     tableName_ = tableName;
     schema_ = schema;
+    firstPageId_ = firstPageId;
   }
 
-  int columnFind(String name) {
+  // serialize to ByteBuffer
+  public void serialize(ByteBuffer buffer, int offset) {
+    // table_name_length
+    buffer.putInt(offset, tableName_.length());
+    offset += 4;
+    // table_name
+    buffer.put(tableName_.getBytes(), offset, tableName_.length());
+    offset += tableName_.length();
+    // schema_length
+    buffer.putInt(offset, schema_.getSize());
+    offset += 4;
+    // schema
+    schema_.serialize(buffer, offset);
+    offset += schema_.getSize();
+    // first_page_id
+    buffer.putInt(offset, firstPageId_);
+  }
+
+  // static method: deserialize from ByteBuffer
+  public static TableInfo deserialize(ByteBuffer buffer, int offset) {
     // TODO
-    return 0;
+    return null;
   }
 }

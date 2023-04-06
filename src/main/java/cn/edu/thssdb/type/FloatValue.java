@@ -4,24 +4,14 @@ import cn.edu.thssdb.utils.Global;
 
 import java.nio.ByteBuffer;
 
-public class FloatValue extends Value {
-  private final float value_;
+public class FloatValue extends Value<FloatType, Float> {
+  float value_;
+  public static final FloatValue NULL_VALUE = new FloatValue(0);
 
+  // constructor
   public FloatValue(float value) {
-    super(Type.FLOAT);
+    super(FloatType.INSTANCE);
     value_ = value;
-  }
-
-  public float getFloat() {
-    return value_;
-  }
-
-  @Override
-  public int compareTo(Value arg0) {
-    if (arg0.getTypeId() == Type.FLOAT) {
-      return Float.compare(value_, ((FloatValue) arg0).getFloat());
-    }
-    throw new UnsupportedOperationException("Unimplemented method 'compareTo'");
   }
 
   @Override
@@ -34,52 +24,77 @@ public class FloatValue extends Value {
     buffer.putFloat(offset, value_);
   }
 
-  public static FloatValue deserialize(ByteBuffer buffer, int offset) {
-    return new FloatValue(buffer.getFloat(offset));
+  @Override
+  public String toString() {
+    return Float.toString(value_);
   }
 
   @Override
-  public Value add(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.FLOAT && rhs.getTypeId() == Type.FLOAT) {
-      float result = ((FloatValue) lhs).getFloat() + ((FloatValue) rhs).getFloat();
-      return new FloatValue(result);
+  protected Value<? extends Type, ?> addImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == FloatType.INSTANCE) {
+      return new FloatValue(((FloatValue) other).getValue() + value_);
     }
-    throw new UnsupportedOperationException("Unimplemented method 'add'");
+    return super.addImpl(other, reverse);
   }
 
   @Override
-  public Value sub(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.FLOAT && rhs.getTypeId() == Type.FLOAT) {
-      float result = ((FloatValue) lhs).getFloat() - ((FloatValue) rhs).getFloat();
-      return new FloatValue(result);
+  protected Value<? extends Type, ?> subImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == FloatType.INSTANCE) {
+      if (reverse) {
+        return new FloatValue(((FloatValue) other).getValue() - value_);
+      } else {
+        return new FloatValue(value_ - ((FloatValue) other).getValue());
+      }
     }
-    throw new UnsupportedOperationException("Unimplemented method 'sub'");
+    return super.subImpl(other, reverse);
   }
 
   @Override
-  public Value mul(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.FLOAT && rhs.getTypeId() == Type.FLOAT) {
-      float result = ((FloatValue) lhs).getFloat() * ((FloatValue) rhs).getFloat();
-      return new FloatValue(result);
+  protected Value<? extends Type, ?> mulImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == FloatType.INSTANCE) {
+      return new FloatValue(((FloatValue) other).getValue() * value_);
     }
-    throw new UnsupportedOperationException("Unimplemented method 'mul'");
+    return super.mulImpl(other, reverse);
   }
 
   @Override
-  public Value div(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.FLOAT && rhs.getTypeId() == Type.FLOAT) {
-      float result = ((FloatValue) lhs).getFloat() / ((FloatValue) rhs).getFloat();
-      return new FloatValue(result);
+  protected Value<? extends Type, ?> divImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == FloatType.INSTANCE) {
+      if (reverse) {
+        return new FloatValue(((FloatValue) other).getValue() / value_);
+      } else {
+        return new FloatValue(value_ / ((FloatValue) other).getValue());
+      }
     }
-    throw new UnsupportedOperationException("Unimplemented method 'div'");
+    return super.divImpl(other, reverse);
   }
 
   @Override
-  public Value mod(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.FLOAT && rhs.getTypeId() == Type.FLOAT) {
-      float result = ((FloatValue) lhs).getFloat() % ((FloatValue) rhs).getFloat();
-      return new FloatValue(result);
+  protected Value<? extends Type, ?> modImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == FloatType.INSTANCE) {
+      if (reverse) {
+        return new FloatValue(((FloatValue) other).getValue() % value_);
+      } else {
+        return new FloatValue(value_ % ((FloatValue) other).getValue());
+      }
     }
-    throw new UnsupportedOperationException("Unimplemented method 'mod'");
+    return super.modImpl(other, reverse);
+  }
+
+  @Override
+  public Float getValue() {
+    return value_;
+  }
+
+  @Override
+  protected int compareToImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == FloatType.INSTANCE) {
+      if (reverse) {
+        return Float.compare(((FloatValue) other).getValue(), value_);
+      } else {
+        return Float.compare(value_, ((FloatValue) other).getValue());
+      }
+    }
+    return super.compareToImpl(other, reverse);
   }
 }

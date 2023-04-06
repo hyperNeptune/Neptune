@@ -4,24 +4,16 @@ import cn.edu.thssdb.utils.Global;
 
 import java.nio.ByteBuffer;
 
-public class LongValue extends Value {
-  private final long value_;
+public class LongValue extends Value<LongType, Long> {
 
+  long value_;
+
+  public static final LongValue NULL_VALUE = new LongValue(0L);
+
+  // constructor
   public LongValue(long value) {
-    super(Type.LONG);
+    super(LongType.INSTANCE);
     value_ = value;
-  }
-
-  public long getLong() {
-    return value_;
-  }
-
-  @Override
-  public int compareTo(Value arg0) {
-    if (arg0.getTypeId() == Type.LONG) {
-      return Long.compare(value_, ((LongValue) arg0).getLong());
-    }
-    throw new UnsupportedOperationException("Unimplemented method 'compareTo'");
   }
 
   @Override
@@ -34,52 +26,78 @@ public class LongValue extends Value {
     buffer.putLong(offset, value_);
   }
 
-  public static LongValue deserialize(ByteBuffer buffer, int offset) {
-    return new LongValue(buffer.getLong(offset));
+  @Override
+  public String toString() {
+    return Long.toString(value_);
   }
 
   @Override
-  public Value add(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.LONG && rhs.getTypeId() == Type.LONG) {
-      long result = ((LongValue) lhs).getLong() + ((LongValue) rhs).getLong();
-      return new LongValue(result);
-    }
-    throw new UnsupportedOperationException("Unimplemented method 'add'");
+  public Long getValue() {
+    return value_;
   }
 
   @Override
-  public Value sub(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.LONG && rhs.getTypeId() == Type.LONG) {
-      long result = ((LongValue) lhs).getLong() - ((LongValue) rhs).getLong();
-      return new LongValue(result);
+  protected Value<? extends Type, ?> addImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == LongType.INSTANCE) {
+      return new LongValue(((LongValue) other).getValue() + value_);
     }
-    throw new UnsupportedOperationException("Unimplemented method 'sub'");
+    return super.addImpl(other, reverse);
   }
 
   @Override
-  public Value mul(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.LONG && rhs.getTypeId() == Type.LONG) {
-      long result = ((LongValue) lhs).getLong() * ((LongValue) rhs).getLong();
-      return new LongValue(result);
+  protected Value<? extends Type, ?> subImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == LongType.INSTANCE) {
+      if (reverse) {
+        return new LongValue(((LongValue) other).getValue() - value_);
+      } else {
+        return new LongValue(value_ - ((LongValue) other).getValue());
+      }
     }
-    throw new UnsupportedOperationException("Unimplemented method 'mul'");
+    return super.subImpl(other, reverse);
   }
 
   @Override
-  public Value div(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.LONG && rhs.getTypeId() == Type.LONG) {
-      long result = ((LongValue) lhs).getLong() / ((LongValue) rhs).getLong();
-      return new LongValue(result);
+  protected Value<? extends Type, ?> mulImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == LongType.INSTANCE) {
+      return new LongValue(((LongValue) other).getValue() * value_);
     }
-    throw new UnsupportedOperationException("Unimplemented method 'div'");
+    return super.mulImpl(other, reverse);
   }
 
   @Override
-  public Value mod(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.LONG && rhs.getTypeId() == Type.LONG) {
-      long result = ((LongValue) lhs).getLong() % ((LongValue) rhs).getLong();
-      return new LongValue(result);
+  protected Value<? extends Type, ?> divImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == LongType.INSTANCE) {
+      if (reverse) {
+        return new LongValue(((LongValue) other).getValue() / value_);
+      } else {
+        return new LongValue(value_ / ((LongValue) other).getValue());
+      }
     }
-    throw new UnsupportedOperationException("Unimplemented method 'mod'");
+    return super.divImpl(other, reverse);
+  }
+
+  @Override
+  protected Value<? extends Type, ?> modImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == LongType.INSTANCE) {
+      if (reverse) {
+        return new LongValue(((LongValue) other).getValue() % value_);
+      } else {
+        return new LongValue(value_ % ((LongValue) other).getValue());
+      }
+    }
+    return super.modImpl(other, reverse);
+  }
+
+  // compareToImpl
+  @Override
+  protected int compareToImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == LongType.INSTANCE) {
+      if (reverse) {
+        return Long.compare(((IntValue) other).value_, value_);
+      } else {
+        return Long.compare(value_, ((IntValue) other).value_);
+      }
+    }
+    return super.compareToImpl(other, reverse);
   }
 }

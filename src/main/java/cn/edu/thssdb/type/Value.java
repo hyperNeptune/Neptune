@@ -4,18 +4,30 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 
 // value is a interface for all values
-public abstract class Value implements Serializable, Cloneable, Comparable<Value> {
-  Type typeId_;
+// use abstract class to make it convenient
+public abstract class Value<T extends Type, V>
+    implements Serializable, Comparable<Value<? extends Type, ?>> {
+  final Type type_;
 
   // trivial constructor
-  public Value(Type typeId) {
-    typeId_ = typeId;
+  public Value(Type type) {
+    type_ = type;
+  }
+
+  // clone is broken in java, so we use copy constructor
+  public Value(Value<T, V> other) {
+    type_ = other.type_;
   }
 
   // get type id
-  public Type getTypeId() {
-    return typeId_;
+  public Type getType() {
+    return type_;
   }
+
+  // get type name
+  public String getTypeName() {
+    return type_.toString();
+  };
 
   // get size
   public abstract int getSize();
@@ -23,61 +35,88 @@ public abstract class Value implements Serializable, Cloneable, Comparable<Value
   // write to byte buffer
   public abstract void serialize(ByteBuffer buffer, int offset);
 
-  public static Value deserialize(ByteBuffer buffer, int offset, Type typeId) {
-    switch (typeId) {
-      case INT:
-        return IntValue.deserialize(buffer, offset);
-      case LONG:
-        return LongValue.deserialize(buffer, offset);
-      case FLOAT:
-        return FloatValue.deserialize(buffer, offset);
-      case DOUBLE:
-        return DoubleValue.deserialize(buffer, offset);
-      case STRING:
-        return StringValue.deserialize(buffer, offset);
-      default:
-        throw new UnsupportedOperationException("Unimplemented method 'deserialize'");
-    }
-  }
-  // arithmetic operations
-  public abstract Value add(Value lhs, Value rhs);
-
-  public abstract Value sub(Value lhs, Value rhs);
-
-  public abstract Value mul(Value lhs, Value rhs);
-
-  public abstract Value div(Value lhs, Value rhs);
-
-  public abstract Value mod(Value lhs, Value rhs);
+  // toString
+  @Override
+  public abstract String toString();
 
   // arithmetic for self and other
-  public Value add(Value other) {
-    return add(this, other);
-  }
-
-  public Value sub(Value other) {
-    return sub(this, other);
-  }
-
-  public Value mul(Value other) {
-    return mul(this, other);
-  }
-
-  public Value div(Value other) {
-    return div(this, other);
-  }
-
-  public Value mod(Value other) {
-    return mod(this, other);
-  }
-
-  @Override
-  public Value clone() {
+  public final Value<? extends Type, ?> add(Value<? extends Type, ?> other) {
     try {
-      // TODO: 复制此处的可变状态，这样此克隆就不能更改初始克隆的内部项
-      return (Value) super.clone();
-    } catch (CloneNotSupportedException e) {
-      throw new AssertionError();
+      return addImpl(other, false);
+    } catch (UnsupportedOperationException e) {
+      return other.addImpl(this, true);
     }
   }
+
+  public final Value<? extends Type, ?> sub(Value<? extends Type, ?> other) {
+    try {
+      return subImpl(other, false);
+    } catch (UnsupportedOperationException e) {
+      return other.subImpl(this, true);
+    }
+  }
+
+  public final Value<? extends Type, ?> mul(Value<? extends Type, ?> other) {
+    try {
+      return mulImpl(other, false);
+    } catch (UnsupportedOperationException e) {
+      return other.mulImpl(this, true);
+    }
+  }
+
+  public final Value<? extends Type, ?> div(Value<? extends Type, ?> other) {
+    try {
+      return divImpl(other, false);
+    } catch (UnsupportedOperationException e) {
+      return other.divImpl(this, true);
+    }
+  }
+
+  public final Value<? extends Type, ?> mod(Value<? extends Type, ?> other) {
+    try {
+      return modImpl(other, false);
+    } catch (UnsupportedOperationException e) {
+      return other.modImpl(this, true);
+    }
+  }
+
+  // compare
+  @Override
+  public int compareTo(Value<? extends Type, ?> other) {
+    try {
+      return compareToImpl(other, false);
+    } catch (UnsupportedOperationException e) {
+      return other.compareToImpl(this, true);
+    }
+  }
+
+  // arithmetic implementation
+  // reverse means the order of lhs and rhs is reversed
+  // we need this because old types can not 'add' new types
+  // but new types can 'add' old types
+  protected Value<? extends Type, ?> addImpl(Value<? extends Type, ?> other, boolean reverse) {
+    throw new UnsupportedOperationException();
+  }
+
+  protected Value<? extends Type, ?> subImpl(Value<? extends Type, ?> other, boolean reverse) {
+    throw new UnsupportedOperationException();
+  }
+
+  protected Value<? extends Type, ?> mulImpl(Value<? extends Type, ?> other, boolean reverse) {
+    throw new UnsupportedOperationException();
+  }
+
+  protected Value<? extends Type, ?> divImpl(Value<? extends Type, ?> other, boolean reverse) {
+    throw new UnsupportedOperationException();
+  }
+
+  protected Value<? extends Type, ?> modImpl(Value<? extends Type, ?> other, boolean reverse) {
+    throw new UnsupportedOperationException();
+  }
+
+  protected int compareToImpl(Value<? extends Type, ?> other, boolean reverse) {
+    throw new UnsupportedOperationException();
+  }
+
+  public abstract V getValue();
 }

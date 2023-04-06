@@ -4,26 +4,14 @@ import cn.edu.thssdb.utils.Global;
 
 import java.nio.ByteBuffer;
 
-public class DoubleValue extends Value {
-  private final double value_;
+public class DoubleValue extends Value<DoubleType, Double> {
+  double value_;
+  public static final DoubleValue NULL_VALUE = new DoubleValue(0);
 
   // constructor
   public DoubleValue(double value) {
-    super(Type.DOUBLE);
+    super(DoubleType.INSTANCE);
     value_ = value;
-  }
-
-  // getter
-  public double getDouble() {
-    return value_;
-  }
-
-  @Override
-  public int compareTo(Value arg0) {
-    if (arg0.getTypeId() == Type.DOUBLE) {
-      return Double.compare(value_, ((DoubleValue) arg0).getDouble());
-    }
-    throw new UnsupportedOperationException("Unimplemented method 'compareTo'");
   }
 
   @Override
@@ -36,52 +24,78 @@ public class DoubleValue extends Value {
     buffer.putDouble(offset, value_);
   }
 
-  public static DoubleValue deserialize(ByteBuffer buffer, int offset) {
-    return new DoubleValue(buffer.getDouble(offset));
+  @Override
+  public String toString() {
+    return Double.toString(value_);
   }
 
   @Override
-  public Value add(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
-      double result = ((DoubleValue) lhs).getDouble() + ((DoubleValue) rhs).getDouble();
-      return new DoubleValue(result);
+  protected Value<? extends Type, ?> addImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == DoubleType.INSTANCE) {
+      return new DoubleValue(((DoubleValue) other).getValue() + value_);
     }
-    throw new UnsupportedOperationException("Unimplemented method 'add'");
+    return super.addImpl(other, reverse);
   }
 
   @Override
-  public Value sub(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
-      double result = ((DoubleValue) lhs).getDouble() - ((DoubleValue) rhs).getDouble();
-      return new DoubleValue(result);
+  protected Value<? extends Type, ?> subImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == DoubleType.INSTANCE) {
+      if (reverse) {
+        return new DoubleValue(((DoubleValue) other).getValue() - value_);
+      } else {
+        return new DoubleValue(value_ - ((DoubleValue) other).getValue());
+      }
     }
-    throw new UnsupportedOperationException("Unimplemented method 'sub'");
+    return super.subImpl(other, reverse);
   }
 
   @Override
-  public Value mul(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
-      double result = ((DoubleValue) lhs).getDouble() * ((DoubleValue) rhs).getDouble();
-      return new DoubleValue(result);
+  protected Value<? extends Type, ?> mulImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == DoubleType.INSTANCE) {
+      return new DoubleValue(((DoubleValue) other).getValue() * value_);
     }
-    throw new UnsupportedOperationException("Unimplemented method 'mul'");
+    return super.mulImpl(other, reverse);
   }
 
   @Override
-  public Value div(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
-      double result = ((DoubleValue) lhs).getDouble() / ((DoubleValue) rhs).getDouble();
-      return new DoubleValue(result);
+  protected Value<? extends Type, ?> divImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == DoubleType.INSTANCE) {
+      if (reverse) {
+        return new DoubleValue(((DoubleValue) other).getValue() / value_);
+      } else {
+        return new DoubleValue(value_ / ((DoubleValue) other).getValue());
+      }
     }
-    throw new UnsupportedOperationException("Unimplemented method 'div'");
+    return super.divImpl(other, reverse);
   }
 
   @Override
-  public Value mod(Value lhs, Value rhs) {
-    if (lhs.getTypeId() == Type.DOUBLE && rhs.getTypeId() == Type.DOUBLE) {
-      double result = ((DoubleValue) lhs).getDouble() % ((DoubleValue) rhs).getDouble();
-      return new DoubleValue(result);
+  protected Value<? extends Type, ?> modImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == DoubleType.INSTANCE) {
+      if (reverse) {
+        return new DoubleValue(((DoubleValue) other).getValue() % value_);
+      } else {
+        return new DoubleValue(value_ % ((DoubleValue) other).getValue());
+      }
     }
-    throw new UnsupportedOperationException("Unimplemented method 'mod'");
+    return super.modImpl(other, reverse);
+  }
+
+  // getValue, compareToImpl
+  @Override
+  public Double getValue() {
+    return value_;
+  }
+
+  @Override
+  protected int compareToImpl(Value<? extends Type, ?> other, boolean reverse) {
+    if (other.getType() == DoubleType.INSTANCE) {
+      if (reverse) {
+        return Double.compare(((DoubleValue) other).getValue(), value_);
+      } else {
+        return Double.compare(value_, ((DoubleValue) other).getValue());
+      }
+    }
+    return super.compareToImpl(other, reverse);
   }
 }
