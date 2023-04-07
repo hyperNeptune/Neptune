@@ -2,6 +2,7 @@ package cn.edu.thssdb.schema;
 
 import java.io.Serializable;
 
+@Deprecated
 public class Entry implements Comparable<Entry>, Serializable {
   private static final long serialVersionUID = -5809782578272943999L;
   public Comparable value;

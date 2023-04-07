@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringJoiner;
 
+@Deprecated
 public class Row implements Serializable {
   private static final long serialVersionUID = -5809782578272943999L;
   protected ArrayList<Entry> entries;

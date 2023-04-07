@@ -5,20 +5,21 @@ import java.nio.ByteBuffer;
 
 // assume all columns are inlined
 // schema is a list of columns
-// |---------|---------|---------|-----|
-// | column1 | column2 | column3 | ... |
-// |---------|---------|---------|-----|
+// |------|---------|---------|---------|-----|
+// | size | column1 | column2 | column3 | ... |
+// |------|---------|---------|---------|-----|
 // columns are separated by semicolon, so column name can't contain semicolon
 public class Schema implements Serializable {
-  private Column[] columns_;
+  private final Column[] columns_;
   private int size_;
 
   public Schema(Column[] columns) {
     columns_ = columns;
-    size_ = 0;
+    size_ = columns_.length;
+    int offset = 0;
     for (Column column : columns) {
-      column.offset_ = size_;
-      size_ += column.getMaxLength();
+      column.offset_ = offset;
+      offset += column.getMaxLength();
     }
   }
 
@@ -73,15 +74,25 @@ public class Schema implements Serializable {
   }
 
   public void serialize(ByteBuffer buffer, int offset) {
+    // size
+    buffer.putInt(offset, size_);
+    offset += 4;
     for (Column column : columns_) {
-      byte[] bytes = column.toString().getBytes();
-      buffer.put(bytes, offset, bytes.length);
-      offset += bytes.length;
+      offset = column.serialize(buffer, offset);
     }
   }
 
-  public static Schema deserialize(ByteBuffer buffer, int offset) {
-    // TODO
-    return null;
+  // WARNING: offset is changed after calling this function
+  public static Schema deserialize(ByteBuffer buffer, Integer offset) {
+    // column one by one until end
+    // column format: name,type,primary,nullable,maxLength,offset
+    // separated by comma
+    int size = buffer.getInt(offset);
+    offset += 4;
+    Column[] columns = new Column[size];
+    for (int i = 0; i < size; i++) {
+      columns[i] = Column.deserialize(buffer, offset);
+    }
+    return new Schema(columns);
   }
 }

@@ -6,9 +6,9 @@ import java.nio.ByteBuffer;
 // TableInfo aggregates to our database Catalog Table
 // The Catalog Table is a table that stores information about all the tables in our database
 // format:
-// |-------------------|------------|---------------|--------|---------------|
-// | table_name_length | table_name | schema_length | schema | first_page_id |
-// |-------------------|------------|---------------|--------|---------------|
+// |-------------------|------------|--------|---------------|
+// | table_name_length | table_name | schema | first_page_id |
+// |-------------------|------------|--------|---------------|
 // Schema is a serialized string of the table's schema
 // Catalog is loaded into our database in bootstrap phase.
 // This table will be the only variable length table in our database,
@@ -45,7 +45,18 @@ public class TableInfo {
 
   // static method: deserialize from ByteBuffer
   public static TableInfo deserialize(ByteBuffer buffer, int offset) {
-    // TODO
-    return null;
+    // table_name_length
+    int tableNameLength = buffer.getInt(offset);
+    offset += 4;
+    // table_name
+    byte[] tableNameBytes = new byte[tableNameLength];
+    buffer.get(tableNameBytes, offset, tableNameLength);
+    offset += tableNameLength;
+    String tableName = new String(tableNameBytes);
+    // schema
+    Schema schema = Schema.deserialize(buffer, offset);
+    // first_page_id
+    int firstPageId = buffer.getInt(offset);
+    return new TableInfo(tableName, schema, firstPageId);
   }
 }

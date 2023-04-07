@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+// TODO: Rewrite this class
 public class Table implements Iterable<Row> {
   ReentrantReadWriteLock lock;
   private String databaseName;

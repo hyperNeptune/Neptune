@@ -47,10 +47,9 @@ public class StringValue extends Value<StringType.VarCharType, String> {
 
   @Override
   protected Value<? extends Type, ?> addImpl(Value<? extends Type, ?> other, boolean reverse) {
-    if (other.getType() .getTypeCode() == BuiltinTypeCode.STRING.value) {
+    if (other.getType().getTypeCode() == BuiltinTypeCode.STRING.value) {
       return new StringValue(
-          ((StringValue) other).getString() + value_,
-          other.getSize() + value_.length());
+          ((StringValue) other).getString() + value_, other.getSize() + value_.length());
     }
     return super.addImpl(other, reverse);
   }

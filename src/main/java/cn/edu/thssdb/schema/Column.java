@@ -8,16 +8,18 @@ import java.nio.ByteBuffer;
 // | name | type | primary | nullable | maxLength | offset |
 // separated by comma. so name can't contain comma
 public class Column implements Comparable<Column> {
-  private String name_;
-  private Type type_;
-  private Boolean primary_;
-  private Boolean nullable_;
-  private int maxLength_;
+  private final String name_;
+  private final Type type_;
+  private final Boolean primary_;
+  private final Boolean nullable_;
+  private final int maxLength_;
   // offset in a tuple
   protected int offset_;
 
-  public Column(String name, Type type, Boolean primary, boolean nullable, int maxLength) {
+  public Column(
+      String name, Type type, Boolean primary, boolean nullable, int maxLength, int offset) {
     if (name.contains(",") || name.contains(";")) {
+      // they will not in sql anyway
       throw new RuntimeException("Column name can't contain comma or semicolon!");
     }
     this.name_ = name;
@@ -25,6 +27,7 @@ public class Column implements Comparable<Column> {
     this.primary_ = primary;
     this.nullable_ = nullable;
     this.maxLength_ = maxLength;
+    this.offset_ = offset;
   }
 
   @Override
@@ -52,7 +55,7 @@ public class Column implements Comparable<Column> {
   }
 
   // serialize to ByteBuffer, comma separated
-  public void serialize(ByteBuffer buffer, int offset) {
+  public int serialize(ByteBuffer buffer, int offset) {
     // name
     buffer.put(name_.getBytes(), offset, name_.length());
     offset += name_.length();
@@ -78,12 +81,50 @@ public class Column implements Comparable<Column> {
     offset += 4;
     // offset
     buffer.putInt(offset, offset_);
+    offset += 4;
+    return offset;
+  }
+
+  // calculate next ','
+  public static int nextComma(ByteBuffer buffer, int offset) {
+    int length = 0;
+    while (buffer.get(offset + length) != ',') {
+      length += 1;
+    }
+    return length;
   }
 
   // deserialize from ByteBuffer
-  public static Column deserialize(ByteBuffer buffer, int offset) {
-    // TODO
-    return null;
+  // WARNING: this method will change offset
+  public static Column deserialize(ByteBuffer buffer, Integer offset) {
+    // name
+    int length = nextComma(buffer, offset);
+    String name = new String(buffer.array(), offset, length);
+    offset += length + 1;
+    // type
+    length = nextComma(buffer, offset);
+    Type type = Type.deserialize(buffer, offset);
+    offset += length + 1;
+    // primary
+    length = nextComma(buffer, offset);
+    Boolean primary = Boolean.parseBoolean(new String(buffer.array(), offset, length));
+    offset += length + 1;
+    // nullable
+    length = nextComma(buffer, offset);
+    boolean nullable = Boolean.parseBoolean(new String(buffer.array(), offset, length));
+    offset += length + 1;
+    // maxLength
+    int maxLength = buffer.getInt(offset);
+    offset += 4;
+    // offset
+    int offset_ = buffer.getInt(offset);
+    offset += 4;
+    // if not ';' then error
+    if (buffer.get(offset) != ';') {
+      throw new RuntimeException("Column deserialize error!");
+    }
+    offset += 1;
+    return new Column(name, type, primary, nullable, maxLength, offset_);
   }
 
   // getters
