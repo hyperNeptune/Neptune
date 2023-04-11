@@ -32,18 +32,18 @@ public class ValueTest {
     }
     // write to a page
     for (int i = 0; i < intNum; i++) {
-      intValues[i].serialize(page.GetData(), i * intSize);
+      intValues[i].serialize(page.getData(), i * intSize);
     }
     diskManager.writePage(0, page);
-    assertEquals(0, page.GetPageId());
+    assertEquals(0, page.getPageId());
     // new page
     Page page2 = new Page(0);
     diskManager.readPage(0, page2);
-    assertEquals(0, page2.GetPageId());
+    assertEquals(0, page2.getPageId());
     // read in
     Value[] intValues2 = new Value[intNum];
     for (int i = 0; i < intNum; i++) {
-      intValues2[i] = new IntValue(page2.GetData().getInt(i * intSize));
+      intValues2[i] = new IntValue(page2.getData().getInt(i * intSize));
     }
     // check if they are equal
     for (int i = 0; i < intNum; i++) {
@@ -54,20 +54,20 @@ public class ValueTest {
   @Test
   public void BufferTest() throws Exception {
     page = new Page(5);
-    assertEquals(0, page.GetData().position());
-    page.GetData().putInt(0, 5);
-    assertEquals(0, page.GetData().position());
-    page.GetData().putInt(4, 2);
-    assertEquals(0, page.GetData().position());
+    assertEquals(0, page.getData().position());
+    page.getData().putInt(0, 5);
+    assertEquals(0, page.getData().position());
+    page.getData().putInt(4, 2);
+    assertEquals(0, page.getData().position());
     diskManager.writePage(5, page);
 
     Page page2 = new Page(5);
     diskManager.readPage(5, page2);
-    assertEquals(Global.PAGE_SIZE, page2.GetData().limit());
-    assertEquals(Global.PAGE_SIZE, page2.GetData().position());
-    assertEquals(2, page2.GetData().getInt(4));
-    assertEquals(5, page2.GetData().getInt(0));
-    assertEquals(Global.PAGE_SIZE, page2.GetData().position());
+    assertEquals(Global.PAGE_SIZE, page2.getData().limit());
+    assertEquals(Global.PAGE_SIZE, page2.getData().position());
+    assertEquals(2, page2.getData().getInt(4));
+    assertEquals(5, page2.getData().getInt(0));
+    assertEquals(Global.PAGE_SIZE, page2.getData().position());
   }
 
   // after test, delete the test.db file

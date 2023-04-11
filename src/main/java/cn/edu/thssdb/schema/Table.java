@@ -1,6 +1,7 @@
 package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.index.BPlusTree;
+import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.utils.Pair;
 
 import java.util.ArrayList;
@@ -8,16 +9,16 @@ import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 // TODO: Rewrite this class
-public class Table implements Iterable<Row> {
+public class Table implements Iterable<Tuple> {
   ReentrantReadWriteLock lock;
-  private String databaseName;
-  public String tableName;
-  public ArrayList<Column> columns;
-  public BPlusTree<Entry, Row> index;
-  private int primaryIndex;
+  private final TableInfo info_;
 
-  public Table(String databaseName, String tableName, Column[] columns) {
-    // TODO
+  @Deprecated public BPlusTree<Entry, Row> index;
+  @Deprecated private int primaryIndex;
+
+  public Table(TableInfo info) {
+    this.info_ = info;
+    this.lock = new ReentrantReadWriteLock();
   }
 
   private void recover() {
@@ -45,11 +46,11 @@ public class Table implements Iterable<Row> {
     return null;
   }
 
-  private class TableIterator implements Iterator<Row> {
-    private Iterator<Pair<Entry, Row>> iterator;
+  private class TableIterator implements Iterator<Tuple> {
+    private Iterator<Pair<Entry, Tuple>> iterator;
 
     TableIterator(Table table) {
-      this.iterator = table.index.iterator();
+      // TODO
     }
 
     @Override
@@ -58,13 +59,13 @@ public class Table implements Iterable<Row> {
     }
 
     @Override
-    public Row next() {
+    public Tuple next() {
       return iterator.next().right;
     }
   }
 
   @Override
-  public Iterator<Row> iterator() {
+  public Iterator<Tuple> iterator() {
     return new TableIterator(this);
   }
 }

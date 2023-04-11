@@ -59,4 +59,17 @@ public class TableInfo {
     int firstPageId = buffer.getInt(offset);
     return new TableInfo(tableName, schema, firstPageId);
   }
+
+  // getters
+  public String getTableName() {
+    return tableName_;
+  }
+
+  public Schema getSchema() {
+    return schema_;
+  }
+
+  public int getFirstPageId() {
+    return firstPageId_;
+  }
 }

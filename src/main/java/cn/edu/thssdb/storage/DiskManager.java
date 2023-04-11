@@ -10,6 +10,7 @@ import java.nio.file.*;
 public class DiskManager {
   Path path_;
   SeekableByteChannel file_;
+  private int numPages_;
 
   // constructor
   public DiskManager(Path path) throws IOException {
@@ -20,6 +21,7 @@ public class DiskManager {
     file_ =
         Files.newByteChannel(
             path, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+    numPages_ = (int) (file_.size() / Global.PAGE_SIZE);
   }
 
   // read one page from file_ with page_id to Page p
@@ -36,7 +38,7 @@ public class DiskManager {
       throw new IOException("file size is " + file_.size() + ", but offset is " + offset);
     }
     file_.position(offset);
-    file_.read(p.GetData());
+    file_.read(p.getData());
     return p;
   }
 
@@ -51,7 +53,14 @@ public class DiskManager {
     }
     long offset = (long) page_id * Global.PAGE_SIZE;
     file_.position(offset);
-    file_.write(p.GetData());
+    file_.write(p.getData());
     return p;
+  }
+
+  // allocatePage
+  public int allocatePage() {
+    int page_id = numPages_;
+    numPages_++;
+    return page_id;
   }
 }

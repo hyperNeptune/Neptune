@@ -27,14 +27,14 @@ public class DiskManagerTest {
     for (int i = 0; i < Global.PAGE_SIZE; i++) {
       bytes[i] = (byte) (Math.random() * 256);
     }
-    page.SetData(bytes);
+    page.setData(bytes);
     diskManager.writePage(0, page);
-    assertEquals(0, page.GetPageId());
+    assertEquals(0, page.getPageId());
     // new page
     Page page2 = new Page(0);
     diskManager.readPage(0, page2);
-    assertEquals(0, page2.GetPageId());
-    byte[] bytes2 = page2.GetData().array();
+    assertEquals(0, page2.getPageId());
+    byte[] bytes2 = page2.getData().array();
     for (int i = 0; i < Global.PAGE_SIZE; i++) {
       assertEquals(bytes[i], bytes2[i]);
     }

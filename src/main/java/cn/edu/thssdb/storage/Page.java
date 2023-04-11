@@ -11,7 +11,8 @@ import java.util.Arrays;
 public class Page {
   protected int page_id_;
   protected ByteBuffer data_;
-
+  private boolean is_dirty_;
+  private int pin_count_;
   private static final int PAGE_ID_OFFSET = 0;
 
   public void resetMemory() {
@@ -20,29 +21,62 @@ public class Page {
     // and we don't use flip because we always write whole page to disk
     data_.clear();
     Arrays.fill(data_.array(), (byte) 0);
+    pin_count_ = 1;
+    is_dirty_ = false;
   }
 
   public Page(int page_id) {
     page_id_ = page_id;
     // allocate will set all bytes to 0
     data_ = ByteBuffer.allocate(Global.PAGE_SIZE);
-    SetPageId(page_id_);
+    setPageId(page_id_);
   }
 
-  public int GetPageId() {
+  public int getPageId() {
     return page_id_;
   }
 
-  public ByteBuffer GetData() {
+  public ByteBuffer getData() {
     return data_;
   }
 
+  public boolean isDirty() {
+    return is_dirty_;
+  }
+
+  public void setDirty(boolean is_dirty) {
+    if (is_dirty) is_dirty_ = true;
+  }
+
+  public int getPinCount() {
+    return pin_count_;
+  }
+
+  public void setPinCount(int pin_count) {
+    pin_count_ = pin_count;
+  }
+
+  // increase pin count by 1
+  public void pin() {
+    pin_count_++;
+  }
+
+  // decrease pin count by 1
+  public void unpin() {
+    pin_count_--;
+  }
+
+  // evict able
+  public boolean replaceable() {
+    return pin_count_ == 0;
+  }
+
   // wrap a byte[]
-  public void SetData(byte[] data) {
+  public void setData(byte[] data) {
     data_ = ByteBuffer.wrap(data);
   }
 
-  public void SetPageId(int page_id) {
+  public void setPageId(int page_id) {
     page_id_ = page_id;
     data_.putInt(PAGE_ID_OFFSET, page_id);
   }
