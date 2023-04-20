@@ -1,5 +1,7 @@
 package cn.edu.thssdb.schema;
 
+import cn.edu.thssdb.utils.Tuple2;
+
 import java.nio.ByteBuffer;
 
 // Represents meta information about our table
@@ -54,7 +56,9 @@ public class TableInfo {
     offset += tableNameLength;
     String tableName = new String(tableNameBytes);
     // schema
-    Schema schema = Schema.deserialize(buffer, offset);
+    Tuple2<Schema, Integer> dsr_result = Schema.deserialize(buffer, offset);
+    Schema schema = dsr_result.getFirst();
+    offset = dsr_result.getSecond();
     // first_page_id
     int firstPageId = buffer.getInt(offset);
     return new TableInfo(tableName, schema, firstPageId);

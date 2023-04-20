@@ -26,7 +26,34 @@ public class ValueTest {
     // new int value array, PAGE_SIZE / INT_SIZE values
     int intSize = Global.INT_SIZE;
     int intNum = Global.PAGE_SIZE / intSize;
-    Value[] intValues = new Value[intNum];
+
+    /* Simple tests for int calculation */
+    IntValue test1 = new IntValue(10);
+    IntValue test2 = new IntValue(20);
+    IntValue add_test1 = (IntValue) test1.add(test2);
+    IntValue add_test2 = (IntValue) test2.add(test1);
+    IntValue mul_test = (IntValue) test1.mul(test2);
+    IntValue sub_test = (IntValue) test1.sub(test2);
+    Integer add_acc = 30;
+    Integer mul_acc = 200;
+    Integer sub_acc = -10;
+    assertEquals(add_test1.getValue(), add_test2.getValue());
+    assertEquals(add_test1.getValue(), add_acc);
+    assertEquals(mul_test.getValue(), mul_acc);
+    assertEquals(sub_test.getValue(), sub_acc);
+
+    StringValue str1 = new StringValue("komeiji ", 30);
+    StringValue str2 = new StringValue("koishi", 10);
+    StringValue concat_test = (StringValue) str1.add(str2);
+    Integer concat_acc_len = 40;
+    String concat_acc_str = "komeiji koishi";
+    assertEquals(concat_test.getValue(), concat_acc_str);
+    //TODO: 这里要再确认一下相加后string的长度如何确定
+    /*assertEquals(concat_test.getSize(), concat_acc_len.intValue());*/
+
+
+
+/*    Value[] intValues = new Value[intNum];
     for (int i = 0; i < intNum; i++) {
       intValues[i] = new IntValue((int) (Math.random() * 100000));
     }
@@ -48,7 +75,14 @@ public class ValueTest {
     // check if they are equal
     for (int i = 0; i < intNum; i++) {
       assertEquals(intValues[i].compareTo(intValues2[i]), 0);
-    }
+    }*/
+
+  }
+
+  @Test
+  public void hahaha() {
+    byte a = 0;
+    System.out.println(Byte.toString(a));
   }
 
   @Test

@@ -1,8 +1,10 @@
 package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.type.Type;
+import cn.edu.thssdb.utils.Tuple2;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 // Column class represents a column in a table
 // | name | type | primary | nullable | maxLength | offset |
@@ -10,14 +12,14 @@ import java.nio.ByteBuffer;
 public class Column implements Comparable<Column> {
   private final String name_;
   private final Type type_;
-  private final Boolean primary_;
-  private final Boolean nullable_;
+  private final byte primary_;
+  private final byte nullable_;
   private final int maxLength_;
   // offset in a tuple
   protected int offset_;
 
   public Column(
-      String name, Type type, Boolean primary, boolean nullable, int maxLength, int offset) {
+      String name, Type type, byte primary, byte nullable, int maxLength, int offset) {
     if (name.contains(",") || name.contains(";")) {
       // they will not in sql anyway
       throw new RuntimeException("Column name can't contain comma or semicolon!");
@@ -67,13 +69,13 @@ public class Column implements Comparable<Column> {
     buffer.put(offset, (byte) ',');
     offset += 1;
     // primary
-    buffer.put(primary_.toString().getBytes(), offset, primary_.toString().length());
-    offset += primary_.toString().length();
+    buffer.put(Byte.toString(primary_).getBytes(), offset, 1);
+    offset += 1;
     buffer.put(offset, (byte) ',');
     offset += 1;
     // nullable
-    buffer.put(nullable_.toString().getBytes(), offset, nullable_.toString().length());
-    offset += nullable_.toString().length();
+    buffer.put(Byte.toString(nullable_).getBytes(), offset, 1);
+    offset += 1;
     buffer.put(offset, (byte) ',');
     offset += 1;
     // maxLength
@@ -96,7 +98,8 @@ public class Column implements Comparable<Column> {
 
   // deserialize from ByteBuffer
   // WARNING: this method will change offset
-  public static Column deserialize(ByteBuffer buffer, Integer offset) {
+  public static Tuple2<Column, Integer> deserialize(ByteBuffer buffer, Integer offset) {
+
     // name
     int length = nextComma(buffer, offset);
     String name = new String(buffer.array(), offset, length);
@@ -106,13 +109,11 @@ public class Column implements Comparable<Column> {
     Type type = Type.deserialize(buffer, offset);
     offset += length + 1;
     // primary
-    length = nextComma(buffer, offset);
-    Boolean primary = Boolean.parseBoolean(new String(buffer.array(), offset, length));
-    offset += length + 1;
+    byte primary = Byte.parseByte(new String(buffer.array(), offset, 1));
+    offset += 1;
     // nullable
-    length = nextComma(buffer, offset);
-    boolean nullable = Boolean.parseBoolean(new String(buffer.array(), offset, length));
-    offset += length + 1;
+    byte nullable = Byte.parseByte(new String(buffer.array(), offset, 1));
+    offset += 1;
     // maxLength
     int maxLength = buffer.getInt(offset);
     offset += 4;
@@ -124,7 +125,7 @@ public class Column implements Comparable<Column> {
       throw new RuntimeException("Column deserialize error!");
     }
     offset += 1;
-    return new Column(name, type, primary, nullable, maxLength, offset_);
+    return new Tuple2<>(new Column(name, type, primary, nullable, maxLength, offset_), offset);
   }
 
   // getters
@@ -136,11 +137,11 @@ public class Column implements Comparable<Column> {
     return type_;
   }
 
-  public Boolean isPrimary() {
+  public byte isPrimary() {
     return primary_;
   }
 
-  public Boolean Nullable() {
+  public byte Nullable() {
     return nullable_;
   }
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>cn.edu.thssdb</groupId>
@@ -35,7 +35,7 @@
     <dependency>
       <groupId>org.apache.thrift</groupId>
       <artifactId>libthrift</artifactId>
-      <version>0.13.0</version>
+      <version>${thrift.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -65,28 +65,6 @@
           <target>8</target>
         </configuration>
       </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.2.0</version>
-        <executions>
-          <execution>
-            <id>add-source</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>${basedir}/target/generated-sources/antlr</source>
-                <source>${basedir}/target/generated-sources/thrift</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
       <plugin>
 
         <groupId>org.apache.thrift.tools</groupId>
@@ -292,7 +270,7 @@
         </os>
       </activation>
       <properties>
-        <thrift.download-url>http://artfiles.org/apache.org/thrift/${thrift.version}/thrift-${thrift.version}.exe</thrift.download-url>
+        <thrift.download-url>https://archive.apache.org/dist/thrift/${thrift.version}/thrift-${thrift.version}.exe</thrift.download-url>
         <thrift.executable>thrift-${thrift.version}-win-x86_64.exe</thrift.executable>
         <thrift.skip-making-executable>true</thrift.skip-making-executable>
         <thrift.exec-cmd.executable>echo</thrift.exec-cmd.executable>
@@ -308,7 +286,7 @@
         </os>
       </activation>
       <properties>
-        <thrift.download-url>https://github.com/jt2594838/mvn-thrift-compiler/raw/master/thrift_0.12.0_0.13.0_linux.exe</thrift.download-url>
+        <thrift.download-url>https://github.com/SpriCoder/mvn-thrift-compiler/raw/master/thrift_0.12.0_0.13.0_linux.exe</thrift.download-url>
         <thrift.executable>thrift_0.12.0_0.13.0_linux.exe</thrift.executable>
         <thrift.skip-making-executable>false</thrift.skip-making-executable>
         <thrift.exec-cmd.executable>chmod</thrift.exec-cmd.executable>
@@ -323,7 +301,7 @@
         </os>
       </activation>
       <properties>
-        <thrift.download-url>https://github.com/jt2594838/mvn-thrift-compiler/raw/master/thrift_0.12.0_0.13.0_mac.exe</thrift.download-url>
+        <thrift.download-url>https://github.com/SpriCoder/mvn-thrift-compiler/raw/master/thrift_0.12.0_0.13.0_mac.exe</thrift.download-url>
         <thrift.executable>thrift_0.12.0_0.13.0_mac.exe</thrift.executable>
         <thrift.skip-making-executable>false</thrift.skip-making-executable>
         <thrift.exec-cmd.executable>chmod</thrift.exec-cmd.executable>
@@ -332,3 +310,5 @@
     </profile>
   </profiles>
 </project>
+
+    
