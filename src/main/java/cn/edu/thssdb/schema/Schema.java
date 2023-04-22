@@ -75,14 +75,12 @@ public class Schema implements Serializable {
     return sb.toString();
   }
 
-  public void serialize(ByteBuffer buffer, int offset) {
+  public void serialize(ByteBuffer buffer) {
     // size
-    buffer.putInt(offset, size_);
-    offset += 4;
+    buffer.putInt(size_);
     for (Column column : columns_) {
-      offset = column.serialize(buffer, offset);
-      buffer.put(offset, (byte)';');
-      offset += 1;
+      column.serialize(buffer);
+      buffer.put((byte)';');
     }
   }
 

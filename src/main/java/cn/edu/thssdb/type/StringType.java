@@ -66,7 +66,7 @@ public class StringType extends Type {
     @Override
     public void serialize(ByteBuffer buffer, int offset) {
       super.serialize(buffer, offset);
-      buffer.putInt(offset, this.size_);
+      buffer.putInt(this.size_);
     }
 
     @Override

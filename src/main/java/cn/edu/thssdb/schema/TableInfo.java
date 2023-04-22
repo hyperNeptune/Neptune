@@ -39,7 +39,7 @@ public class TableInfo {
     buffer.putInt(offset, schema_.getSize());
     offset += 4;
     // schema
-    schema_.serialize(buffer, offset);
+    schema_.serialize(buffer);
     offset += schema_.getSize();
     // first_page_id
     buffer.putInt(offset, firstPageId_);

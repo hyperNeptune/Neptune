@@ -21,7 +21,7 @@ public abstract class Type {
 
   // serialization
   public void serialize(ByteBuffer buffer, int offset) {
-    buffer.put(offset, getTypeCode());
+    buffer.put(getTypeCode());
   }
 
   public abstract Value<? extends Type, ?> getNullValue();

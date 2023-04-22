@@ -3,6 +3,7 @@ package cn.edu.thssdb.storage;
 import cn.edu.thssdb.utils.Global;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 
@@ -53,7 +54,9 @@ public class DiskManager {
     }
     long offset = (long) page_id * Global.PAGE_SIZE;
     file_.position(offset);
-    file_.write(p.getData());
+    ByteBuffer buf = p.getData();
+    buf.rewind();
+    file_.write(buf);
     return p;
   }
 

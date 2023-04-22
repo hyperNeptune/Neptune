@@ -57,34 +57,47 @@ public class Column implements Comparable<Column> {
   }
 
   // serialize to ByteBuffer, comma separated
-  public int serialize(ByteBuffer buffer, int offset) {
+  public void serialize(ByteBuffer buffer) {
     // name
-    buffer.put(name_.getBytes(), offset, name_.length());
+    /*buffer.put(name_.getBytes(), offset, name_.length());
     offset += name_.length();
     buffer.put(offset, (byte) ',');
-    offset += 1;
+    offset += 1;*/
+
+    buffer.put(name_.getBytes());
+    buffer.put((byte) ',');
+
     // type
-    type_.serialize(buffer, offset);
+    /*type_.serialize(buffer, offset);
     offset += 1;
     buffer.put(offset, (byte) ',');
-    offset += 1;
+    offset += 1;*/
+
+    type_.serialize(buffer, 0);
+    buffer.put((byte) ',');
+
     // primary
-    buffer.put(Byte.toString(primary_).getBytes(), offset, 1);
+    /*buffer.put(Byte.toString(primary_).getBytes(), offset, 1);
     offset += 1;
     buffer.put(offset, (byte) ',');
-    offset += 1;
+    offset += 1;*/
+
+    buffer.put(primary_);
+
     // nullable
-    buffer.put(Byte.toString(nullable_).getBytes(), offset, 1);
+    /*buffer.put(Byte.toString(nullable_).getBytes(), offset, 1);
     offset += 1;
     buffer.put(offset, (byte) ',');
-    offset += 1;
+    offset += 1;*/
+
+    buffer.put(nullable_);
+
     // maxLength
-    buffer.putInt(offset, maxLength_);
-    offset += 4;
+    buffer.putInt(maxLength_);
+
     // offset
-    buffer.putInt(offset, offset_);
-    offset += 4;
-    return offset;
+    buffer.putInt( offset_);
+
   }
 
   // calculate next ','
@@ -104,22 +117,28 @@ public class Column implements Comparable<Column> {
     int length = nextComma(buffer, offset);
     String name = new String(buffer.array(), offset, length);
     offset += length + 1;
+
     // type
     length = nextComma(buffer, offset);
     Type type = Type.deserialize(buffer, offset);
     offset += length + 1;
+
     // primary
-    byte primary = Byte.parseByte(new String(buffer.array(), offset, 1));
+    byte primary = buffer.get(offset);
     offset += 1;
+
     // nullable
-    byte nullable = Byte.parseByte(new String(buffer.array(), offset, 1));
+    byte nullable = buffer.get(offset);
     offset += 1;
+
     // maxLength
     int maxLength = buffer.getInt(offset);
     offset += 4;
+
     // offset
     int offset_ = buffer.getInt(offset);
     offset += 4;
+
     // if not ';' then error
     if (buffer.get(offset) != ';') {
       throw new RuntimeException("Column deserialize error!");
