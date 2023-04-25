@@ -48,12 +48,10 @@ public class ValueTest {
     Integer concat_acc_len = 40;
     String concat_acc_str = "komeiji koishi";
     assertEquals(concat_test.getValue(), concat_acc_str);
-    //TODO: 这里要再确认一下相加后string的长度如何确定
+    // TODO: 这里要再确认一下相加后string的长度如何确定
     /*assertEquals(concat_test.getSize(), concat_acc_len.intValue());*/
 
-
-
-/*    Value[] intValues = new Value[intNum];
+    /*    Value[] intValues = new Value[intNum];
     for (int i = 0; i < intNum; i++) {
       intValues[i] = new IntValue((int) (Math.random() * 100000));
     }

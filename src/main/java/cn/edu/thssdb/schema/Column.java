@@ -1,10 +1,9 @@
 package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.type.Type;
-import cn.edu.thssdb.utils.Tuple2;
+import cn.edu.thssdb.utils.Pair;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 // Column class represents a column in a table
 // | name | type | primary | nullable | maxLength | offset |
@@ -18,8 +17,7 @@ public class Column implements Comparable<Column> {
   // offset in a tuple
   protected int offset_;
 
-  public Column(
-      String name, Type type, byte primary, byte nullable, int maxLength, int offset) {
+  public Column(String name, Type type, byte primary, byte nullable, int maxLength, int offset) {
     if (name.contains(",") || name.contains(";")) {
       // they will not in sql anyway
       throw new RuntimeException("Column name can't contain comma or semicolon!");
@@ -96,8 +94,7 @@ public class Column implements Comparable<Column> {
     buffer.putInt(maxLength_);
 
     // offset
-    buffer.putInt( offset_);
-
+    buffer.putInt(offset_);
   }
 
   // calculate next ','
@@ -111,7 +108,7 @@ public class Column implements Comparable<Column> {
 
   // deserialize from ByteBuffer
   // WARNING: this method will change offset
-  public static Tuple2<Column, Integer> deserialize(ByteBuffer buffer, Integer offset) {
+  public static Pair<Column, Integer> deserialize(ByteBuffer buffer, Integer offset) {
 
     // name
     int length = nextComma(buffer, offset);
@@ -144,7 +141,7 @@ public class Column implements Comparable<Column> {
       throw new RuntimeException("Column deserialize error!");
     }
     offset += 1;
-    return new Tuple2<>(new Column(name, type, primary, nullable, maxLength, offset_), offset);
+    return new Pair<>(new Column(name, type, primary, nullable, maxLength, offset_), offset);
   }
 
   // getters

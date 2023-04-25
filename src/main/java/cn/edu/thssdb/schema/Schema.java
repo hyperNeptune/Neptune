@@ -1,6 +1,6 @@
 package cn.edu.thssdb.schema;
 
-import cn.edu.thssdb.utils.Tuple2;
+import cn.edu.thssdb.utils.Pair;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -80,12 +80,12 @@ public class Schema implements Serializable {
     buffer.putInt(size_);
     for (Column column : columns_) {
       column.serialize(buffer);
-      buffer.put((byte)';');
+      buffer.put((byte) ';');
     }
   }
 
   // WARNING: offset is changed after calling this function
-  public static Tuple2<Schema, Integer> deserialize(ByteBuffer buffer, Integer offset) {
+  public static Pair<Schema, Integer> deserialize(ByteBuffer buffer, Integer offset) {
     // column one by one until end
     // column format: name,type,primary,nullable,maxLength,offset
     // separated by comma
@@ -93,10 +93,10 @@ public class Schema implements Serializable {
     offset += 4;
     Column[] columns = new Column[size];
     for (int i = 0; i < size; i++) {
-      Tuple2<Column, Integer> dsr_result = Column.deserialize(buffer, offset);
-      columns[i] = dsr_result.getFirst();
-      offset = dsr_result.getSecond();
+      Pair<Column, Integer> dsr_result = Column.deserialize(buffer, offset);
+      columns[i] = dsr_result.left;
+      offset = dsr_result.right;
     }
-    return new Tuple2<>(new Schema(columns), offset);
+    return new Pair<>(new Schema(columns), offset);
   }
 }

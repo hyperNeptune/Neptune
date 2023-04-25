@@ -1,6 +1,6 @@
 package cn.edu.thssdb.schema;
 
-import cn.edu.thssdb.utils.Tuple2;
+import cn.edu.thssdb.utils.Pair;
 
 import java.nio.ByteBuffer;
 
@@ -56,9 +56,9 @@ public class TableInfo {
     offset += tableNameLength;
     String tableName = new String(tableNameBytes);
     // schema
-    Tuple2<Schema, Integer> dsr_result = Schema.deserialize(buffer, offset);
-    Schema schema = dsr_result.getFirst();
-    offset = dsr_result.getSecond();
+    Pair<Schema, Integer> dsr_result = Schema.deserialize(buffer, offset);
+    Schema schema = dsr_result.left;
+    offset = dsr_result.right;
     // first_page_id
     int firstPageId = buffer.getInt(offset);
     return new TableInfo(tableName, schema, firstPageId);

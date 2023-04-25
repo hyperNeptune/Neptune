@@ -49,7 +49,7 @@ public class StringValue extends Value<StringType.VarCharType, String> {
   protected Value<? extends Type, ?> addImpl(Value<? extends Type, ?> other, boolean reverse) {
     if (other.getType().getTypeCode() == BuiltinTypeCode.STRING.value) {
       return new StringValue(
-         value_ + ((StringValue) other).getString(), other.getSize() + value_.length());
+          value_ + ((StringValue) other).getString(), other.getSize() + value_.length());
     }
     return super.addImpl(other, reverse);
   }
