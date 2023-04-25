@@ -13,16 +13,18 @@ import java.nio.ByteBuffer;
 // columns are separated by semicolon, so column name can't contain semicolon
 public class Schema implements Serializable {
   private final Column[] columns_;
-  private int size_;
+  private final int colNum;
+  private final int size;
 
   public Schema(Column[] columns) {
     columns_ = columns;
-    size_ = columns_.length;
+    colNum = columns_.length;
     int offset = 0;
     for (Column column : columns) {
       column.offset_ = offset;
       offset += column.getMaxLength();
     }
+    size = offset;
   }
 
   // getters
@@ -46,8 +48,12 @@ public class Schema implements Serializable {
     return columns_[index];
   }
 
+  public int getColNum() {
+    return colNum;
+  }
+
   public int getSize() {
-    return size_;
+    return size;
   }
 
   public int getOffset(String name) {
@@ -77,7 +83,7 @@ public class Schema implements Serializable {
 
   public void serialize(ByteBuffer buffer) {
     // size
-    buffer.putInt(size_);
+    buffer.putInt(colNum);
     for (Column column : columns_) {
       column.serialize(buffer);
       buffer.put((byte) ';');

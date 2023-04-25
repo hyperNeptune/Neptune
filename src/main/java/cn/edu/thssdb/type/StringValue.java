@@ -32,7 +32,7 @@ public class StringValue extends Value<StringType.VarCharType, String> {
 
   @Override
   public void serialize(ByteBuffer buffer, int offset) {
-    ((ByteBuffer) buffer.position(offset)).put(value_.getBytes());
+    ((ByteBuffer) buffer.position(offset)).put(value_.getBytes()).clear();
   }
 
   @Override

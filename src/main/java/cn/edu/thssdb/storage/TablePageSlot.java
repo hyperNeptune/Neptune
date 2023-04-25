@@ -3,6 +3,8 @@ package cn.edu.thssdb.storage;
 import cn.edu.thssdb.schema.Schema;
 import cn.edu.thssdb.utils.Global;
 
+import java.util.Iterator;
+
 //
 // | Page_id | Prev_page_id | Next_page_id | freeSpacePointer | tupleCount | tupleLength |
 // | BitMap of allocation of tuples |
@@ -20,12 +22,13 @@ public class TablePageSlot extends Page implements TablePage {
   private static final int TUPLE_LENGTH_OFFSET = 20;
   private static final int PAGE_HEADER_SIZE = 24;
 
-  public TablePageSlot(int page_id) {
+  public TablePageSlot(int page_id, int tupleLength) {
     super(page_id);
     prev_page_id_ = Global.PAGE_ID_INVALID;
     next_page_id_ = Global.PAGE_ID_INVALID;
     freeSpacePointer_ = Global.PAGE_SIZE;
     tupleCount_ = 0;
+    tupleLength_ = tupleLength;
   }
 
   // setters
@@ -85,19 +88,24 @@ public class TablePageSlot extends Page implements TablePage {
   }
 
   private boolean slotEmpty(int slotId) {
-    return (data_.get(PAGE_HEADER_SIZE + slotId / 8) & (slotId % 8)) != 1;
+    // System.out.println(slotId + " slot empty " + ((data_.get(PAGE_HEADER_SIZE + slotId / 8) & (1
+    // << slotId % 8)) != 1));
+    // System.out.println("slot empty " + (data_.get(PAGE_HEADER_SIZE + slotId / 8) & (1 << slotId %
+    // 8)));
+    return (data_.get(PAGE_HEADER_SIZE + slotId / 8) & (1 << (slotId % 8))) == 0;
   }
 
   private void setSlot(int slotId) {
+    // System.out.println("set slot " + slotId + " " + data_.get(PAGE_HEADER_SIZE + slotId / 8));
     data_.put(
         PAGE_HEADER_SIZE + slotId / 8,
-        (byte) (data_.get(PAGE_HEADER_SIZE + slotId) | (slotId % 8)));
+        (byte) (data_.get(PAGE_HEADER_SIZE + slotId / 8) | (1 << (slotId % 8))));
   }
 
   private void clearSlot(int slotId) {
     data_.put(
         PAGE_HEADER_SIZE + slotId / 8,
-        (byte) (data_.get(PAGE_HEADER_SIZE + slotId) & ~(slotId % 8)));
+        (byte) (data_.get(PAGE_HEADER_SIZE + slotId / 8) & ~(1 << slotId % 8)));
   }
 
   // bitmap area space
@@ -167,7 +175,7 @@ public class TablePageSlot extends Page implements TablePage {
     } else {
       // insert into deleted slots
       slotId = findDeletedSlot();
-      tuple.serialize(data_, Global.PAGE_SIZE - slotId * tupleLength_);
+      tuple.serialize(data_, Global.PAGE_SIZE - (slotId + 1) * tupleLength_);
       setSlot(slotId);
     }
     tupleCount_++;
@@ -198,7 +206,7 @@ public class TablePageSlot extends Page implements TablePage {
     if (slotEmpty(slotId)) {
       return null;
     }
-    return Tuple.deserialize(data_, Global.PAGE_SIZE - slotId * tupleLength_, schema);
+    return Tuple.deserialize(data_, Global.PAGE_SIZE - (slotId + 1) * tupleLength_, schema);
   }
 
   // update tuple by slot id
@@ -211,5 +219,47 @@ public class TablePageSlot extends Page implements TablePage {
     }
     tuple.serialize(data_, Global.PAGE_SIZE - slotId * tupleLength_);
     return true;
+  }
+
+  // iterator
+  public class TablePageIterator implements Iterator<Tuple> {
+    private int slotId = 0;
+    private Schema schema;
+
+    public TablePageIterator(Schema schema) {
+      this.schema = schema;
+    }
+
+    @Override
+    public boolean hasNext() {
+      while (slotId < slotAreaSize()) {
+        if (!slotEmpty(slotId)) {
+          return true;
+        }
+        slotId++;
+      }
+      return false;
+    }
+
+    @Override
+    public Tuple next() {
+      return getTuple(slotId++, schema);
+    }
+  }
+
+  // print
+  public void print(Schema schema) {
+    super.print();
+    System.out.println("prev_page_id: " + prev_page_id_);
+    System.out.println("next_page_id: " + next_page_id_);
+    System.out.println("freeSpacePointer: " + freeSpacePointer_);
+    System.out.println("tupleCount: " + tupleCount_);
+    System.out.println("tupleLength: " + tupleLength_);
+    // print all tuples
+    TablePageIterator iter = new TablePageIterator(schema);
+    while (iter.hasNext()) {
+      Tuple tuple = iter.next();
+      tuple.print(schema);
+    }
   }
 }

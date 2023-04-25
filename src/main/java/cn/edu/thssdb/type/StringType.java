@@ -41,6 +41,10 @@ public class StringType extends Type {
     return new VarCharType(buffer.getInt(offset));
   }
 
+  public static Type getVarCharType(int i) {
+    return new VarCharType(i);
+  }
+
   static class VarCharType extends StringType {
     private final int size_;
 

@@ -39,7 +39,8 @@ public class Tuple {
 
   // serialize
   public void serialize(ByteBuffer buffer, int offset) {
-    buffer.put(data_.array(), offset, size_);
+    buffer.position(offset);
+    buffer.put(data_.array(), 0, size_).clear();
   }
 
   // deserialize
@@ -49,5 +50,18 @@ public class Tuple {
     tuple.data_ = ByteBuffer.allocate(tuple.size_);
     tuple.data_.put(buffer.array(), offset, tuple.size_);
     return tuple;
+  }
+
+  public void print(Schema schema) {
+    System.out.println(toString(schema));
+  }
+
+  // like print, but return a string
+  public String toString(Schema sh) {
+    String s = "Tuple: |";
+    for (int i = 0; i < sh.getColNum(); i++) {
+      s += getValue(sh, i).toString() + "|";
+    }
+    return s;
   }
 }

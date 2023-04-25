@@ -36,11 +36,11 @@ public class TableInfo {
     buffer.put(tableName_.getBytes(), offset, tableName_.length());
     offset += tableName_.length();
     // schema_length
-    buffer.putInt(offset, schema_.getSize());
+    buffer.putInt(offset, schema_.getColNum());
     offset += 4;
     // schema
     schema_.serialize(buffer);
-    offset += schema_.getSize();
+    offset += schema_.getColNum();
     // first_page_id
     buffer.putInt(offset, firstPageId_);
   }

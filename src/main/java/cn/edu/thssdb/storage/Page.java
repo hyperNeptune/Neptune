@@ -80,4 +80,14 @@ public class Page {
     page_id_ = page_id;
     data_.putInt(PAGE_ID_OFFSET, page_id);
   }
+
+  // print
+  public void print() {
+    // invalid pageid say invalid
+    if (page_id_ == -1) {
+      System.out.println("invalid page");
+      return;
+    }
+    System.out.println("page id: " + page_id_);
+  }
 }
