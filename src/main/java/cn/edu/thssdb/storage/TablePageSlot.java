@@ -250,11 +250,11 @@ public class TablePageSlot extends Page implements TablePage {
   // print
   public void print(Schema schema) {
     super.print();
-    System.out.println("prev_page_id: " + prev_page_id_);
-    System.out.println("next_page_id: " + next_page_id_);
-    System.out.println("freeSpacePointer: " + freeSpacePointer_);
-    System.out.println("tupleCount: " + tupleCount_);
-    System.out.println("tupleLength: " + tupleLength_);
+    System.out.println("prev_page_id: " + getPrevPageId());
+    System.out.println("next_page_id: " + getNextPageId());
+    System.out.println("freeSpacePointer: " + getFreeSpacePointer());
+    System.out.println("tupleCount: " + getTupleCount());
+    System.out.println("tupleLength: " + getTupleLength());
     // print all tuples
     TablePageIterator iter = new TablePageIterator(schema);
     while (iter.hasNext()) {

@@ -38,4 +38,7 @@ public class Global {
   // Disk Manager Constants
   public static final int PAGE_SIZE = 4096;
   public static final int PAGE_ID_INVALID = -1;
+
+  // buffer pool manager Constants
+  public static final int DEFAULT_BUFFER_SIZE = 128;
 }

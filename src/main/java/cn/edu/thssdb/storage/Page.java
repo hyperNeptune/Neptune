@@ -63,7 +63,7 @@ public class Page {
 
   // decrease pin count by 1
   public void unpin() {
-    pin_count_--;
+    if (pin_count_ > 0) pin_count_--;
   }
 
   // evict able
