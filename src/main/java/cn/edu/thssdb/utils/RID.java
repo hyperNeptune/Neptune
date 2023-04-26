@@ -11,6 +11,14 @@ public class RID implements java.io.Serializable {
     slotId_ = slotId;
   }
 
+  public void setPageId(int pageId) {
+    pageId_ = pageId;
+  }
+
+  public void setSlotId(int slotId) {
+    slotId_ = slotId;
+  }
+
   public int getPageId() {
     return pageId_;
   }

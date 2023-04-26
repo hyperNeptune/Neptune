@@ -64,4 +64,9 @@ public class Tuple {
     }
     return s;
   }
+
+  // get size
+  public int getSize() {
+    return size_;
+  }
 }

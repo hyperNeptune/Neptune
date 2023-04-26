@@ -2,6 +2,7 @@ package cn.edu.thssdb.storage;
 
 import cn.edu.thssdb.schema.Schema;
 import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.RID;
 
 import java.util.Iterator;
 
@@ -10,81 +11,71 @@ import java.util.Iterator;
 // | BitMap of allocation of tuples |
 //
 public class TablePageSlot extends Page implements TablePage {
-  private int prev_page_id_;
   private static final int PREV_PAGE_ID_OFFSET = 4;
-  private int next_page_id_;
   private static final int NEXT_PAGE_ID_OFFSET = 8;
-  private int freeSpacePointer_;
   private static final int FREE_SPACE_POINTER_OFFSET = 12;
-  private int tupleCount_;
   private static final int TUPLE_COUNT_OFFSET = 16;
-  private int tupleLength_;
   private static final int TUPLE_LENGTH_OFFSET = 20;
-  private static final int PAGE_HEADER_SIZE = 24;
+  public static final int PAGE_HEADER_SIZE = 24;
 
   public TablePageSlot(int page_id, int tupleLength) {
     super(page_id);
-    prev_page_id_ = Global.PAGE_ID_INVALID;
-    next_page_id_ = Global.PAGE_ID_INVALID;
-    freeSpacePointer_ = Global.PAGE_SIZE;
-    tupleCount_ = 0;
-    tupleLength_ = tupleLength;
+    setPrevPageId(Global.PAGE_ID_INVALID);
+    setNextPageId(Global.PAGE_ID_INVALID);
+    setFreeSpacePointer(Global.PAGE_SIZE);
+    setTupleCount(0);
+    setTupleLength(tupleLength);
+  }
+
+  public TablePageSlot(Page page) {
+    super(page);
   }
 
   // setters
   public void setPrevPageId(int prev_page_id) {
-    prev_page_id_ = prev_page_id;
     data_.putInt(PREV_PAGE_ID_OFFSET, prev_page_id);
   }
 
   public void setNextPageId(int next_page_id) {
-    next_page_id_ = next_page_id;
     data_.putInt(NEXT_PAGE_ID_OFFSET, next_page_id);
   }
 
   public void setFreeSpacePointer(int freeSpacePointer) {
-    freeSpacePointer_ = freeSpacePointer;
     data_.putInt(FREE_SPACE_POINTER_OFFSET, freeSpacePointer);
   }
 
   public void setTupleCount(int tupleCount) {
-    tupleCount_ = tupleCount;
     data_.putInt(TUPLE_COUNT_OFFSET, tupleCount);
   }
 
   public void setTupleLength(int tupleLength) {
-    tupleLength_ = tupleLength;
     data_.putInt(TUPLE_LENGTH_OFFSET, tupleLength);
   }
 
   // getters
   public int getPrevPageId() {
-    return prev_page_id_;
+    return data_.getInt(PREV_PAGE_ID_OFFSET);
   }
 
   public int getNextPageId() {
-    return next_page_id_;
+    return data_.getInt(NEXT_PAGE_ID_OFFSET);
   }
 
   public int getFreeSpacePointer() {
-    return freeSpacePointer_;
+    return data_.getInt(FREE_SPACE_POINTER_OFFSET);
   }
 
   public int getTupleCount() {
-    return tupleCount_;
-  }
-
-  public int getPageHeaderSize() {
-    return PAGE_HEADER_SIZE;
+    return data_.getInt(TUPLE_COUNT_OFFSET);
   }
 
   public int getTupleLength() {
-    return tupleLength_;
+    return data_.getInt(TUPLE_LENGTH_OFFSET);
   }
 
   // remaining free space
   public int getFreeSpace() {
-    return freeSpacePointer_ - PAGE_HEADER_SIZE - bitmapAreaSpace();
+    return getFreeSpacePointer() - PAGE_HEADER_SIZE - bitmapAreaSpace();
   }
 
   private boolean slotEmpty(int slotId) {
@@ -114,16 +105,16 @@ public class TablePageSlot extends Page implements TablePage {
   }
 
   private int slotAreaSpace() {
-    return Global.PAGE_SIZE - freeSpacePointer_;
+    return Global.PAGE_SIZE - getFreeSpacePointer();
   }
 
   private int slotAreaSize() {
-    return slotAreaSpace() / tupleLength_;
+    return slotAreaSpace() / getTupleLength();
   }
 
   // has deleted slots, use them if no free space.
   private boolean hasDeletedSlots() {
-    return tupleCount_ < slotAreaSize();
+    return getTupleCount() < slotAreaSize();
   }
 
   // find deleted slot id
@@ -147,7 +138,7 @@ public class TablePageSlot extends Page implements TablePage {
   // check if there is enough space for a new tuple
   public hasEnoughSpaceResult hasEnoughSpace() {
     // has sufficient free space, return
-    if (getFreeSpace() > tupleLength_) {
+    if (getFreeSpace() > getTupleLength()) {
       return hasEnoughSpaceResult.HAS_ENOUGH_SPACE;
     }
     // has deleted slots, use them if no free space.
@@ -159,7 +150,7 @@ public class TablePageSlot extends Page implements TablePage {
 
   // insert new tuple
   // return slot id if success, -1 if failed
-  public int insertTuple(Tuple tuple) {
+  public int insertTuple(Tuple tuple, RID rid) {
     // check if there is enough space for a new tuple
     hasEnoughSpaceResult result = hasEnoughSpace();
     if (result == hasEnoughSpaceResult.NO_ENOUGH_SPACE) {
@@ -168,18 +159,18 @@ public class TablePageSlot extends Page implements TablePage {
     // insert into free space
     int slotId;
     if (result == hasEnoughSpaceResult.HAS_ENOUGH_SPACE) {
-      freeSpacePointer_ -= tupleLength_;
-      tuple.serialize(data_, freeSpacePointer_);
+      setFreeSpacePointer(getFreeSpacePointer() - getTupleLength());
+      tuple.serialize(data_, getFreeSpacePointer());
       setSlot(slotId = slotAreaSize() - 1);
-      setFreeSpacePointer(freeSpacePointer_);
     } else {
       // insert into deleted slots
       slotId = findDeletedSlot();
-      tuple.serialize(data_, Global.PAGE_SIZE - (slotId + 1) * tupleLength_);
+      tuple.serialize(data_, Global.PAGE_SIZE - (slotId + 1) * getTupleLength());
       setSlot(slotId);
     }
-    tupleCount_++;
-    setTupleCount(tupleCount_);
+    setTupleCount(getTupleCount() + 1);
+    rid.setPageId(getPageId());
+    rid.setSlotId(slotId);
     return slotId;
   }
 
@@ -193,8 +184,7 @@ public class TablePageSlot extends Page implements TablePage {
     }
     // set slot to 0
     clearSlot(slotId);
-    tupleCount_--;
-    setTupleCount(tupleCount_);
+    setTupleCount(getTupleCount() - 1);
     return true;
   }
 
@@ -206,7 +196,7 @@ public class TablePageSlot extends Page implements TablePage {
     if (slotEmpty(slotId)) {
       return null;
     }
-    return Tuple.deserialize(data_, Global.PAGE_SIZE - (slotId + 1) * tupleLength_, schema);
+    return Tuple.deserialize(data_, Global.PAGE_SIZE - (slotId + 1) * getTupleLength(), schema);
   }
 
   // update tuple by slot id
@@ -217,8 +207,18 @@ public class TablePageSlot extends Page implements TablePage {
     if (slotEmpty(slotId)) {
       return false;
     }
-    tuple.serialize(data_, Global.PAGE_SIZE - slotId * tupleLength_);
+    tuple.serialize(data_, Global.PAGE_SIZE - (slotId + 1) * getTupleLength());
     return true;
+  }
+
+  // we need tuple size
+  @Override
+  public void init(Object[] data) {
+    setNextPageId(Global.PAGE_ID_INVALID);
+    setPrevPageId(Global.PAGE_ID_INVALID);
+    setFreeSpacePointer(PAGE_HEADER_SIZE);
+    setTupleCount(0);
+    setTupleLength((int) data[0]);
   }
 
   // iterator

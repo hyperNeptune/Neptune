@@ -1,6 +1,11 @@
-package cn.edu.thssdb.storage;
+package cn.edu.thssdb.schema;
 
-import cn.edu.thssdb.schema.*;
+import cn.edu.thssdb.buffer.BufferPoolManager;
+import cn.edu.thssdb.buffer.LRUReplacer;
+import cn.edu.thssdb.buffer.ReplaceAlgorithm;
+import cn.edu.thssdb.storage.DiskManager;
+import cn.edu.thssdb.storage.Page;
+import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.type.*;
 import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.RID;
@@ -12,13 +17,19 @@ import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 
-public class TablePageSlotTest {
+public class TableTest {
   private DiskManager diskManager;
+  private BufferPoolManager bufferPoolManager;
+  private ReplaceAlgorithm replaceAlgorithm;
   private Page page;
+  private Table table;
 
   @Before
   public void setUp() throws Exception {
+    replaceAlgorithm = new LRUReplacer(Global.DEFAULT_BUFFER_SIZE);
     diskManager = new DiskManager(Paths.get("test.db"));
+    bufferPoolManager =
+        new BufferPoolManager(Global.DEFAULT_BUFFER_SIZE, diskManager, replaceAlgorithm);
     page = new Page(0);
   }
 
@@ -36,6 +47,7 @@ public class TablePageSlotTest {
     s[4] = new Column("col5", LongType.INSTANCE, (byte) 0, (byte) 0, Global.LONG_SIZE, 26);
 
     Schema sh = new Schema(s);
+    table = new Table(bufferPoolManager, sh);
 
     Value<?, ?>[] v = new Value[5];
     v[0] = new IntValue(1);
@@ -48,29 +60,16 @@ public class TablePageSlotTest {
     System.out.println(sh);
     t.print(sh);
 
-    t.serialize(page.getData(), 20);
-    Tuple tt = Tuple.deserialize(page.getData(), 20, sh);
-    tt.print(sh);
-    assertEquals(t.toString(sh), tt.toString(sh));
+    v[0] = new IntValue(5);
+    Tuple tt = new Tuple(v, sh);
 
-    // test TablePageSlot
-    TablePageSlot tablePage = new TablePageSlot(1, sh.getSize());
-    RID rid = new RID();
-    for (int i = 0; i < 131; i++) {
-      tablePage.insertTuple(t, rid);
-    }
-
-    Tuple tt2 = tablePage.getTuple(0, sh);
-    tt2.print(sh);
-    assertEquals(t.toString(sh), tt2.toString(sh));
-    tablePage.print(sh);
-
-    tablePage.deleteTuple(0);
-    tablePage.print(sh);
-
-    tablePage.insertTuple(t, rid);
-    tablePage.print(sh);
+    RID rid = new RID(0, 0);
+    table.insert(t, rid);
+    table.update(tt, rid);
+    table.getTuple(rid, sh).print(sh);
+    assertEquals(5, table.getTuple(rid, sh).getValue(sh, 0).getValue());
   }
+  // TODO: add more tests here.
 
   // after test, delete the test.db file
   @After

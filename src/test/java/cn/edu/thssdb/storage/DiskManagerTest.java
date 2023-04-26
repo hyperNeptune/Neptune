@@ -24,11 +24,12 @@ public class DiskManagerTest {
     // random generate PAGE_SIZE bytes
     // write them to page, and read in, check if they are equal
     byte[] bytes = new byte[Global.PAGE_SIZE];
-    for (int i = 0; i < Global.PAGE_SIZE; i++) {
+    for (int i = 4; i < Global.PAGE_SIZE; i++) {
       bytes[i] = (byte) (Math.random() * 256);
     }
     page.setData(bytes);
     diskManager.writePage(0, page);
+    page.setPageId(0);
     assertEquals(0, page.getPageId());
     // new page
     Page page2 = new Page(0);

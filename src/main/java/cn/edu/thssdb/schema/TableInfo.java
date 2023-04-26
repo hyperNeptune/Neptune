@@ -1,5 +1,6 @@
 package cn.edu.thssdb.schema;
 
+import cn.edu.thssdb.buffer.BufferPoolManager;
 import cn.edu.thssdb.utils.Pair;
 
 import java.nio.ByteBuffer;
@@ -19,12 +20,12 @@ public class TableInfo {
 
   private final String tableName_;
   private final Schema schema_;
-  private final int firstPageId_;
+  private final Table tableHeap_;
 
-  public TableInfo(String tableName, Schema schema, int firstPageId) {
+  public TableInfo(String tableName, Schema schema, Table tableHeap) {
     tableName_ = tableName;
     schema_ = schema;
-    firstPageId_ = firstPageId;
+    tableHeap_ = tableHeap;
   }
 
   // serialize to ByteBuffer
@@ -42,11 +43,12 @@ public class TableInfo {
     schema_.serialize(buffer);
     offset += schema_.getColNum();
     // first_page_id
-    buffer.putInt(offset, firstPageId_);
+    buffer.putInt(offset, tableHeap_.getFirstPageId());
   }
 
   // static method: deserialize from ByteBuffer
-  public static TableInfo deserialize(ByteBuffer buffer, int offset) {
+  public static TableInfo deserialize(
+      ByteBuffer buffer, int offset, BufferPoolManager bufferPoolManager) {
     // table_name_length
     int tableNameLength = buffer.getInt(offset);
     offset += 4;
@@ -61,7 +63,7 @@ public class TableInfo {
     offset = dsr_result.right;
     // first_page_id
     int firstPageId = buffer.getInt(offset);
-    return new TableInfo(tableName, schema, firstPageId);
+    return new TableInfo(tableName, schema, new Table(bufferPoolManager, firstPageId));
   }
 
   // getters
@@ -73,7 +75,11 @@ public class TableInfo {
     return schema_;
   }
 
+  public Table getTable() {
+    return tableHeap_;
+  }
+
   public int getFirstPageId() {
-    return firstPageId_;
+    return tableHeap_.getFirstPageId();
   }
 }
