@@ -1,5 +1,6 @@
 package cn.edu.thssdb.schema;
 
+import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.utils.Pair;
 
 import java.io.Serializable;
@@ -52,8 +53,14 @@ public class Schema implements Serializable {
     return colNum;
   }
 
-  public int getSize() {
+  public int getDataSize() {
     return size;
+  }
+
+  // tuple size is bigger than data size
+  // because of the header
+  public int getTupleSize() {
+    return size + Tuple.FIX_HDR_SIZE + (colNum + 7) / 8;
   }
 
   public int getOffset(String name) {

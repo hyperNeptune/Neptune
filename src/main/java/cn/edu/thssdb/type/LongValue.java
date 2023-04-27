@@ -8,12 +8,18 @@ public class LongValue extends Value<LongType, Long> {
 
   long value_;
 
-  public static final LongValue NULL_VALUE = new LongValue(0L);
+  public static final LongValue NULL_VALUE = new LongValue();
 
   // constructor
   public LongValue(long value) {
     super(LongType.INSTANCE);
     value_ = value;
+  }
+
+  public LongValue() {
+    super(LongType.INSTANCE);
+    isNull_ = true;
+    value_ = 0;
   }
 
   @Override
@@ -28,6 +34,9 @@ public class LongValue extends Value<LongType, Long> {
 
   @Override
   public String toString() {
+    if (isNull_) {
+      return "null (long)";
+    }
     return Long.toString(value_);
   }
 

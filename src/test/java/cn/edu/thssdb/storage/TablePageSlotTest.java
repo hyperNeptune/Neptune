@@ -49,18 +49,18 @@ public class TablePageSlotTest {
     t.print(sh);
 
     t.serialize(page.getData(), 20);
-    Tuple tt = Tuple.deserialize(page.getData(), 20, sh);
+    Tuple tt = Tuple.deserialize(page.getData(), 20);
     tt.print(sh);
     assertEquals(t.toString(sh), tt.toString(sh));
 
     // test TablePageSlot
-    TablePageSlot tablePage = new TablePageSlot(1, sh.getSize());
+    TablePageSlot tablePage = new TablePageSlot(1, sh.getTupleSize());
     RID rid = new RID();
     for (int i = 0; i < 131; i++) {
       tablePage.insertTuple(t, rid);
     }
 
-    Tuple tt2 = tablePage.getTuple(0, sh);
+    Tuple tt2 = tablePage.getTuple(0);
     tt2.print(sh);
     assertEquals(t.toString(sh), tt2.toString(sh));
     tablePage.print(sh);

@@ -3,7 +3,6 @@ package cn.edu.thssdb.schema;
 import cn.edu.thssdb.buffer.BufferPoolManager;
 import cn.edu.thssdb.storage.Page;
 import cn.edu.thssdb.storage.TablePage;
-import cn.edu.thssdb.storage.TablePageSlot;
 import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.RID;
@@ -11,39 +10,56 @@ import cn.edu.thssdb.utils.RID;
 import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class Table {
+public abstract class Table {
   // TODO: concurrency control(jyx)
+  protected enum NewFlag {
+    INSTANCE;
+  }
+
+  protected enum OpenFlag {
+    INSTANCE;
+  }
+
   ReentrantReadWriteLock lock;
-  private final BufferPoolManager bufferPoolManager_;
+  protected final BufferPoolManager bufferPoolManager_;
   private final int firstPageId_;
+  protected int slotSize_;
+
+  // new table page needs init
+  protected abstract TablePage newTablePage(Page p, int slotSize);
+  // fetch does not init
+  protected abstract TablePage fetchTablePage(Page p);
+
+  protected abstract int getPageMaxTupleSize();
 
   // open a table
-  public Table(BufferPoolManager bufferPoolManager, int firstPageId) {
+  public Table(BufferPoolManager bufferPoolManager, int firstPageId, OpenFlag flag)
+      throws Exception {
     this.lock = new ReentrantReadWriteLock();
     this.bufferPoolManager_ = bufferPoolManager;
     this.firstPageId_ = firstPageId;
+    // get slot size
+    TablePage tablePage = fetchTablePage(bufferPoolManager_.fetchPage(firstPageId_));
+    slotSize_ = tablePage.getSlotSize();
   }
 
-  // create a table
-  public Table(BufferPoolManager bufferPoolManager, Schema sh) throws Exception {
+  public Table(BufferPoolManager bufferPoolManager, int slotSize, NewFlag flag) throws Exception {
     this.lock = new ReentrantReadWriteLock();
     this.bufferPoolManager_ = bufferPoolManager;
     this.firstPageId_ = bufferPoolManager_.newPage().getPageId();
+    slotSize_ = slotSize;
     // init the first page
-    TablePage tablePage = new TablePageSlot(bufferPoolManager_.fetchPage(firstPageId_));
-    Object[] data = new Object[1];
-    data[0] = sh.getSize();
-    tablePage.init(data);
+    newTablePage(bufferPoolManager_.fetchPage(firstPageId_), slotSize);
   }
 
   // [out]: rid is the output parameter, return
   // the insert tuple rid
   public boolean insert(Tuple tuple, RID rid) throws Exception {
-    if (tuple.getSize() > Global.PAGE_SIZE - TablePageSlot.PAGE_HEADER_SIZE - 1) {
+    if (tuple.getSize() > getPageMaxTupleSize()) {
       return false;
     }
 
-    TablePage tablePage = new TablePageSlot(bufferPoolManager_.fetchPage(firstPageId_));
+    TablePage tablePage = fetchTablePage(bufferPoolManager_.fetchPage(firstPageId_));
 
     // invariant: insertTuple failed
     // rid is changed in insertTuple
@@ -55,17 +71,14 @@ public class Table {
           bufferPoolManager_.unpinPage(tablePage.getPageId(), false);
           return false;
         }
-        TablePageSlot newPage = new TablePageSlot(p);
+        TablePage newPage = newTablePage(p, slotSize_);
         tablePage.setNextPageId(newPage.getPageId());
         newPage.setPrevPageId(tablePage.getPageId());
-        Object[] d = new Object[1];
-        d[0] = tuple.getSize();
-        newPage.init(d);
         bufferPoolManager_.unpinPage(tablePage.getPageId(), true);
         tablePage = newPage;
       } else {
         bufferPoolManager_.unpinPage(tablePage.getPageId(), false);
-        tablePage = new TablePageSlot(bufferPoolManager_.fetchPage(nextPageId));
+        tablePage = fetchTablePage(bufferPoolManager_.fetchPage(nextPageId));
       }
     }
 
@@ -79,7 +92,7 @@ public class Table {
     if (p == null) {
       return;
     }
-    TablePage tablePage = new TablePageSlot(p);
+    TablePage tablePage = fetchTablePage(p);
     tablePage.deleteTuple(rid.getSlotId());
     bufferPoolManager_.unpinPage(tablePage.getPageId(), true);
   }
@@ -89,7 +102,7 @@ public class Table {
     if (p == null) {
       return false;
     }
-    TablePage tablePage = new TablePageSlot(p);
+    TablePage tablePage = fetchTablePage(p);
     boolean ret = tablePage.updateTuple(rid.getSlotId(), tuple);
     bufferPoolManager_.unpinPage(tablePage.getPageId(), ret);
     return ret;
@@ -101,13 +114,13 @@ public class Table {
   }
 
   // get tuple
-  public Tuple getTuple(RID rid, Schema sh) throws Exception {
+  public Tuple getTuple(RID rid) throws Exception {
     Page p = bufferPoolManager_.fetchPage(rid.getPageId());
     if (p == null) {
       return null;
     }
-    TablePage tablePage = new TablePageSlot(p);
-    Tuple tuple = tablePage.getTuple(rid.getSlotId(), sh);
+    TablePage tablePage = fetchTablePage(p);
+    Tuple tuple = tablePage.getTuple(rid.getSlotId());
     bufferPoolManager_.unpinPage(tablePage.getPageId(), false);
     return tuple;
   }
@@ -117,21 +130,19 @@ public class Table {
     if (p == null) {
       return null;
     }
-    return new TablePageSlot(p);
+    return fetchTablePage(p);
   }
 
   private class TableIterator implements Iterator<Tuple> {
     private Iterator<Tuple> tablePageIterator_;
     private TablePage tablePage_;
-    private final Schema schema_;
 
-    public TableIterator(Schema schema) throws Exception {
-      schema_ = schema;
+    public TableIterator() throws Exception {
       tablePage_ = getTablePage(firstPageId_);
       if (tablePage_ == null) {
         throw new Exception("TableIterator: tablePage_ is null");
       }
-      tablePageIterator_ = tablePage_.iterator(schema_);
+      tablePageIterator_ = tablePage_.iterator();
     }
 
     @Override
@@ -148,7 +159,7 @@ public class Table {
           if (tablePage_ == null) {
             return false;
           }
-          tablePageIterator_ = tablePage_.iterator(schema_);
+          tablePageIterator_ = tablePage_.iterator();
           return tablePageIterator_.hasNext();
         } catch (Exception e) {
           return false;
@@ -162,7 +173,7 @@ public class Table {
     }
   }
 
-  public Iterator<Tuple> iterator(Schema sh) throws Exception {
-    return new TableIterator(sh);
+  public Iterator<Tuple> iterator() throws Exception {
+    return new TableIterator();
   }
 }

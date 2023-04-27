@@ -191,17 +191,18 @@ public class TablePageSlot extends Page implements TablePage {
   }
 
   // get tuple by slot id
-  public Tuple getTuple(int slotId, Schema schema) {
+  public Tuple getTuple(int slotId) {
     if (slotId < 0 || slotId >= slotAreaSize()) {
       return null;
     }
     if (slotEmpty(slotId)) {
       return null;
     }
-    return Tuple.deserialize(data_, Global.PAGE_SIZE - (slotId + 1) * getTupleLength(), schema);
+    return Tuple.deserialize(data_, Global.PAGE_SIZE - (slotId + 1) * getTupleLength());
   }
 
   // update tuple by slot id
+  // TODO: in update clause, we need to change tuple bitmap
   public boolean updateTuple(int slotId, Tuple tuple) {
     if (slotId < 0 || slotId >= slotAreaSize()) {
       return false;
@@ -223,14 +224,14 @@ public class TablePageSlot extends Page implements TablePage {
     setTupleLength((int) data[0]);
   }
 
+  @Override
+  public int getSlotSize() {
+    return getTupleLength();
+  }
+
   // iterator
   public class TablePageIterator implements Iterator<Tuple> {
     private int slotId = 0;
-    private Schema schema;
-
-    public TablePageIterator(Schema schema) {
-      this.schema = schema;
-    }
 
     @Override
     public boolean hasNext() {
@@ -245,7 +246,7 @@ public class TablePageSlot extends Page implements TablePage {
 
     @Override
     public Tuple next() {
-      return getTuple(slotId++, schema);
+      return getTuple(slotId++);
     }
   }
 
@@ -258,15 +259,15 @@ public class TablePageSlot extends Page implements TablePage {
     System.out.println("tupleCount: " + getTupleCount());
     System.out.println("tupleLength: " + getTupleLength());
     // print all tuples
-    TablePageIterator iter = new TablePageIterator(schema);
+    TablePageIterator iter = new TablePageIterator();
     while (iter.hasNext()) {
       Tuple tuple = iter.next();
       tuple.print(schema);
     }
   }
 
-  // iter
-  public Iterator<Tuple> iterator(Schema schema) {
-    return new TablePageIterator(schema);
+  // iterator
+  public Iterator<Tuple> iterator() {
+    return new TablePageIterator();
   }
 }

@@ -5,12 +5,17 @@ import java.util.function.Function;
 
 public class StringValue extends Value<StringType.VarCharType, String> {
   private final String value_;
-  public static final Function<Integer, StringValue> NULL_VALUE =
-      (size) -> new StringValue("", size);
+  public static final Function<Integer, StringValue> NULL_VALUE = StringValue::new;
 
   public StringValue(String value, int size) {
     super(new StringType.VarCharType(size));
     value_ = value;
+  }
+
+  public StringValue(int size) {
+    super(new StringType.VarCharType(size));
+    isNull_ = true;
+    value_ = "";
   }
 
   public String getString() {
@@ -37,6 +42,9 @@ public class StringValue extends Value<StringType.VarCharType, String> {
 
   @Override
   public String toString() {
+    if (isNull_) {
+      return "null (string)";
+    }
     return value_;
   }
 

@@ -6,12 +6,18 @@ import java.nio.ByteBuffer;
 
 public class FloatValue extends Value<FloatType, Float> {
   float value_;
-  public static final FloatValue NULL_VALUE = new FloatValue(0);
+  public static final FloatValue NULL_VALUE = new FloatValue();
 
   // constructor
   public FloatValue(float value) {
     super(FloatType.INSTANCE);
     value_ = value;
+  }
+
+  public FloatValue() {
+    super(FloatType.INSTANCE);
+    isNull_ = true;
+    value_ = 0;
   }
 
   @Override
@@ -26,6 +32,9 @@ public class FloatValue extends Value<FloatType, Float> {
 
   @Override
   public String toString() {
+    if (isNull_) {
+      return "null (float)";
+    }
     return Float.toString(value_);
   }
 

@@ -6,12 +6,18 @@ import java.nio.ByteBuffer;
 
 public class DoubleValue extends Value<DoubleType, Double> {
   double value_;
-  public static final DoubleValue NULL_VALUE = new DoubleValue(0);
+  public static final DoubleValue NULL_VALUE = new DoubleValue();
 
   // constructor
   public DoubleValue(double value) {
     super(DoubleType.INSTANCE);
     value_ = value;
+  }
+
+  public DoubleValue() {
+    super(DoubleType.INSTANCE);
+    isNull_ = true;
+    value_ = 0;
   }
 
   @Override
@@ -26,6 +32,9 @@ public class DoubleValue extends Value<DoubleType, Double> {
 
   @Override
   public String toString() {
+    if (isNull_) {
+      return "null (double)";
+    }
     return Double.toString(value_);
   }
 

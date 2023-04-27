@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 public abstract class Value<T extends Type, V>
     implements Serializable, Comparable<Value<? extends Type, ?>> {
   final Type type_;
+  protected boolean isNull_ = false;
 
   // trivial constructor
   public Value(Type type) {
@@ -17,6 +18,7 @@ public abstract class Value<T extends Type, V>
   // clone is broken in java, so we use copy constructor
   public Value(Value<T, V> other) {
     type_ = other.type_;
+    isNull_ = other.isNull_;
   }
 
   // get type id
@@ -31,6 +33,10 @@ public abstract class Value<T extends Type, V>
 
   // get size
   public abstract int getSize();
+
+  public boolean isNull() {
+    return isNull_;
+  }
 
   // write to byte buffer
   public abstract void serialize(ByteBuffer buffer, int offset);

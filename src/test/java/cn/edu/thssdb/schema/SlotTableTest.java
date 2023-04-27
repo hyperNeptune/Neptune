@@ -18,7 +18,7 @@ import java.util.Iterator;
 
 import static org.junit.Assert.assertEquals;
 
-public class TableTest {
+public class SlotTableTest {
   private DiskManager diskManager;
   private BufferPoolManager bufferPoolManager;
   private ReplaceAlgorithm replaceAlgorithm;
@@ -48,7 +48,7 @@ public class TableTest {
     s[4] = new Column("col5", LongType.INSTANCE, (byte) 0, (byte) 0, Global.LONG_SIZE, 26);
 
     Schema sh = new Schema(s);
-    table = new Table(bufferPoolManager, sh);
+    table = SlotTable.newSlotTable(bufferPoolManager, sh.getTupleSize());
 
     Value<?, ?>[] v = new Value[5];
     v[0] = new IntValue(1);
@@ -70,14 +70,14 @@ public class TableTest {
     }
     System.out.println(rid.toString());
     table.update(tt, rid);
-    table.getTuple(rid, sh).print(sh);
-    assertEquals(5, table.getTuple(rid, sh).getValue(sh, 0).getValue());
+    table.getTuple(rid).print(sh);
+    assertEquals(5, table.getTuple(rid).getValue(sh, 0).getValue());
 
     RID rid_delete = new RID(2, 14);
     table.delete(rid_delete);
     table.insert(tt, rid_delete);
-    table.getTuple(rid_delete, sh).print(sh);
-    assertEquals(5, table.getTuple(rid_delete, sh).getValue(sh, 0).getValue());
+    table.getTuple(rid_delete).print(sh);
+    assertEquals(5, table.getTuple(rid_delete).getValue(sh, 0).getValue());
   }
 
   @Test
@@ -94,7 +94,7 @@ public class TableTest {
     s[4] = new Column("col5", LongType.INSTANCE, (byte) 0, (byte) 0, Global.LONG_SIZE, 26);
 
     Schema sh = new Schema(s);
-    table = new Table(bufferPoolManager, sh);
+    table = SlotTable.newSlotTable(bufferPoolManager, sh.getTupleSize());
 
     Value<?, ?>[] v = new Value[5];
     v[0] = new IntValue(1);
@@ -116,23 +116,23 @@ public class TableTest {
     }
     System.out.println(rid.toString());
     table.update(tt, rid);
-    table.getTuple(rid, sh).print(sh);
-    assertEquals(5, table.getTuple(rid, sh).getValue(sh, 0).getValue());
+    table.getTuple(rid).print(sh);
+    assertEquals(5, table.getTuple(rid).getValue(sh, 0).getValue());
 
     RID rid_delete = new RID(2, 14);
     table.delete(rid_delete);
     table.insert(tt, rid_delete);
-    table.getTuple(rid_delete, sh).print(sh);
-    assertEquals(5, table.getTuple(rid_delete, sh).getValue(sh, 0).getValue());
+    table.getTuple(rid_delete).print(sh);
+    assertEquals(5, table.getTuple(rid_delete).getValue(sh, 0).getValue());
 
     // iterator
-    Iterator<Tuple> iterator = table.iterator(sh);
+    Iterator<Tuple> iterator = table.iterator();
     int idx = 0;
     while (iterator.hasNext()) {
       Tuple tuple = iterator.next();
       idx++;
       tuple.print(sh);
-      if (idx != 1000 && idx != 253) {
+      if (idx != 1000 && idx != 203) {
         assertEquals(1, tuple.getValue(sh, 0).getValue());
       } else {
         System.out.println("special attention");

@@ -72,7 +72,7 @@ public class TableInfo {
 
   // static method: deserialize from ByteBuffer
   public static TableInfo deserialize(
-      ByteBuffer buffer, int offset, BufferPoolManager bufferPoolManager) {
+      ByteBuffer buffer, int offset, BufferPoolManager bufferPoolManager) throws Exception {
     // table_name_length
     int tableNameLength = buffer.getInt(offset);
     offset += 4;
@@ -87,7 +87,8 @@ public class TableInfo {
     offset = dsr_result.right;
     // first_page_id
     int firstPageId = buffer.getInt(offset);
-    return new TableInfo(tableName, schema, new Table(bufferPoolManager, firstPageId));
+    return new TableInfo(
+        tableName, schema, SlotTable.openSlotTable(bufferPoolManager, firstPageId));
   }
 
   // getters

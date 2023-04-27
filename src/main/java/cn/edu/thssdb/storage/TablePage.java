@@ -1,6 +1,5 @@
 package cn.edu.thssdb.storage;
 
-import cn.edu.thssdb.schema.Schema;
 import cn.edu.thssdb.utils.RID;
 
 import java.util.Iterator;
@@ -20,11 +19,13 @@ public interface TablePage {
 
   public boolean deleteTuple(int slotId);
 
-  public Tuple getTuple(int slotId, Schema schema);
+  public Tuple getTuple(int slotId);
 
   public boolean updateTuple(int slotId, Tuple tuple);
 
   public void init(Object[] data);
 
-  public Iterator<Tuple> iterator(Schema schema);
+  public int getSlotSize();
+
+  public Iterator<Tuple> iterator();
 }

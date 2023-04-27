@@ -11,7 +11,7 @@ import java.util.Arrays;
 public class Page {
   protected ByteBuffer data_;
   // for mutable runtime data
-  private PageRuntimeData runtime_data_;
+  private final PageRuntimeData runtime_data_;
   private static final int PAGE_ID_OFFSET = 0;
 
   public void resetMemory() {
@@ -87,7 +87,7 @@ public class Page {
 
   // print
   public void print() {
-    // invalid pageid say invalid
+    // invalid page id say invalid
     if (getPageId() == -1) {
       System.out.println("invalid page");
       return;

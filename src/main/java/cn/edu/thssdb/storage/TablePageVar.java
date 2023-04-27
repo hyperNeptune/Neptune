@@ -1,6 +1,5 @@
 package cn.edu.thssdb.storage;
 
-import cn.edu.thssdb.schema.Schema;
 import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.RID;
 
@@ -165,7 +164,7 @@ public class TablePageVar extends Page implements TablePage {
   // check if there is enough space for a new tuple
   public hasEnoughSpaceResult hasEnoughSpace(int size) {
     // has sufficient free space, return
-    if (getFreeSpace() > size) {
+    if (getFreeSpace() > size + TUPLE_META_SIZE) {
       return hasEnoughSpaceResult.HAS_ENOUGH_SPACE;
     }
     // has deleted slots, use them if no free space.
@@ -220,10 +219,6 @@ public class TablePageVar extends Page implements TablePage {
   }
 
   @Override
-  public Tuple getTuple(int slotId, Schema schema) {
-    return getTuple(slotId);
-  }
-
   // get tuple by slot id
   public Tuple getTuple(int slotId) {
     if (slotId < 0 || slotId >= getSlotCount()) {
@@ -258,8 +253,8 @@ public class TablePageVar extends Page implements TablePage {
   }
 
   @Override
-  public Iterator<Tuple> iterator(Schema schema) {
-    return new TablePageIterator();
+  public int getSlotSize() {
+    throw new UnsupportedOperationException();
   }
 
   // iterator
@@ -300,6 +295,7 @@ public class TablePageVar extends Page implements TablePage {
   }
 
   // iter
+  @Override
   public Iterator<Tuple> iterator() {
     return new TablePageIterator();
   }

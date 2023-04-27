@@ -48,7 +48,7 @@ public class TupleTest {
     t.print(sh);
 
     t.serialize(page.getData(), 20);
-    Tuple tt = Tuple.deserialize(page.getData(), 20, sh);
+    Tuple tt = Tuple.deserialize(page.getData(), 20);
     tt.print(sh);
     assertEquals(t.toString(sh), tt.toString(sh));
   }

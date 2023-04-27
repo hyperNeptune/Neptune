@@ -6,12 +6,18 @@ import java.nio.ByteBuffer;
 
 public class IntValue extends Value<IntType, Integer> {
   int value_;
-  public static final IntValue NULL_VALUE = new IntValue(0);
+  public static final IntValue NULL_VALUE = new IntValue();
 
   // constructor
   public IntValue(int value) {
     super(IntType.INSTANCE);
     value_ = value;
+  }
+
+  public IntValue() {
+    super(IntType.INSTANCE);
+    isNull_ = true;
+    value_ = 0;
   }
 
   @Override
@@ -26,6 +32,9 @@ public class IntValue extends Value<IntType, Integer> {
 
   @Override
   public String toString() {
+    if (isNull_) {
+      return "null (int)";
+    }
     return Integer.toString(value_);
   }
 
