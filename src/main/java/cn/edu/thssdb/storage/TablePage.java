@@ -3,6 +3,8 @@ package cn.edu.thssdb.storage;
 import cn.edu.thssdb.schema.Schema;
 import cn.edu.thssdb.utils.RID;
 
+import java.util.Iterator;
+
 public interface TablePage {
   public int getPageId();
   // next page, prev page
@@ -23,4 +25,6 @@ public interface TablePage {
   public boolean updateTuple(int slotId, Tuple tuple);
 
   public void init(Object[] data);
+
+  public Iterator<Tuple> iterator(Schema schema);
 }

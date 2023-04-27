@@ -262,4 +262,9 @@ public class TablePageSlot extends Page implements TablePage {
       tuple.print(schema);
     }
   }
+
+  // iter
+  public Iterator<Tuple> iterator(Schema schema) {
+    return new TablePageIterator(schema);
+  }
 }

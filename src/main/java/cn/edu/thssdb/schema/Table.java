@@ -11,8 +11,7 @@ import cn.edu.thssdb.utils.RID;
 import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-// TODO: Rewrite this class
-public class Table implements Iterable<Tuple> {
+public class Table {
   // TODO: concurrency control(jyx)
   ReentrantReadWriteLock lock;
   private final BufferPoolManager bufferPoolManager_;
@@ -75,7 +74,7 @@ public class Table implements Iterable<Tuple> {
     return true;
   }
 
-  public void delete(RID rid) throws Exception{
+  public void delete(RID rid) throws Exception {
     Page p = bufferPoolManager_.fetchPage(rid.getPageId());
     if (p == null) {
       return;
@@ -113,30 +112,57 @@ public class Table implements Iterable<Tuple> {
     return tuple;
   }
 
-  private static class TableIterator implements Iterator<Tuple> {
-    private final Table table_;
-    private RID rid_;
+  protected TablePage getTablePage(int pageId) throws Exception {
+    Page p = bufferPoolManager_.fetchPage(pageId);
+    if (p == null) {
+      return null;
+    }
+    return new TablePageSlot(p);
+  }
 
-    public TableIterator(Table table) {
-      table_ = table;
-      rid_ = new RID(table_.getFirstPageId(), 0);
+  private class TableIterator implements Iterator<Tuple> {
+    private Iterator<Tuple> tablePageIterator_;
+    private TablePage tablePage_;
+    private final Schema schema_;
+
+    public TableIterator(Schema schema) throws Exception {
+      schema_ = schema;
+      tablePage_ = getTablePage(firstPageId_);
+      if (tablePage_ == null) {
+        throw new Exception("TableIterator: tablePage_ is null");
+      }
+      tablePageIterator_ = tablePage_.iterator(schema_);
     }
 
     @Override
     public boolean hasNext() {
-      // TODO
-      return false;
+      if (tablePageIterator_.hasNext()) {
+        return true;
+      } else {
+        try {
+          int nextPageId = tablePage_.getNextPageId();
+          if (nextPageId == Global.PAGE_ID_INVALID) {
+            return false;
+          }
+          tablePage_ = getTablePage(nextPageId);
+          if (tablePage_ == null) {
+            return false;
+          }
+          tablePageIterator_ = tablePage_.iterator(schema_);
+          return tablePageIterator_.hasNext();
+        } catch (Exception e) {
+          return false;
+        }
+      }
     }
 
     @Override
     public Tuple next() {
-      // TODO
-      return null;
+      return tablePageIterator_.next();
     }
   }
 
-  @Override
-  public Iterator<Tuple> iterator() {
-    return new TableIterator(this);
+  public Iterator<Tuple> iterator(Schema sh) throws Exception {
+    return new TableIterator(sh);
   }
 }
