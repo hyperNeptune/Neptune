@@ -1,6 +1,7 @@
 package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.buffer.BufferPoolManager;
+import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.utils.Pair;
 
 import java.nio.ByteBuffer;
@@ -44,6 +45,29 @@ public class TableInfo {
     offset += schema_.getColNum();
     // first_page_id
     buffer.putInt(offset, tableHeap_.getFirstPageId());
+  }
+
+  // serialize to Tuple
+  // TODO
+  public Tuple serialize() {
+    // table_name_length
+    int tableNameLength = tableName_.length();
+    // table_name
+    byte[] tableNameBytes = tableName_.getBytes();
+    // schema_length
+    int schemaLength = schema_.getColNum();
+    // schema
+    // byte[] schemaBytes = schema_.serialize();
+    // first_page_id
+    int firstPageId = tableHeap_.getFirstPageId();
+    // serialize
+    ByteBuffer buffer = ByteBuffer.allocate(4 + tableNameLength + 4 + schemaLength + 4);
+    buffer.putInt(tableNameLength);
+    buffer.put(tableNameBytes);
+    buffer.putInt(schemaLength);
+    // buffer.put(schemaBytes);
+    buffer.putInt(firstPageId);
+    return new Tuple(buffer);
   }
 
   // static method: deserialize from ByteBuffer

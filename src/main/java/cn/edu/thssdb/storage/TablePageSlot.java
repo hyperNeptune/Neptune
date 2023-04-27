@@ -169,8 +169,10 @@ public class TablePageSlot extends Page implements TablePage {
       setSlot(slotId);
     }
     setTupleCount(getTupleCount() + 1);
-    rid.setPageId(getPageId());
-    rid.setSlotId(slotId);
+    if (rid != null) {
+      rid.setPageId(getPageId());
+      rid.setSlotId(slotId);
+    }
     return slotId;
   }
 
@@ -216,7 +218,7 @@ public class TablePageSlot extends Page implements TablePage {
   public void init(Object[] data) {
     setNextPageId(Global.PAGE_ID_INVALID);
     setPrevPageId(Global.PAGE_ID_INVALID);
-    setFreeSpacePointer(PAGE_HEADER_SIZE);
+    setFreeSpacePointer(Global.PAGE_SIZE);
     setTupleCount(0);
     setTupleLength((int) data[0]);
   }

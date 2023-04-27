@@ -31,6 +31,12 @@ public class Tuple {
     }
   }
 
+  // constructor by data and size
+  public Tuple(ByteBuffer data) {
+    size_ = data.capacity();
+    data_ = data;
+  }
+
   // get value by schema and column index
   public Value getValue(Schema schema, int index) {
     Column column = schema.getColumn(index);
@@ -45,8 +51,12 @@ public class Tuple {
 
   // deserialize
   public static Tuple deserialize(ByteBuffer buffer, int offset, Schema schema) {
+    return deserialize(buffer, offset, schema.getSize());
+  }
+
+  public static Tuple deserialize(ByteBuffer buffer, int offset, int size) {
     Tuple tuple = new Tuple();
-    tuple.size_ = schema.getSize();
+    tuple.size_ = size;
     tuple.data_ = ByteBuffer.allocate(tuple.size_);
     tuple.data_.put(buffer.array(), offset, tuple.size_);
     return tuple;
@@ -63,6 +73,13 @@ public class Tuple {
       s += getValue(sh, i).toString() + "|";
     }
     return s;
+  }
+
+  // toString
+  @Override
+  public String toString() {
+    // byte array to String
+    return new String(data_.array());
   }
 
   // get size
