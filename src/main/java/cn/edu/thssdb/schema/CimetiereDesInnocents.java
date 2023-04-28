@@ -39,8 +39,7 @@ public class CimetiereDesInnocents {
     return new CimetiereDesInnocents(bpm, metaKamiTable);
   }
 
-  public static CimetiereDesInnocents openCDI(BufferPoolManager bpm, int metaKamiPageId)
-      throws Exception {
+  public static CimetiereDesInnocents openCDI(BufferPoolManager bpm) throws Exception {
     Table metaKamiTable = SlotTable.openSlotTable(bpm, META_KAMI_PAGE_ID);
     CimetiereDesInnocents cdi = new CimetiereDesInnocents(bpm, metaKamiTable);
     cdi.reload();
@@ -53,13 +52,13 @@ public class CimetiereDesInnocents {
       Pair<Tuple, RID> pair = iter.next();
       Tuple tuple = pair.left;
       String databaseName = (String) tuple.getValue(metaKamiSchema_, 0).getValue();
-      int databaseCatalogPageId = (int) tuple.getValue(metaKamiSchema_, 1).getValue();
+      int databaseCatalogPageId = (Integer) tuple.getValue(metaKamiSchema_, 1).getValue();
       Catalog catalog = Catalog.loadCatalog(bufferPoolManager_, databaseCatalogPageId);
       databases_.put(databaseName, catalog);
     }
   }
 
-  private Catalog createDatabase(String name) throws Exception {
+  public Catalog createDatabase(String name) throws Exception {
     Catalog catalog = Catalog.createCatalog(bufferPoolManager_);
     databases_.put(name, catalog);
     metaKamiTable_.insert(
@@ -70,7 +69,7 @@ public class CimetiereDesInnocents {
     return catalog;
   }
 
-  private void dropDatabase(String tableName) throws Exception {
+  public void dropDatabase(String tableName) throws Exception {
     Catalog catalog = databases_.get(tableName);
     if (catalog == null) {
       return;
