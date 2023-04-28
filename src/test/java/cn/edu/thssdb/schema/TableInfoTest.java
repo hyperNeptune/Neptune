@@ -7,6 +7,7 @@ import cn.edu.thssdb.storage.DiskManager;
 import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.type.*;
 import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.Pair;
 import cn.edu.thssdb.utils.RID;
 import org.junit.After;
 import org.junit.Before;
@@ -70,11 +71,11 @@ public class TableInfoTest {
     System.out.println(rid.toString());
 
     // iterator
-    Iterator<Tuple> iterator = table.iterator();
+    Iterator<Pair<Tuple, RID>> iterator = table.iterator();
     // test insert
     int idx = 0;
     while (iterator.hasNext()) {
-      Tuple tuple = iterator.next();
+      Tuple tuple = iterator.next().left;
       idx++;
       v[0] = new IntValue(idx);
       tt = new Tuple(v, sh);

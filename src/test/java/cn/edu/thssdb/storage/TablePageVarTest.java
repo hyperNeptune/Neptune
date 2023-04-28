@@ -5,6 +5,7 @@ import cn.edu.thssdb.buffer.LRUReplacer;
 import cn.edu.thssdb.buffer.ReplaceAlgorithm;
 import cn.edu.thssdb.schema.*;
 import cn.edu.thssdb.type.*;
+import cn.edu.thssdb.utils.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,9 +42,9 @@ public class TablePageVarTest {
     }
     tablePage.printmeta();
     // iterator
-    Iterator<Tuple> iterator = tablePage.iterator();
+    Iterator<Pair<Tuple, Integer>> iterator = tablePage.iterator();
     while (iterator.hasNext()) {
-      Tuple tuple = iterator.next();
+      Tuple tuple = iterator.next().left;
       System.out.println(tuple.toString());
     }
     // delete

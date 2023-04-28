@@ -1,7 +1,7 @@
 package cn.edu.thssdb.server;
 
 import cn.edu.thssdb.rpc.thrift.IService;
-import cn.edu.thssdb.schema.Manager;
+import cn.edu.thssdb.schema.CimetiereDesInnocents;
 import cn.edu.thssdb.service.IServiceHandler;
 import cn.edu.thssdb.utils.Global;
 import org.apache.thrift.server.TServer;
@@ -20,7 +20,7 @@ public class ThssDB {
   private static TServerSocket transport;
   private static TServer server;
 
-  private Manager manager;
+  private CimetiereDesInnocents cdi;
 
   public static ThssDB getInstance() {
     return ThssDBHolder.INSTANCE;

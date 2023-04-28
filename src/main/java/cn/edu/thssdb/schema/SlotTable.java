@@ -10,6 +10,8 @@ public class SlotTable extends Table {
   public SlotTable(BufferPoolManager bufferPoolManager, int firstPageId, Table.OpenFlag flag)
       throws Exception {
     super(bufferPoolManager, firstPageId, flag);
+    TablePage tablePage = fetchTablePage(bufferPoolManager_.fetchPage(firstPageId));
+    slotSize_ = tablePage.getSlotSize();
   }
 
   public SlotTable(BufferPoolManager bufferPoolManager, int slotSize, Table.NewFlag flag)

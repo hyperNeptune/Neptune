@@ -1,5 +1,6 @@
 package cn.edu.thssdb.storage;
 
+import cn.edu.thssdb.utils.Pair;
 import cn.edu.thssdb.utils.RID;
 
 import java.util.Iterator;
@@ -27,5 +28,5 @@ public interface TablePage {
 
   public int getSlotSize();
 
-  public Iterator<Tuple> iterator();
+  public Iterator<Pair<Tuple, Integer>> iterator();
 }

@@ -7,6 +7,8 @@ import cn.edu.thssdb.storage.DiskManager;
 import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.type.*;
 import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.Pair;
+import cn.edu.thssdb.utils.RID;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,10 +65,10 @@ public class VarTableTest {
     }
     bufferPoolManager.flushAllPages();
     // use iterator
-    Iterator<Tuple> iterator = table.iterator();
+    Iterator<Pair<Tuple, RID>> iterator = table.iterator();
     int i = 0;
     while (iterator.hasNext()) {
-      Tuple tuple = iterator.next();
+      Tuple tuple = iterator.next().left;
       assertEquals(s[i % 5], tuple.toString());
       i++;
     }

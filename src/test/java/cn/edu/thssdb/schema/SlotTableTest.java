@@ -8,6 +8,7 @@ import cn.edu.thssdb.storage.Page;
 import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.type.*;
 import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.Pair;
 import cn.edu.thssdb.utils.RID;
 import org.junit.After;
 import org.junit.Before;
@@ -126,10 +127,10 @@ public class SlotTableTest {
     assertEquals(5, table.getTuple(rid_delete).getValue(sh, 0).getValue());
 
     // iterator
-    Iterator<Tuple> iterator = table.iterator();
+    Iterator<Pair<Tuple, RID>> iterator = table.iterator();
     int idx = 0;
     while (iterator.hasNext()) {
-      Tuple tuple = iterator.next();
+      Tuple tuple = iterator.next().left;
       idx++;
       tuple.print(sh);
       if (idx != 1000 && idx != 203) {

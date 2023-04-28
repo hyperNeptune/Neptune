@@ -7,18 +7,17 @@ import cn.edu.thssdb.storage.DiskManager;
 import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.type.*;
 import cn.edu.thssdb.utils.Global;
-import cn.edu.thssdb.utils.Pair;
 import cn.edu.thssdb.utils.RID;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.file.Paths;
-import java.util.Iterator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
-public class SchemaTest {
+public class CatalogTest {
   private DiskManager diskManager;
   private BufferPoolManager bufferPoolManager;
   private ReplaceAlgorithm replaceAlgorithm;
@@ -46,44 +45,48 @@ public class SchemaTest {
   }
 
   @Test
-  public void testTableIterator() throws Exception {
-    table = VarTable.newVarTable(bufferPoolManager);
-
-    Value<?, ?>[] v = new Value[5];
-    v[0] = new IntValue(1);
-    v[1] = new DoubleValue(2.0);
-    v[2] = new StringValue("aaaaaaaaaa", 10);
-    v[3] = new FloatValue(3.0f);
-    v[4] = new LongValue(4);
-
-    Tuple t = new Tuple(sh);
-
-    RID rid = new RID(0, 0);
-    for (int i = 0; i < 1000; i++) {
-      table.insert(t, rid);
+  public void testCatalog() throws Exception {
+    // 1. create a catalog
+    Catalog clg = Catalog.createCatalog(bufferPoolManager);
+    // 2. create a table
+    TableInfo ti = clg.createTable("test", sh);
+    // 3. get the table
+    Table t = clg.getTable("test");
+    // 4. prepare and insert a tuple to table
+    Value[] values = new Value[5];
+    values[0] = new IntValue(1);
+    values[1] = new DoubleValue(2.0);
+    values[2] = new StringValue("a great string", 10);
+    values[3] = new FloatValue(4.0f);
+    values[4] = new LongValue(5L);
+    Tuple tuple = new Tuple(values, sh);
+    // 5. insert the tuple
+    RID id = new RID(0, 0);
+    t.insert(tuple, id);
+    // 6. flush buffer pool
+    bufferPoolManager.flushAllPages();
+    // 7. load the catalog from disk
+    Catalog clg2 = Catalog.loadCatalog(bufferPoolManager, clg.getFirstPageId());
+    // 8. compare the content of clg.list(), print them
+    String[] names = clg.list();
+    String[] names2 = clg2.list();
+    assertEquals(names.length, names2.length);
+    for (int i = 0; i < names.length; i++) {
+      assertEquals(names[i], names2[i]);
+      System.out.println(names[i]);
     }
-    System.out.println(rid.toString());
-
-    // iterator
-    Iterator<Pair<Tuple, RID>> iterator = table.iterator();
-    int idx = 0;
-    while (iterator.hasNext()) {
-      Tuple tuple = iterator.next().left;
-      idx++;
-      Pair<Schema, Integer> p = Schema.deserialize(tuple.getValue(), 0);
-      Schema s = p.left;
-      int offset = p.right;
-      // assert fields of s with sh
-      assertEquals(s.getColumns().length, sh.getColumns().length);
-      for (int i = 0; i < s.getColumns().length; i++) {
-        assertEquals(s.getColumns()[i].getName(), sh.getColumns()[i].getName());
-        assertEquals(s.getColumns()[i].getType(), sh.getColumns()[i].getType());
-        assertEquals(s.getColumns()[i].isPrimary(), sh.getColumns()[i].isPrimary());
-        assertEquals(s.getColumns()[i].Nullable(), sh.getColumns()[i].Nullable());
-        assertEquals(s.getColumns()[i].getMaxLength(), sh.getColumns()[i].getMaxLength());
-        assertEquals(s.getColumns()[i].getOffset(), sh.getColumns()[i].getOffset());
-      }
+    // 9. get the table from clg2
+    Table t2 = clg2.getTable("test");
+    // 10. fetch RID tuple
+    Tuple tuple2 = t2.getTuple(id);
+    // 11. compare the content of tuple and tuple2. use sh
+    for (int i = 0; i < sh.getColumns().length; i++) {
+      assertEquals(tuple.getValue(sh, i).getValue(), tuple2.getValue(sh, i).getValue());
     }
+    // 12. drop the table
+    clg.dropTable("test");
+    // 13. check if the table is dropped
+    assertNull(clg.getTable("test"));
   }
 
   // after test, delete the test.db file

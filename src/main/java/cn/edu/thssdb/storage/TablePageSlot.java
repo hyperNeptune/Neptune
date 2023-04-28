@@ -2,6 +2,7 @@ package cn.edu.thssdb.storage;
 
 import cn.edu.thssdb.schema.Schema;
 import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.Pair;
 import cn.edu.thssdb.utils.RID;
 
 import java.util.Iterator;
@@ -230,7 +231,7 @@ public class TablePageSlot extends Page implements TablePage {
   }
 
   // iterator
-  public class TablePageIterator implements Iterator<Tuple> {
+  public class TablePageIterator implements Iterator<Pair<Tuple, Integer>> {
     private int slotId = 0;
 
     @Override
@@ -245,8 +246,10 @@ public class TablePageSlot extends Page implements TablePage {
     }
 
     @Override
-    public Tuple next() {
-      return getTuple(slotId++);
+    public Pair<Tuple, Integer> next() {
+      int old_sid = slotId;
+      slotId++;
+      return new Pair<>(getTuple(old_sid), old_sid);
     }
   }
 
@@ -261,13 +264,13 @@ public class TablePageSlot extends Page implements TablePage {
     // print all tuples
     TablePageIterator iter = new TablePageIterator();
     while (iter.hasNext()) {
-      Tuple tuple = iter.next();
+      Tuple tuple = iter.next().left;
       tuple.print(schema);
     }
   }
 
   // iterator
-  public Iterator<Tuple> iterator() {
+  public Iterator<Pair<Tuple, Integer>> iterator() {
     return new TablePageIterator();
   }
 }

@@ -5,6 +5,7 @@ import cn.edu.thssdb.storage.Page;
 import cn.edu.thssdb.storage.TablePage;
 import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.Pair;
 import cn.edu.thssdb.utils.RID;
 
 import java.util.Iterator;
@@ -38,9 +39,6 @@ public abstract class Table {
     this.lock = new ReentrantReadWriteLock();
     this.bufferPoolManager_ = bufferPoolManager;
     this.firstPageId_ = firstPageId;
-    // get slot size
-    TablePage tablePage = fetchTablePage(bufferPoolManager_.fetchPage(firstPageId_));
-    slotSize_ = tablePage.getSlotSize();
   }
 
   public Table(BufferPoolManager bufferPoolManager, int slotSize, NewFlag flag) throws Exception {
@@ -133,8 +131,8 @@ public abstract class Table {
     return fetchTablePage(p);
   }
 
-  private class TableIterator implements Iterator<Tuple> {
-    private Iterator<Tuple> tablePageIterator_;
+  private class TableIterator implements Iterator<Pair<Tuple, RID>> {
+    private Iterator<Pair<Tuple, Integer>> tablePageIterator_;
     private TablePage tablePage_;
 
     public TableIterator() throws Exception {
@@ -168,12 +166,13 @@ public abstract class Table {
     }
 
     @Override
-    public Tuple next() {
-      return tablePageIterator_.next();
+    public Pair<Tuple, RID> next() {
+      Pair<Tuple, Integer> pti = tablePageIterator_.next();
+      return new Pair<>(pti.left, new RID(tablePage_.getPageId(), pti.right));
     }
   }
 
-  public Iterator<Tuple> iterator() throws Exception {
+  public Iterator<Pair<Tuple, RID>> iterator() throws Exception {
     return new TableIterator();
   }
 }
