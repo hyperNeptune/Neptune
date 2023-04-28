@@ -35,13 +35,15 @@ public class TableInfo {
     buffer.putInt(offset, tableName_.length());
     offset += 4;
     // table_name
-    buffer.put(tableName_.getBytes(), offset, tableName_.length());
+    buffer.position(offset);
+    buffer.put(tableName_.getBytes(), 0, tableName_.length());
+    buffer.clear();
     offset += tableName_.length();
     // schema_length
     buffer.putInt(offset, schema_.getColNum());
     offset += 4;
     // schema
-    schema_.serialize(buffer);
+    schema_.serialize(buffer, offset);
     offset += schema_.getColNum();
     // first_page_id
     buffer.putInt(offset, tableHeap_.getFirstPageId());

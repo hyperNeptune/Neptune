@@ -21,6 +21,10 @@ public abstract class Type {
 
   // serialization
   public void serialize(ByteBuffer buffer, int offset) {
+    buffer.put(offset, getTypeCode());
+  }
+
+  public void serialize(ByteBuffer buffer) {
     buffer.put(getTypeCode());
   }
 

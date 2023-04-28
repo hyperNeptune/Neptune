@@ -9,13 +9,14 @@ import java.nio.ByteBuffer;
 // assume all columns are inlined
 // schema is a list of columns
 // |------|---------|---------|---------|-----|
-// | size | column1 | column2 | column3 | ... |
+// |colNum| column1 | column2 | column3 | ... |
 // |------|---------|---------|---------|-----|
 // columns are separated by semicolon, so column name can't contain semicolon
 public class Schema implements Serializable {
   private final Column[] columns_;
   private final int colNum;
-  private final int size;
+  private final int dataSize_;
+  private int schemaSize_ = 4;
 
   public Schema(Column[] columns) {
     columns_ = columns;
@@ -24,8 +25,9 @@ public class Schema implements Serializable {
     for (Column column : columns) {
       column.offset_ = offset;
       offset += column.getMaxLength();
+      schemaSize_ += column.getColMetaSize();
     }
-    size = offset;
+    dataSize_ = offset;
   }
 
   // getters
@@ -44,7 +46,7 @@ public class Schema implements Serializable {
 
   public Column getColumn(int index) {
     if (index < 0 || index >= columns_.length) {
-      throw new IndexOutOfBoundsException("getcolumn Index out of bound!");
+      throw new IndexOutOfBoundsException("getColumn Index out of bound!");
     }
     return columns_[index];
   }
@@ -54,13 +56,17 @@ public class Schema implements Serializable {
   }
 
   public int getDataSize() {
-    return size;
+    return dataSize_;
   }
 
   // tuple size is bigger than data size
   // because of the header
   public int getTupleSize() {
-    return size + Tuple.FIX_HDR_SIZE + (colNum + 7) / 8;
+    return dataSize_ + Tuple.FIX_HDR_SIZE + (colNum + 7) / 8;
+  }
+
+  public int getSchemaSize() {
+    return schemaSize_;
   }
 
   public int getOffset(String name) {
@@ -88,24 +94,25 @@ public class Schema implements Serializable {
     return sb.toString();
   }
 
-  public void serialize(ByteBuffer buffer) {
-    // size
-    buffer.putInt(colNum);
+  public int serialize(ByteBuffer buffer, int offset) {
+    buffer.putInt(offset, colNum);
+    offset += 4;
     for (Column column : columns_) {
-      column.serialize(buffer);
-      buffer.put((byte) ';');
+      offset = column.serialize(buffer, offset);
+      buffer.put(offset++, (byte) ';');
     }
+    return offset;
   }
 
   // WARNING: offset is changed after calling this function
   public static Pair<Schema, Integer> deserialize(ByteBuffer buffer, Integer offset) {
     // column one by one until end
-    // column format: name,type,primary,nullable,maxLength,offset
-    // separated by comma
-    int size = buffer.getInt(offset);
+    // column format: name,type,primary nullable maxLength offset
+    // not all separated by comma
+    int coln = buffer.getInt(offset);
     offset += 4;
-    Column[] columns = new Column[size];
-    for (int i = 0; i < size; i++) {
+    Column[] columns = new Column[coln];
+    for (int i = 0; i < coln; i++) {
       Pair<Column, Integer> dsr_result = Column.deserialize(buffer, offset);
       columns[i] = dsr_result.left;
       offset = dsr_result.right;

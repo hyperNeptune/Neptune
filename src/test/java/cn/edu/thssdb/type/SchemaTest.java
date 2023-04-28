@@ -29,7 +29,7 @@ public class SchemaTest {
     Column col2 = new Column("col2", IntType.INSTANCE, (byte) 0, (byte) 0, 64, 0);
     Column[] columns = new Column[] {col1, col2};
     Schema schema = new Schema(columns);
-    schema.serialize(page.getData());
+    schema.serialize(page.getData(), 0);
     diskManager.writePage(5, page);
 
     Page new_page = new Page(5);

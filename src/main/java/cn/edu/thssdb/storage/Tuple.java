@@ -54,6 +54,14 @@ public class Tuple {
     data_ = data;
   }
 
+  // constructor by sole schema
+  public Tuple(Schema schema) {
+    ByteBuffer data = ByteBuffer.allocate(schema.getSchemaSize());
+    schema.serialize(data, 0);
+    size_ = data.capacity();
+    data_ = data;
+  }
+
   public ByteBuffer getValue() {
     return data_;
   }

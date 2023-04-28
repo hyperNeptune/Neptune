@@ -55,39 +55,20 @@ public class Column implements Comparable<Column> {
   }
 
   // serialize to ByteBuffer, comma separated
-  public void serialize(ByteBuffer buffer) {
+  public int serialize(ByteBuffer buffer, int offset) {
+    buffer.position(offset);
     // name
-    /*buffer.put(name_.getBytes(), offset, name_.length());
-    offset += name_.length();
-    buffer.put(offset, (byte) ',');
-    offset += 1;*/
-
     buffer.put(name_.getBytes());
     buffer.put((byte) ',');
 
     // type
-    /*type_.serialize(buffer, offset);
-    offset += 1;
-    buffer.put(offset, (byte) ',');
-    offset += 1;*/
-
-    type_.serialize(buffer, 0);
+    type_.serialize(buffer);
     buffer.put((byte) ',');
 
     // primary
-    /*buffer.put(Byte.toString(primary_).getBytes(), offset, 1);
-    offset += 1;
-    buffer.put(offset, (byte) ',');
-    offset += 1;*/
-
     buffer.put(primary_);
 
     // nullable
-    /*buffer.put(Byte.toString(nullable_).getBytes(), offset, 1);
-    offset += 1;
-    buffer.put(offset, (byte) ',');
-    offset += 1;*/
-
     buffer.put(nullable_);
 
     // maxLength
@@ -95,6 +76,10 @@ public class Column implements Comparable<Column> {
 
     // offset
     buffer.putInt(offset_);
+
+    int retv = buffer.position();
+    buffer.clear();
+    return retv;
   }
 
   // calculate next ','
@@ -109,7 +94,6 @@ public class Column implements Comparable<Column> {
   // deserialize from ByteBuffer
   // WARNING: this method will change offset
   public static Pair<Column, Integer> deserialize(ByteBuffer buffer, Integer offset) {
-
     // name
     int length = nextComma(buffer, offset);
     String name = new String(buffer.array(), offset, length);
@@ -163,6 +147,18 @@ public class Column implements Comparable<Column> {
 
   public int getMaxLength() {
     return maxLength_;
+  }
+
+  public int getColMetaSize() {
+    return name_.getBytes().length
+        + 1 // comma
+        + type_.getTypeSize()
+        + 1 // comma
+        + 1
+        + 1
+        + 4
+        + 4 // meta info
+        + 1; // ;
   }
 
   public int getOffset() {

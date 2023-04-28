@@ -6,6 +6,7 @@ import cn.edu.thssdb.query.QueryTable;
 import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+// a database is typically a file, and it stores its metadata in a catalog table
 public class Database {
 
   private String name;
