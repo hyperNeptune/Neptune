@@ -1,5 +1,7 @@
 package cn.edu.thssdb.type;
 
+import cn.edu.thssdb.utils.Global;
+
 import java.nio.ByteBuffer;
 
 // StringType produces VarCharType, and VarCharType produces StringValue.
@@ -19,6 +21,11 @@ public class StringType extends Type {
   @Override
   public int getTypeSize() {
     throw new RuntimeException("StringType.getTypeSize() should not be called");
+  }
+
+  @Override
+  public int getTypeCodeSize() {
+    return Global.INT_SIZE + 1;
   }
 
   @Override

@@ -22,6 +22,11 @@ public class LongType extends Type {
   }
 
   @Override
+  public int getTypeCodeSize() {
+    return 1;
+  }
+
+  @Override
   public String toString() {
     return "long";
   }

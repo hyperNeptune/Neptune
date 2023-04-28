@@ -40,4 +40,9 @@ public class IntType extends Type {
   public int getTypeSize() {
     return Global.INT_SIZE;
   }
+
+  @Override
+  public int getTypeCodeSize() {
+    return 1;
+  }
 }

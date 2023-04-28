@@ -22,6 +22,11 @@ public class DoubleType extends Type {
   }
 
   @Override
+  public int getTypeCodeSize() {
+    return 1;
+  }
+
+  @Override
   public String toString() {
     return "double";
   }

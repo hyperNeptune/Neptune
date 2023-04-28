@@ -152,7 +152,7 @@ public class Column implements Comparable<Column> {
   public int getColMetaSize() {
     return name_.getBytes().length
         + 1 // comma
-        + type_.getTypeSize()
+        + type_.getTypeCodeSize()
         + 1 // comma
         + 1
         + 1

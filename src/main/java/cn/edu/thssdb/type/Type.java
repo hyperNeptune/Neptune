@@ -15,6 +15,8 @@ public abstract class Type {
 
   public abstract int getTypeSize();
 
+  public abstract int getTypeCodeSize();
+
   // toString
   @Override
   public abstract String toString();
