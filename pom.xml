@@ -99,6 +99,50 @@
       </plugin>
 
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+            <execution>
+              <id>server</id>
+                <phase>package</phase>
+                <goals>
+                <goal>single</goal>
+                </goals>
+              <configuration>
+                <descriptorRefs>
+                  <descriptorRef>jar-with-dependencies</descriptorRef>
+                </descriptorRefs>
+                <finalName>server</finalName>
+                <archive>
+                  <manifest>
+                    <mainClass>cn.edu.thssdb.server.ThssDB</mainClass>
+                  </manifest>
+                </archive>
+              </configuration>
+            </execution>
+          <execution>
+            <id>client</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+              <finalName>client</finalName>
+              <archive>
+                <manifest>
+                  <mainClass>cn.edu.thssdb.client.Client</mainClass>
+                </manifest>
+              </archive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
 
         <groupId>org.apache.thrift.tools</groupId>
         <artifactId>maven-thrift-plugin</artifactId>
