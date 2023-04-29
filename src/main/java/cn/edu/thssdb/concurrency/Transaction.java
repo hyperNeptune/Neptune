@@ -1,4 +1,3 @@
 package cn.edu.thssdb.concurrency;
 
-public class Transaction {
-}
+public class Transaction {}

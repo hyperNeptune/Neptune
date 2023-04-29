@@ -1,6 +1,9 @@
 package cn.edu.thssdb.service;
 
 import cn.edu.thssdb.buffer.BufferPoolManager;
+import cn.edu.thssdb.buffer.LRUReplacer;
+import cn.edu.thssdb.buffer.ReplaceAlgorithm;
+import cn.edu.thssdb.concurrency.Transaction;
 import cn.edu.thssdb.concurrency.TransactionManager;
 import cn.edu.thssdb.execution.ExecutionEngine;
 import cn.edu.thssdb.execution.plan.LogicalGenerator;
@@ -23,6 +26,8 @@ import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.StatusUtil;
 import org.apache.thrift.TException;
 
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,6 +43,16 @@ public class HyperNeptuneInstance implements IService.Iface {
   private LogManager logManager_;
   private static final String builtinCommandIndicator = "㵘";
 
+  public HyperNeptuneInstance(String db_file_name) throws Exception {
+    diskManager_ = new DiskManager(Paths.get(db_file_name));
+    ReplaceAlgorithm replaceAlgorithm = new LRUReplacer(Global.DEFAULT_BUFFER_SIZE);
+    bufferPoolManager_ =
+        new BufferPoolManager(Global.DEFAULT_BUFFER_SIZE, diskManager_, replaceAlgorithm);
+    cdi_ = CimetiereDesInnocents.createCDI(bufferPoolManager_);
+    LogManager logManager_ = new LogManager(diskManager_);
+    transactionManager_ = new TransactionManager(logManager_);
+    executionEngine_ = new ExecutionEngine(curDB_, transactionManager_);
+  }
 
   @Override
   public GetTimeResp getTime(GetTimeReq req) throws TException {
@@ -58,12 +73,46 @@ public class HyperNeptuneInstance implements IService.Iface {
   }
 
   @Override
-  public ExecuteStatementResp executeStatement(ExecuteStatementReq req) throws TException {
+  public ExecuteStatementResp executeStatement(ExecuteStatementReq req) {
     if (req.getSessionId() < 0) {
       return new ExecuteStatementResp(
           StatusUtil.fail("You are not connected. Please connect first."), false);
     }
-    // TODO: implement execution logic
+    try {
+      Transaction txn = transactionManager_.begin();
+      ExecuteStatementResp resp = executeStatementTxn(req);
+      transactionManager_.commit(txn);
+      return resp;
+    } catch (Exception e) {
+      e.printStackTrace();
+      return new ExecuteStatementResp(StatusUtil.fail(e.getMessage()), false);
+    }
+  }
+
+  public ExecuteStatementResp executeStatementTxn(ExecuteStatementReq req) throws Exception {
+    if (req.getSessionId() < 0) {
+      throw new Exception("You are not connected. Please connect first.");
+    }
+    // handle builtin commands
+    if (req.statement.startsWith(builtinCommandIndicator)) {
+      if (req.statement.equals("㵘dt")) {
+        return showDatabases();
+      }
+      if (req.statement.startsWith("㵘create")) {
+        return createDatabase(req.statement);
+      }
+      if (req.statement.startsWith("㵘drop")) {
+        return dropDatabase(req.statement);
+      }
+      if (req.statement.startsWith("㵘use")) {
+        return useDatabase(req.statement);
+      }
+      if (req.statement.startsWith("㵘help")) {
+        return help();
+      }
+      throw new Exception("Invalid builtin command.");
+    }
+
     LogicalPlan plan = LogicalGenerator.generate(req.statement);
     switch (plan.getType()) {
       case CREATE_DB:
@@ -72,5 +121,85 @@ public class HyperNeptuneInstance implements IService.Iface {
       default:
     }
     return null;
+  }
+
+  // built-in
+  private ExecuteStatementResp showDatabases() {
+    if (cdi_.listDatabases().length == 0) {
+      throw new RuntimeException("No database exists.");
+    }
+    ExecuteStatementResp resp = new ExecuteStatementResp();
+    resp.setHasResult(true);
+    resp.setStatus(StatusUtil.success());
+    resp.setColumnsList(Arrays.asList("database_name"));
+    resp.setRowList(Arrays.asList(Arrays.asList(cdi_.listDatabases())));
+    return resp;
+  }
+
+  private ExecuteStatementResp createDatabase(String statement) {
+    String[] tokens = statement.split("\\s+");
+    if (tokens.length != 3) {
+      return new ExecuteStatementResp(StatusUtil.fail("Invalid statement."), false);
+    }
+    String dbName = tokens[2];
+    if (cdi_.hasDatabase(dbName)) {
+      return new ExecuteStatementResp(StatusUtil.fail("Database already exists."), false);
+    }
+    try {
+      cdi_.createDatabase(dbName);
+    } catch (Exception e) {
+      return new ExecuteStatementResp(StatusUtil.fail("Failed to create database."), false);
+    }
+    return new ExecuteStatementResp(StatusUtil.success(), false);
+  }
+
+  private ExecuteStatementResp dropDatabase(String statement) {
+    String[] tokens = statement.split("\\s+");
+    if (tokens.length != 3) {
+      return new ExecuteStatementResp(StatusUtil.fail("Invalid statement."), false);
+    }
+    String dbName = tokens[2];
+    if (!cdi_.hasDatabase(dbName)) {
+      return new ExecuteStatementResp(StatusUtil.fail("Database does not exist."), false);
+    }
+    try {
+      cdi_.dropDatabase(dbName);
+    } catch (Exception e) {
+      return new ExecuteStatementResp(StatusUtil.fail("Failed to drop database."), false);
+    }
+    return new ExecuteStatementResp(StatusUtil.success(), false);
+  }
+
+  private ExecuteStatementResp useDatabase(String statement) {
+    String[] tokens = statement.split("\\s+");
+    if (tokens.length != 3) {
+      return new ExecuteStatementResp(StatusUtil.fail("Invalid statement."), false);
+    }
+    String dbName = tokens[2];
+    if (!cdi_.hasDatabase(dbName)) {
+      return new ExecuteStatementResp(StatusUtil.fail("Database does not exist."), false);
+    }
+    try {
+      curDB_ = cdi_.useDatabase(dbName);
+      executionEngine_.setCatalog(curDB_);
+    } catch (Exception e) {
+      return new ExecuteStatementResp(StatusUtil.fail("Failed to use database."), false);
+    }
+    return new ExecuteStatementResp(StatusUtil.success(), false);
+  }
+
+  private ExecuteStatementResp help() {
+    ExecuteStatementResp resp = new ExecuteStatementResp();
+    resp.setHasResult(true);
+    resp.setStatus(StatusUtil.success());
+    resp.setColumnsList(Arrays.asList("command", "description"));
+    resp.setRowList(
+        Arrays.asList(
+            Arrays.asList("㵘dt", "show all databases"),
+            Arrays.asList("㵘create database <db_name>", "create a database"),
+            Arrays.asList("㵘drop database <db_name>", "drop a database"),
+            Arrays.asList("㵘use database <db_name>", "use a database"),
+            Arrays.asList("㵘help", "show this help message")));
+    return resp;
   }
 }

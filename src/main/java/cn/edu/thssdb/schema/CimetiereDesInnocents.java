@@ -82,6 +82,7 @@ public class CimetiereDesInnocents {
       String databaseName = (String) tuple.getValue(metaKamiSchema_, 0).getValue();
       if (databaseName.equals(tableName)) {
         iter.remove();
+        databases_.remove(tableName);
         break;
       }
     }
@@ -93,5 +94,9 @@ public class CimetiereDesInnocents {
 
   public String[] listDatabases() {
     return databases_.keySet().toArray(new String[0]);
+  }
+
+  public boolean hasDatabase(String dbName) {
+    return databases_.containsKey(dbName);
   }
 }

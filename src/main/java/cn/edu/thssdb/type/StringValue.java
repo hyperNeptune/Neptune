@@ -47,10 +47,12 @@ public class StringValue extends Value<StringType.VarCharType, String> {
     }
     return value_;
   }
+
   static String trimZeros(String str) {
     int pos = str.indexOf(0);
     return pos == -1 ? str : str.substring(0, pos);
   }
+
   @Override
   public String getValue() {
     return trimZeros(value_);

@@ -134,6 +134,7 @@ public abstract class Table {
   private class TableIterator implements Iterator<Pair<Tuple, RID>> {
     private Iterator<Pair<Tuple, Integer>> tablePageIterator_;
     private TablePage tablePage_;
+    private RID curRid_;
 
     public TableIterator() throws Exception {
       tablePage_ = getTablePage(firstPageId_);
@@ -168,7 +169,13 @@ public abstract class Table {
     @Override
     public Pair<Tuple, RID> next() {
       Pair<Tuple, Integer> pti = tablePageIterator_.next();
-      return new Pair<>(pti.left, new RID(tablePage_.getPageId(), pti.right));
+      curRid_ = new RID(tablePage_.getPageId(), pti.right);
+      return new Pair<>(pti.left, curRid_);
+    }
+
+    @Override
+    public void remove() {
+      tablePage_.deleteTuple(curRid_.getSlotId());
     }
   }
 

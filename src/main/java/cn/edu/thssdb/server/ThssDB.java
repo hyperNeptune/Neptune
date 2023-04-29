@@ -21,13 +21,13 @@ public class ThssDB {
 
   public static ThssDB INSTANCE = new ThssDB();
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Exception {
     ThssDB server = ThssDB.INSTANCE;
     server.start();
   }
 
-  private void start() {
-    handler = new HyperNeptuneInstance();
+  private void start() throws Exception {
+    handler = new HyperNeptuneInstance("tmp.db");
     processor = new IService.Processor(handler);
     Runnable setup = () -> setUp(processor);
     new Thread(setup).start();
@@ -43,5 +43,4 @@ public class ThssDB {
       logger.error(e.getMessage());
     }
   }
-
 }
