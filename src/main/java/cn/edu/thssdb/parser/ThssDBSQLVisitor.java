@@ -18,8 +18,8 @@
  */
 package cn.edu.thssdb.parser;
 
-import cn.edu.thssdb.plan.LogicalPlan;
-import cn.edu.thssdb.plan.impl.CreateDatabasePlan;
+import cn.edu.thssdb.execution.plan.LogicalPlan;
+import cn.edu.thssdb.execution.plan.impl.CreateDatabasePlan;
 import cn.edu.thssdb.sql.SQLBaseVisitor;
 import cn.edu.thssdb.sql.SQLParser;
 

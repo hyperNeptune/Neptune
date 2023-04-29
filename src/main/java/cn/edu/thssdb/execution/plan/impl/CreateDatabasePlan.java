@@ -16,9 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package cn.edu.thssdb.plan.impl;
+package cn.edu.thssdb.execution.plan.impl;
 
-import cn.edu.thssdb.plan.LogicalPlan;
+import cn.edu.thssdb.execution.plan.LogicalPlan;
 
 public class CreateDatabasePlan extends LogicalPlan {
 

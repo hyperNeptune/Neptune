@@ -1,4 +1,4 @@
-package cn.edu.thssdb.plan;
+package cn.edu.thssdb.execution.plan;
 
 public abstract class LogicalPlan {
 

@@ -1,8 +1,7 @@
 package cn.edu.thssdb.server;
 
 import cn.edu.thssdb.rpc.thrift.IService;
-import cn.edu.thssdb.schema.CimetiereDesInnocents;
-import cn.edu.thssdb.service.IServiceHandler;
+import cn.edu.thssdb.service.HyperNeptuneInstance;
 import cn.edu.thssdb.utils.Global;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TThreadPoolServer;
@@ -15,24 +14,20 @@ public class ThssDB {
 
   private static final Logger logger = LoggerFactory.getLogger(ThssDB.class);
 
-  private static IServiceHandler handler;
+  private static HyperNeptuneInstance handler;
   private static IService.Processor processor;
   private static TServerSocket transport;
   private static TServer server;
 
-  private CimetiereDesInnocents cdi;
-
-  public static ThssDB getInstance() {
-    return ThssDBHolder.INSTANCE;
-  }
+  public static ThssDB INSTANCE = new ThssDB();
 
   public static void main(String[] args) {
-    ThssDB server = ThssDB.getInstance();
+    ThssDB server = ThssDB.INSTANCE;
     server.start();
   }
 
   private void start() {
-    handler = new IServiceHandler();
+    handler = new HyperNeptuneInstance();
     processor = new IService.Processor(handler);
     Runnable setup = () -> setUp(processor);
     new Thread(setup).start();
@@ -49,9 +44,4 @@ public class ThssDB {
     }
   }
 
-  private static class ThssDBHolder {
-    private static final ThssDB INSTANCE = new ThssDB();
-
-    private ThssDBHolder() {}
-  }
 }

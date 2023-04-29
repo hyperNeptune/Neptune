@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package cn.edu.thssdb.plan;
+package cn.edu.thssdb.execution.plan;
 
 import cn.edu.thssdb.parser.SQLParseError;
 import cn.edu.thssdb.parser.ThssDBSQLVisitor;
