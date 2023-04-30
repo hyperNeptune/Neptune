@@ -23,21 +23,26 @@ import cn.edu.thssdb.parser.expression.ColumnRefExpression;
 import cn.edu.thssdb.parser.expression.ConstantExpression;
 import cn.edu.thssdb.parser.expression.Expression;
 import cn.edu.thssdb.parser.statement.*;
+import cn.edu.thssdb.parser.tableBinder.JoinTableBinder;
+import cn.edu.thssdb.parser.tableBinder.RegularTableBinder;
+import cn.edu.thssdb.parser.tableBinder.TableBinder;
 import cn.edu.thssdb.schema.*;
 import cn.edu.thssdb.sql.SQLBaseVisitor;
 import cn.edu.thssdb.sql.SQLLexer;
 import cn.edu.thssdb.sql.SQLParser;
-import cn.edu.thssdb.type.FloatValue;
-import cn.edu.thssdb.type.IntValue;
-import cn.edu.thssdb.type.StringValue;
-import cn.edu.thssdb.type.Type;
+import cn.edu.thssdb.storage.Tuple;
+import cn.edu.thssdb.type.*;
+import cn.edu.thssdb.utils.Pair;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 // our binder is a visitor that walks the parse tree and builds a statement tree
 // planner walks the statement tree and turn SQL statements into actual operations
@@ -190,6 +195,10 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
     return new ShowTbStatement(catalog.getTableInfo(ctx.tableName().getText()));
   }
 
+  /*
+   *  methods for parsing expressions
+   * */
+
   private Expression visitConstants(SQLParser.LiteralValueContext ctx) {
     if (ctx.FLOAT_LITERAL() != null) {
       return new ConstantExpression(
@@ -294,43 +303,121 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
 
   @Override
   public Statement visitDropTableStmt(SQLParser.DropTableStmtContext ctx) {
-    return super.visitDropTableStmt(ctx);
-  }
-
-  @Override
-  public Statement visitShowTableStmt(SQLParser.ShowTableStmtContext ctx) {
-    return super.visitShowTableStmt(ctx);
+    return new DropTbStatement(ctx.tableName().getText());
   }
 
   @Override
   public Statement visitInsertStmt(SQLParser.InsertStmtContext ctx) {
-    return super.visitInsertStmt(ctx);
-  }
+    if (ctx.columnName().size() != ctx.valueEntry().size()) {
+      throw new RuntimeException("column size not match");
+    }
+    TableInfo tableInfo = catalog.getTableInfo(ctx.tableName().getText());
+    if (tableInfo == null) {
+      throw new RuntimeException("table not found");
+    }
+    List<String> columnNames = new ArrayList<>();
+    List<Expression> values = new ArrayList<>();
+    Tuple[] tuples;
+    int[] uOrderToOrder = new int[tableInfo.getSchema().getColNum()];
+    Arrays.fill(uOrderToOrder, -1);
+    for (int i = 0; i < ctx.columnName().size(); i++) {
+      String columnName = ctx.columnName(i).getText();
+      int order = tableInfo.getSchema().getColumnOrder(columnName);
+      if (order == -1) {
+        throw new RuntimeException("column not found");
+      }
+      uOrderToOrder[order] = i;
+    }
 
-  @Override
-  public Statement visitValueEntry(SQLParser.ValueEntryContext ctx) {
-    return super.visitValueEntry(ctx);
+    // construct values
+    tuples = new Tuple[ctx.valueEntry().size()];
+    for (int i = 0; i < ctx.valueEntry().size(); i++) {
+      Value<?, ?>[] tupleValues = new Value[tableInfo.getSchema().getColNum()];
+      // fill them with null, if column is nullable
+      for (int j = 0; j < tableInfo.getSchema().getColNum(); j++) {
+        if (tableInfo.getSchema().getColumn(j).Nullable() == 1) {
+          tupleValues[j] = tableInfo.getSchema().getColumn(j).getType().getNullValue();
+        }
+      }
+      for (int j = 0; j < ctx.valueEntry(i).literalValue().size(); j++) {
+        Expression expression = visitConstants(ctx.valueEntry(i).literalValue(j));
+        if (expression instanceof ConstantExpression) {
+          tupleValues[uOrderToOrder[j]] = expression.getValue();
+        } else {
+          throw new RuntimeException("not constant expression");
+        }
+      }
+      // if we still have null values, that is bad
+      for (int j = 0; j < tableInfo.getSchema().getColNum(); j++) {
+        if (tupleValues[j] == null) {
+          throw new RuntimeException("insert: null value unexpected");
+        }
+      }
+      tuples[i] = new Tuple(tupleValues, tableInfo.getSchema());
+    }
+    return new InsertStatement(tableInfo, tuples);
   }
 
   @Override
   public Statement visitSelectStmt(SQLParser.SelectStmtContext ctx) {
-    return super.visitSelectStmt(ctx);
+    boolean distinct = ctx.K_DISTINCT() != null;
+    List<ColumnRefExpression> selectList = new ArrayList<>();
+    for (SQLParser.ResultColumnContext rcctx : ctx.resultColumn()) {
+      selectList.add(new ColumnRefExpression(rcctx.getText()));
+    }
+    TableBinder tableBinder = visitTableQLS(ctx.tableQuery());
+    Expression where = null;
+    if (ctx.expression() != null) {
+      where = visitBinaryExpr(ctx.expression());
+    }
+    return new SelectStatement(
+        distinct, selectList.toArray(new ColumnRefExpression[0]), where, tableBinder);
+  }
+
+  private TableBinder visitTableQLS(List<SQLParser.TableQueryContext> ctx) {
+    if (ctx.size() == 1) {
+      return visitTableQ(ctx.get(0));
+    }
+    // cross product
+    TableBinder left = visitTableQ(ctx.get(0));
+    TableBinder right = visitTableQLS(ctx.subList(1, ctx.size()));
+    Expression on = visitBinaryExpr(ctx.get(0).expression());
+    return new JoinTableBinder(left, right, on);
+  }
+
+  private TableBinder visitTableQ(SQLParser.TableQueryContext ctx) {
+    // no join, regular tablebind
+    if (ctx.K_JOIN() == null) {
+      TableInfo tableInfo = catalog.getTableInfo(ctx.tableName().get(0).getText());
+      if (tableInfo == null) {
+        throw new RuntimeException("table not found");
+      }
+      return new RegularTableBinder(tableInfo);
+    }
+    // join
+    TableBinder left =
+        new RegularTableBinder(catalog.getTableInfo(ctx.tableName().get(0).getText()));
+    TableBinder right =
+        new RegularTableBinder(catalog.getTableInfo(ctx.tableName().get(1).getText()));
+    Expression on = visitBinaryExpr(ctx.expression());
+    return new JoinTableBinder(left, right, on);
   }
 
   @Override
   public Statement visitUpdateStmt(SQLParser.UpdateStmtContext ctx) {
-    return super.visitUpdateStmt(ctx);
+    TableInfo tableInfo = catalog.getTableInfo(ctx.tableName().getText());
+    if (tableInfo == null) {
+      throw new RuntimeException("table not found");
+    }
+    // build pair
+    String s = ctx.columnName().getText();
+    Expression expression = visitBinaryExpr(ctx.expression().get(0));
+    Pair<String, Expression> pair = new Pair<>(s, expression);
+    // if exists where
+    Expression where = null;
+    if (ctx.expression().size() == 2) {
+      where = visitBinaryExpr(ctx.expression().get(1));
+    }
+    return new UpdateStatement(tableInfo, pair, where);
   }
-
-  @Override
-  public Statement visitResultColumn(SQLParser.ResultColumnContext ctx) {
-    return super.visitResultColumn(ctx);
-  }
-
-  @Override
-  public Statement visitTableQuery(SQLParser.TableQueryContext ctx) {
-    return super.visitTableQuery(ctx);
-  }
-
-  // TODO: parser to more logical plan
 }

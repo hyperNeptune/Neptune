@@ -1,3 +1,15 @@
 package cn.edu.thssdb.parser.statement;
 
-public class DropTbStatement {}
+public class DropTbStatement extends Statement {
+  public String tableName;
+
+  public DropTbStatement(String tableName) {
+    super(StatementType.DROP_TABLE);
+    this.tableName = tableName;
+  }
+
+  @Override
+  public StatementType getType() {
+    return StatementType.DROP_TABLE;
+  }
+}

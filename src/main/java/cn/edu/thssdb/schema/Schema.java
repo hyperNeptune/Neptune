@@ -69,6 +69,16 @@ public class Schema implements Serializable {
     return schemaSize_;
   }
 
+  // get column index by its name
+  public int getColumnOrder(String name) {
+    for (int i = 0; i < columns_.length; i++) {
+      if (columns_[i].getName().equals(name)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   public int getOffset(String name) {
     for (Column column : columns_) {
       if (column.getName().equals(name)) {

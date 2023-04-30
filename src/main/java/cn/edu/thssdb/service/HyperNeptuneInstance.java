@@ -111,6 +111,9 @@ public class HyperNeptuneInstance implements IService.Iface {
       if (req.statement.startsWith("㵘use database")) {
         return useDatabase(req.statement);
       }
+      if (req.statement.startsWith("㵘show tables")) {
+        return showTables(req.statement);
+      }
       if (req.statement.startsWith("㵘help")) {
         return help();
       }
@@ -139,6 +142,28 @@ public class HyperNeptuneInstance implements IService.Iface {
   }
 
   // built-in
+  private ExecuteStatementResp showTables(String statement) {
+    String[] tokens = statement.split("\\s+");
+    if (tokens.length != 3) {
+      return new ExecuteStatementResp(StatusUtil.fail("Invalid statement."), false);
+    }
+    Catalog catalog = cdi_.useDatabase(tokens[2]);
+    if (catalog == null) {
+      return new ExecuteStatementResp(StatusUtil.fail("Database does not exist."), false);
+    }
+    ExecuteStatementResp resp = new ExecuteStatementResp();
+    resp.setHasResult(true);
+    resp.setStatus(StatusUtil.success());
+    resp.setColumnsList(Arrays.asList("table_name"));
+    List<List<String>> rows = new ArrayList<>();
+    String[] tableNames = catalog.list();
+    for (String tableName : tableNames) {
+      rows.add(Arrays.asList(tableName));
+    }
+    resp.setRowList(rows);
+    return resp;
+  }
+
   private ExecuteStatementResp showDatabases() {
     if (cdi_.listDatabases().length == 0) {
       throw new RuntimeException("No database exists.");

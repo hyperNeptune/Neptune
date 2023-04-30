@@ -1,5 +1,7 @@
 package cn.edu.thssdb.parser.expression;
 
+import cn.edu.thssdb.type.Value;
+
 public class BinaryExpression extends Expression {
   private Expression left;
   private Expression right;
@@ -22,6 +24,11 @@ public class BinaryExpression extends Expression {
 
   public String getOp() {
     return op;
+  }
+
+  @Override
+  public Value<?, ?> getValue() {
+    return null;
   }
 
   @Override

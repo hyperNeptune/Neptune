@@ -1,5 +1,7 @@
 package cn.edu.thssdb.parser.expression;
 
+import cn.edu.thssdb.type.Value;
+
 public class ColumnRefExpression extends Expression {
   // TODO: null table => current table, need to be filled in other modules
   private String table;
@@ -28,6 +30,11 @@ public class ColumnRefExpression extends Expression {
 
   public String getColumn() {
     return column;
+  }
+
+  @Override
+  public Value<?, ?> getValue() {
+    return null;
   }
 
   @Override

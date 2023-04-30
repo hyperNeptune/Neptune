@@ -16,7 +16,6 @@ sqlStmt :
     | dropTableStmt
     | insertStmt
     | selectStmt
-    | showTableStmt
     | showMetaStmt
     | updateStmt ;
 
@@ -33,9 +32,6 @@ deleteStmt :
 dropTableStmt :
     K_DROP K_TABLE ( K_IF K_EXISTS )? tableName ;
 
-showTableStmt :
-    K_SHOW K_DATABASE databaseName;
-
 insertStmt :
     K_INSERT K_INTO tableName ( '(' columnName ( ',' columnName )* ')' )?
         K_VALUES valueEntry ( ',' valueEntry )* ;
@@ -43,9 +39,10 @@ insertStmt :
 valueEntry :
     '(' literalValue ( ',' literalValue )* ')' ;
 
+// if no table name, we can use database as a calculator
 selectStmt :
     K_SELECT ( K_DISTINCT | K_ALL )? resultColumn ( ',' resultColumn )*
-        K_FROM tableQuery ( ',' tableQuery )* ( K_WHERE expression )? ;
+        (K_FROM tableQuery ( ',' tableQuery )*)? ( K_WHERE expression )? ;
 
 updateStmt :
     K_UPDATE tableName
@@ -59,7 +56,7 @@ typeName :
     | T_LONG
     | T_FLOAT
     | T_DOUBLE
-    | T_STRING '(' NUMERIC_LITERAL ')' ;
+    | T_STRING '(' INTEGER_LITERAL ')' ;
 
 columnConstraint :
     K_PRIMARY K_KEY

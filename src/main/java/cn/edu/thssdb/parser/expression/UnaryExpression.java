@@ -1,5 +1,7 @@
 package cn.edu.thssdb.parser.expression;
 
+import cn.edu.thssdb.type.Value;
+
 public class UnaryExpression extends Expression {
   private Expression expression;
   private String op;
@@ -16,6 +18,11 @@ public class UnaryExpression extends Expression {
 
   public String getOp() {
     return op;
+  }
+
+  @Override
+  public Value<?, ?> getValue() {
+    return null;
   }
 
   @Override

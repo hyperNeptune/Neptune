@@ -1,6 +1,8 @@
 package cn.edu.thssdb.parser.expression;
 
-public class Expression {
+import cn.edu.thssdb.type.Value;
+
+public abstract class Expression {
   private final ExpressionType type;
 
   public Expression(ExpressionType type) {
@@ -14,6 +16,8 @@ public class Expression {
   public ExpressionType getType() {
     return type;
   }
+
+  public abstract Value<?, ?> getValue();
 
   @Override
   public String toString() {
