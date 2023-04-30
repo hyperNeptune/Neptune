@@ -8,6 +8,8 @@ import cn.edu.thssdb.concurrency.TransactionManager;
 import cn.edu.thssdb.execution.ExecutionEngine;
 import cn.edu.thssdb.execution.plan.LogicalGenerator;
 import cn.edu.thssdb.execution.plan.LogicalPlan;
+import cn.edu.thssdb.parser.Binder;
+import cn.edu.thssdb.parser.statement.Statement;
 import cn.edu.thssdb.recovery.LogManager;
 import cn.edu.thssdb.rpc.thrift.ConnectReq;
 import cn.edu.thssdb.rpc.thrift.ConnectResp;
@@ -27,8 +29,10 @@ import cn.edu.thssdb.utils.StatusUtil;
 import org.apache.thrift.TException;
 
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class HyperNeptuneInstance implements IService.Iface {
@@ -95,16 +99,16 @@ public class HyperNeptuneInstance implements IService.Iface {
     }
     // handle builtin commands
     if (req.statement.startsWith(builtinCommandIndicator)) {
-      if (req.statement.equals("㵘dt")) {
+      if (req.statement.equals("㵘show databases")) {
         return showDatabases();
       }
-      if (req.statement.startsWith("㵘create")) {
+      if (req.statement.startsWith("㵘create database")) {
         return createDatabase(req.statement);
       }
-      if (req.statement.startsWith("㵘drop")) {
+      if (req.statement.startsWith("㵘drop database")) {
         return dropDatabase(req.statement);
       }
-      if (req.statement.startsWith("㵘use")) {
+      if (req.statement.startsWith("㵘use database")) {
         return useDatabase(req.statement);
       }
       if (req.statement.startsWith("㵘help")) {
@@ -113,13 +117,24 @@ public class HyperNeptuneInstance implements IService.Iface {
       throw new Exception("Invalid builtin command.");
     }
 
-    LogicalPlan plan = LogicalGenerator.generate(req.statement);
-    switch (plan.getType()) {
-      case CREATE_DB:
-        System.out.println("[DEBUG] " + plan);
-        return new ExecuteStatementResp(StatusUtil.success(), false);
-      default:
+    // we finally came to the real SQL statements
+    if (curDB_ == null) {
+      throw new Exception("No database selected.");
     }
+
+    Binder binder = new Binder(curDB_);
+    binder.parseAndBind(req.statement);
+    for (Statement stmt : binder) {
+      // do something
+      LogicalPlan plan = LogicalGenerator.generate(stmt);
+      switch (plan.getType()) {
+        case CREATE_DB:
+          System.out.println("[DEBUG] " + plan);
+          return new ExecuteStatementResp(StatusUtil.success(), false);
+        default:
+      }
+    }
+
     return null;
   }
 
@@ -132,7 +147,12 @@ public class HyperNeptuneInstance implements IService.Iface {
     resp.setHasResult(true);
     resp.setStatus(StatusUtil.success());
     resp.setColumnsList(Arrays.asList("database_name"));
-    resp.setRowList(Arrays.asList(Arrays.asList(cdi_.listDatabases())));
+    List<List<String>> rows = new ArrayList<>();
+    String[] dbNames = cdi_.listDatabases();
+    for (String dbName : dbNames) {
+      rows.add(Arrays.asList(dbName));
+    }
+    resp.setRowList(rows);
     return resp;
   }
 
@@ -195,7 +215,7 @@ public class HyperNeptuneInstance implements IService.Iface {
     resp.setColumnsList(Arrays.asList("command", "description"));
     resp.setRowList(
         Arrays.asList(
-            Arrays.asList("㵘dt", "show all databases"),
+            Arrays.asList("㵘show databases", "show all databases"),
             Arrays.asList("㵘create database <db_name>", "create a database"),
             Arrays.asList("㵘drop database <db_name>", "drop a database"),
             Arrays.asList("㵘use database <db_name>", "use a database"),

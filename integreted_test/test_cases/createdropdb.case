@@ -1,0 +1,10 @@
+connect 1 1;
+㵘create database test
+㵘create database testaa
+㵘create database testaaaa
+㵘create database testaaaaa
+㵘show databases
+㵘drop database testaaaa
+㵘show databases
+㵘drop database testaaaaa
+㵘show databases

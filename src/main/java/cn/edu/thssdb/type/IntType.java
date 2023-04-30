@@ -8,6 +8,7 @@ public class IntType extends Type {
   public static IntType INSTANCE = new IntType();
 
   static {
+    Type.TYPEDICT.put("int", INSTANCE);
     Type.TYPES.put(INSTANCE.getTypeCode(), INSTANCE);
   }
 

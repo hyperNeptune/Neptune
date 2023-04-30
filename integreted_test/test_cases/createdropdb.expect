@@ -1,0 +1,36 @@
+----------------------
+Starting ThssDB Client
+----------------------
+ThssDB2023>The statement is executed successfully.
+It costs 44 ms.
+ThssDB2023>The statement is executed successfully.
+It costs 34 ms.
+ThssDB2023>The statement is executed successfully.
+It costs 2 ms.
+ThssDB2023>The statement is executed successfully.
+It costs 2 ms.
+ThssDB2023>The statement is executed successfully.
+It costs 1 ms.
+ThssDB2023>database_name
+----------------------------------------------------------------
+testaaaaa
+test
+testaa
+testaaaa
+It costs 4 ms.
+ThssDB2023>The statement is executed successfully.
+It costs 3 ms.
+ThssDB2023>database_name
+----------------------------------------------------------------
+testaaaaa
+test
+testaa
+It costs 1 ms.
+ThssDB2023>The statement is executed successfully.
+It costs 1 ms.
+ThssDB2023>database_name
+----------------------------------------------------------------
+test
+testaa
+It costs 1 ms.
+ThssDB2023>

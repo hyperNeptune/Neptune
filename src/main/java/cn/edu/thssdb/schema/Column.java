@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
 public class Column implements Comparable<Column> {
   private final String name_;
   private final Type type_;
-  private final byte primary_;
+  private byte primary_;
   private final byte nullable_;
   private final int maxLength_;
   // offset in a tuple
@@ -33,6 +33,14 @@ public class Column implements Comparable<Column> {
   @Override
   public int compareTo(Column e) {
     return name_.compareTo(e.name_);
+  }
+
+  public void setPrimary(byte primary) {
+    this.primary_ = primary;
+  }
+
+  public byte getPrimary() {
+    return primary_;
   }
 
   // human-readable string with variable names

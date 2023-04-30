@@ -8,6 +8,7 @@ public class LongType extends Type {
   public static LongType INSTANCE = new LongType();
 
   static {
+    Type.TYPEDICT.put("long", INSTANCE);
     Type.TYPES.put(INSTANCE.getTypeCode(), INSTANCE);
   }
 

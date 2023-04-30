@@ -9,6 +9,7 @@ import java.util.Map;
 // type can be an abstract factory
 public abstract class Type {
   public static Map<Byte, Type> TYPES = new HashMap<>();
+  public static Map<String, Type> TYPEDICT = new HashMap<>();
 
   // get type code
   public abstract byte getTypeCode();

@@ -10,6 +10,7 @@ public class StringType extends Type {
   public static StringType INSTANCE = new StringType();
 
   static {
+    Type.TYPEDICT.put("string", INSTANCE);
     Type.TYPES.put(INSTANCE.getTypeCode(), INSTANCE);
   }
 

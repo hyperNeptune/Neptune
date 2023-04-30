@@ -12,36 +12,13 @@ sqlStmtList :
 
 sqlStmt :
     createTableStmt
-    | createDbStmt
-    | createUserStmt
-    | dropDbStmt
-    | dropUserStmt
     | deleteStmt
     | dropTableStmt
     | insertStmt
     | selectStmt
-    | createViewStmt
-    | dropViewStmt
-    | grantStmt
-    | revokeStmt
-    | useDbStmt
-    | showDbStmt
     | showTableStmt
     | showMetaStmt
-    | quitStmt
     | updateStmt ;
-
-createDbStmt :
-    K_CREATE K_DATABASE databaseName ;
-
-dropDbStmt :
-    K_DROP K_DATABASE ( K_IF K_EXISTS )? databaseName ;
-
-createUserStmt :
-    K_CREATE K_USER userName K_IDENTIFIED K_BY password ;
-
-dropUserStmt :
-    K_DROP K_USER ( K_IF K_EXISTS )? userName ;
 
 createTableStmt :
     K_CREATE K_TABLE tableName
@@ -50,26 +27,11 @@ createTableStmt :
 showMetaStmt :
     K_SHOW K_TABLE tableName ;
 
-grantStmt :
-    K_GRANT authLevel ( ',' authLevel )* K_ON tableName K_TO userName ;
-
-revokeStmt :
-    K_REVOKE authLevel ( ',' authLevel )* K_ON tableName K_FROM userName ;
-
-useDbStmt :
-    K_USE databaseName;
-
 deleteStmt :
-    K_DELETE K_FROM tableName ( K_WHERE multipleCondition )? ;
+    K_DELETE K_FROM tableName ( K_WHERE expression )? ;
 
 dropTableStmt :
     K_DROP K_TABLE ( K_IF K_EXISTS )? tableName ;
-
-showDbStmt :
-    K_SHOW K_DATABASES;
-
-quitStmt :
-    K_QUIT;
 
 showTableStmt :
     K_SHOW K_DATABASE databaseName;
@@ -83,17 +45,11 @@ valueEntry :
 
 selectStmt :
     K_SELECT ( K_DISTINCT | K_ALL )? resultColumn ( ',' resultColumn )*
-        K_FROM tableQuery ( ',' tableQuery )* ( K_WHERE multipleCondition )? ;
-
-createViewStmt :
-    K_CREATE K_VIEW viewName K_AS selectStmt ;
-
-dropViewStmt :
-    K_DROP K_VIEW ( K_IF K_EXISTS )? viewName ;
+        K_FROM tableQuery ( ',' tableQuery )* ( K_WHERE expression )? ;
 
 updateStmt :
     K_UPDATE tableName
-        K_SET columnName '=' expression ( K_WHERE multipleCondition )? ;
+        K_SET columnName '=' expression ( K_WHERE expression )? ;
 
 columnDef :
     columnName typeName columnConstraint* ;
@@ -109,26 +65,20 @@ columnConstraint :
     K_PRIMARY K_KEY
     | K_NOT K_NULL ;
 
-multipleCondition :
-    condition
-    | multipleCondition AND multipleCondition
-    | multipleCondition OR multipleCondition ;
-
-condition :
-    expression comparator expression;
-
-comparer :
-    columnFullName
-    | literalValue ;
-
 comparator :
     EQ | NE | LE | GE | LT | GT ;
 
+primaryExpression :
+    literalValue
+    | columnFullName
+    | '(' expression ')';
+
 expression :
-    comparer
+    primaryExpression
     | expression ( MUL | DIV ) expression
     | expression ( ADD | SUB ) expression
-    | '(' expression ')';
+    | expression comparator expression
+    | expression (AND | OR) expression;
 
 tableConstraint :
     K_PRIMARY K_KEY '(' columnName (',' columnName)* ')' ;
@@ -140,13 +90,11 @@ resultColumn
 
 tableQuery :
     tableName
-    | tableName ( K_JOIN tableName )+ K_ON multipleCondition ;
-
-authLevel :
-    K_SELECT | K_INSERT | K_UPDATE | K_DELETE | K_DROP ;
+    | tableName ( K_JOIN tableName )+ K_ON expression ;
 
 literalValue :
-    NUMERIC_LITERAL
+    INTEGER_LITERAL
+    | FLOAT_LITERAL
     | STRING_LITERAL
     | K_NULL ;
 
@@ -159,17 +107,9 @@ databaseName :
 tableName :
     IDENTIFIER ;
 
-userName :
-    IDENTIFIER ;
-
 columnName :
     IDENTIFIER ;
 
-viewName :
-    IDENTIFIER;
-
-password :
-    STRING_LITERAL ;
 
 EQ : '=';
 NE : '<>';
@@ -233,8 +173,10 @@ K_WHERE : W H E R E;
 IDENTIFIER :
     [a-zA-Z_] [a-zA-Z_0-9]* ;
 
-NUMERIC_LITERAL :
-    DIGIT+ EXPONENT?
+INTEGER_LITERAL :
+    DIGIT+ EXPONENT?;
+
+FLOAT_LITERAL :
     | DIGIT+ '.' DIGIT* EXPONENT?
     | '.' DIGIT+ EXPONENT? ;
 

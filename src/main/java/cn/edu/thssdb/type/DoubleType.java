@@ -9,6 +9,7 @@ public class DoubleType extends Type {
 
   static {
     Type.TYPES.put(INSTANCE.getTypeCode(), INSTANCE);
+    Type.TYPEDICT.put("double", INSTANCE);
   }
 
   @Override

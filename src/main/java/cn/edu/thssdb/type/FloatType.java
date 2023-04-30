@@ -8,6 +8,7 @@ public class FloatType extends Type {
   public static FloatType INSTANCE = new FloatType();
 
   static {
+    Type.TYPEDICT.put("float", INSTANCE);
     Type.TYPES.put(INSTANCE.getTypeCode(), INSTANCE);
   }
 

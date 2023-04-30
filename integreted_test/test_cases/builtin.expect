@@ -5,7 +5,7 @@ ThssDB2023>The statement is executed successfully.
 It costs 36 ms.
 ThssDB2023>command, description
 ----------------------------------------------------------------
-㵘dt, show all databases
+㵘show databases, show all databases
 㵘create database <db_name>, create a database
 㵘drop database <db_name>, drop a database
 㵘use database <db_name>, use a database

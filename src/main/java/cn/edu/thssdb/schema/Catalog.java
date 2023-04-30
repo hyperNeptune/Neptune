@@ -118,6 +118,15 @@ public class Catalog {
     return tableSchemas_.get(tableName);
   }
 
+  public TableInfo getTableInfo(String tableName) {
+    Table table = getTable(tableName);
+    Schema schema = getTableSchema(tableName);
+    if (table == null || schema == null) {
+      return null;
+    }
+    return new TableInfo(tableName, schema, table);
+  }
+
   public int getFirstPageId() {
     return catalogTable_.getFirstPageId();
   }
