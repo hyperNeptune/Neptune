@@ -1,7 +1,7 @@
 package cn.edu.thssdb.parser.statement;
 
 public class DropTbStatement extends Statement {
-  public String tableName;
+  public final String tableName;
 
   public DropTbStatement(String tableName) {
     super(StatementType.DROP_TABLE);

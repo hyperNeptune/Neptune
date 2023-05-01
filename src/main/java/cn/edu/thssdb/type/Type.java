@@ -33,6 +33,14 @@ public abstract class Type {
 
   public abstract Value<? extends Type, ?> getNullValue();
 
+  public Value<? extends Type, ?> castFrom(Value<? extends Type, ?> value) {
+    // identical casting, ignore
+    if (value.getType().getTypeCode() == getTypeCode()) {
+      return value;
+    }
+    throw new RuntimeException("this casting is not allowed.");
+  }
+
   // deserialization
   public abstract Value<? extends Type, ?> deserializeValue(ByteBuffer buffer, int offset);
 

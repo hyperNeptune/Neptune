@@ -4,9 +4,6 @@ grammar SQL;
 package cn.edu.thssdb.sql;
 }
 
-parse :
-    sqlStmtList ;
-
 sqlStmtList :
     ';'* sqlStmt ( ';'+ sqlStmt )* ';'* ;
 

@@ -46,4 +46,12 @@ public class FloatType extends Type {
   protected Type customDeserialize(ByteBuffer buffer, int offset) {
     return this;
   }
+
+  @Override
+  public Value<? extends Type, ?> castFrom(Value<? extends Type, ?> value) {
+    if (value.getType().getTypeCode() == BuiltinTypeCode.DOUBLE.value) {
+      return new FloatValue(((DoubleValue) value).getValue().floatValue());
+    }
+    return super.castFrom(value);
+  }
 }

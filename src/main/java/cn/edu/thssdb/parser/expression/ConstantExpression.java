@@ -3,6 +3,8 @@ package cn.edu.thssdb.parser.expression;
 import cn.edu.thssdb.type.Type;
 import cn.edu.thssdb.type.Value;
 
+// TODO: how to spawn null value from constant expression?
+// maybe **refactor** null value. null can be a separated singleton class.
 public class ConstantExpression extends Expression {
   private Value<? extends Type, ?> value;
 

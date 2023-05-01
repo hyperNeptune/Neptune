@@ -40,7 +40,6 @@ import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -72,7 +71,7 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
     ParseTree tree;
     try {
       // STAGE 1: try with simpler/faster SLL(*)
-      tree = parser1.sqlStmt();
+      tree = parser1.sqlStmtList();
       // if we get here, there was no syntax error and SLL(*) was enough;
       // there is no need to try full LL(*)
     } catch (Exception ex) {
@@ -90,7 +89,7 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
       parser2.addErrorListener(SQLParseError.INSTANCE);
 
       // STAGE 2: parser with full LL(*)
-      tree = parser2.sqlStmt();
+      tree = parser2.sqlStmtList();
       // if we get here, it's LL not SLL
     }
     return tree;
@@ -137,7 +136,15 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
   private Column bindColumnDef(SQLParser.ColumnDefContext ctx) {
     String columnName = ctx.columnName().getText();
     String typeName = ctx.typeName().getText().toLowerCase();
-    Type type = Type.TYPEDICT.get(typeName);
+    // special for string
+    Type type;
+    if (typeName.startsWith("string") && Type.TYPEDICT.get(typeName) == null) {
+      type =
+          StringType.getVarCharType(Integer.parseInt(ctx.typeName().INTEGER_LITERAL().getText()));
+      Type.TYPEDICT.put(typeName, type);
+    } else {
+      type = Type.TYPEDICT.get(typeName);
+    }
     byte nullable = 1;
     byte primary = 0;
     byte maxlenth = (byte) type.getTypeSize();
@@ -152,7 +159,7 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
         }
       }
     }
-    return new Column(columnName, type, nullable, primary, maxlenth, 0);
+    return new Column(columnName, type, primary, nullable, maxlenth, 0);
   }
 
   @Override
@@ -200,15 +207,22 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
    * */
 
   private Expression visitConstants(SQLParser.LiteralValueContext ctx) {
+    // parse use the biggest type, and exception will be thrown if overflow
+    // when casting to smaller type
     if (ctx.FLOAT_LITERAL() != null) {
       return new ConstantExpression(
-          new FloatValue(Float.parseFloat(ctx.FLOAT_LITERAL().getText())));
+          new DoubleValue(Double.parseDouble(ctx.FLOAT_LITERAL().getText())));
     } else if (ctx.INTEGER_LITERAL() != null) {
-      return new ConstantExpression(
-          new IntValue(Integer.parseInt(ctx.INTEGER_LITERAL().getText())));
+      return new ConstantExpression(new LongValue(Long.parseLong(ctx.INTEGER_LITERAL().getText())));
     } else if (ctx.STRING_LITERAL() != null) {
-      return new ConstantExpression(
-          new StringValue(ctx.STRING_LITERAL().getText(), ctx.STRING_LITERAL().getText().length()));
+      // trim leading and trailing '
+      String text = ctx.STRING_LITERAL().getText();
+      // assert it has leading and trailing '
+      assert text.length() >= 2;
+      assert text.charAt(0) == '\'';
+      assert text.charAt(text.length() - 1) == '\'';
+      text = text.substring(1, text.length() - 1);
+      return new ConstantExpression(new StringValue(text, text.length()));
     } else if (ctx.K_NULL() != null) {
       return new ConstantExpression(null);
     } else {
@@ -217,12 +231,10 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
   }
 
   private Expression visitColumnRef(SQLParser.ColumnFullNameContext ctx) {
-    String tableName = ctx.tableName().getText();
-    String columnName = ctx.columnName().getText();
-    if (tableName == null) {
-      return new ColumnRefExpression(columnName);
+    if (ctx.tableName() == null) {
+      return new ColumnRefExpression(ctx.columnName().getText());
     } else {
-      return new ColumnRefExpression(tableName, columnName);
+      return new ColumnRefExpression(ctx.tableName().getText(), ctx.columnName().getText());
     }
   }
 
@@ -308,7 +320,7 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
 
   @Override
   public Statement visitInsertStmt(SQLParser.InsertStmtContext ctx) {
-    if (ctx.columnName().size() != ctx.valueEntry().size()) {
+    if (ctx.columnName().size() != ctx.valueEntry().size() && ctx.columnName().size() != 0) {
       throw new RuntimeException("column size not match");
     }
     TableInfo tableInfo = catalog.getTableInfo(ctx.tableName().getText());
@@ -319,7 +331,10 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
     List<Expression> values = new ArrayList<>();
     Tuple[] tuples;
     int[] uOrderToOrder = new int[tableInfo.getSchema().getColNum()];
-    Arrays.fill(uOrderToOrder, -1);
+    // identical mapping
+    for (int i = 0; i < tableInfo.getSchema().getColNum(); i++) {
+      uOrderToOrder[i] = i;
+    }
     for (int i = 0; i < ctx.columnName().size(); i++) {
       String columnName = ctx.columnName(i).getText();
       int order = tableInfo.getSchema().getColumnOrder(columnName);
@@ -342,7 +357,12 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
       for (int j = 0; j < ctx.valueEntry(i).literalValue().size(); j++) {
         Expression expression = visitConstants(ctx.valueEntry(i).literalValue(j));
         if (expression instanceof ConstantExpression) {
-          tupleValues[uOrderToOrder[j]] = expression.getValue();
+          tupleValues[uOrderToOrder[j]] =
+              tableInfo
+                  .getSchema()
+                  .getColumn(uOrderToOrder[j])
+                  .getType()
+                  .castFrom(expression.getValue());
         } else {
           throw new RuntimeException("not constant expression");
         }
@@ -387,7 +407,7 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
 
   private TableBinder visitTableQ(SQLParser.TableQueryContext ctx) {
     // no join, regular tablebind
-    if (ctx.K_JOIN() == null) {
+    if (ctx.K_JOIN().size() == 0) {
       TableInfo tableInfo = catalog.getTableInfo(ctx.tableName().get(0).getText());
       if (tableInfo == null) {
         throw new RuntimeException("table not found");

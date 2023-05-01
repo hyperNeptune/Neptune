@@ -9,6 +9,9 @@ import cn.edu.thssdb.execution.ExecutionEngine;
 import cn.edu.thssdb.execution.plan.LogicalGenerator;
 import cn.edu.thssdb.execution.plan.LogicalPlan;
 import cn.edu.thssdb.parser.Binder;
+import cn.edu.thssdb.parser.statement.CreateTbStatement;
+import cn.edu.thssdb.parser.statement.DropTbStatement;
+import cn.edu.thssdb.parser.statement.ShowTbStatement;
 import cn.edu.thssdb.parser.statement.Statement;
 import cn.edu.thssdb.recovery.LogManager;
 import cn.edu.thssdb.rpc.thrift.ConnectReq;
@@ -21,9 +24,9 @@ import cn.edu.thssdb.rpc.thrift.GetTimeReq;
 import cn.edu.thssdb.rpc.thrift.GetTimeResp;
 import cn.edu.thssdb.rpc.thrift.IService;
 import cn.edu.thssdb.rpc.thrift.Status;
-import cn.edu.thssdb.schema.Catalog;
-import cn.edu.thssdb.schema.CimetiereDesInnocents;
+import cn.edu.thssdb.schema.*;
 import cn.edu.thssdb.storage.DiskManager;
+import cn.edu.thssdb.type.*;
 import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.StatusUtil;
 import org.apache.thrift.TException;
@@ -56,6 +59,13 @@ public class HyperNeptuneInstance implements IService.Iface {
     LogManager logManager_ = new LogManager(diskManager_);
     transactionManager_ = new TransactionManager(logManager_);
     executionEngine_ = new ExecutionEngine(curDB_, transactionManager_);
+    // init type system
+    StringType st = new StringType();
+    IntType it = new IntType();
+    DoubleType dt = new DoubleType();
+    FloatType ft = new FloatType();
+    LongType lt = new LongType();
+    // discard them
   }
 
   @Override
@@ -93,6 +103,7 @@ public class HyperNeptuneInstance implements IService.Iface {
     }
   }
 
+  // we need this because we cannot afford to shut down the whole system when sql statement errs
   public ExecuteStatementResp executeStatementTxn(ExecuteStatementReq req) throws Exception {
     if (req.getSessionId() < 0) {
       throw new Exception("You are not connected. Please connect first.");
@@ -128,20 +139,58 @@ public class HyperNeptuneInstance implements IService.Iface {
     Binder binder = new Binder(curDB_);
     binder.parseAndBind(req.statement);
     for (Statement stmt : binder) {
-      // do something
-      LogicalPlan plan = LogicalGenerator.generate(stmt);
-      switch (plan.getType()) {
-        case CREATE_DB:
-          System.out.println("[DEBUG] " + plan);
+      // some statements can be executed directly
+      // they are:
+      // - create table
+      // - drop table
+      // - show meta
+      // they are handled by this switch-case clause
+      switch (stmt.getType()) {
+        case CREATE_TABLE:
+          CreateTbStatement createTableStatement = (CreateTbStatement) stmt;
+          curDB_.createTable(
+              createTableStatement.getTableName(), new Schema(createTableStatement.getColumns()));
           return new ExecuteStatementResp(StatusUtil.success(), false);
+        case DROP_TABLE:
+          DropTbStatement dropTableStatement = (DropTbStatement) stmt;
+          curDB_.dropTable(dropTableStatement.tableName);
+          return new ExecuteStatementResp(StatusUtil.success(), false);
+        case SHOW_TABLES:
+          ShowTbStatement showMetaStatement = (ShowTbStatement) stmt;
+          return showTable(showMetaStatement.getTableInfo());
         default:
+          break;
       }
+
+      // other statements need to be executed by the execution engine
+      // insert
+      // select
+      // update
+      // delete
+      LogicalPlan plan = LogicalGenerator.generate(stmt);
     }
 
     return null;
   }
 
   // built-in
+  private ExecuteStatementResp showTable(TableInfo tableInfo) {
+    ExecuteStatementResp resp = new ExecuteStatementResp();
+    resp.setHasResult(true);
+    resp.setStatus(StatusUtil.success());
+    resp.setColumnsList(Arrays.asList("column_name", "type", "primary_key"));
+    List<List<String>> rows = new ArrayList<>();
+    for (Column columnInfo : tableInfo.getSchema().getColumns()) {
+      rows.add(
+          Arrays.asList(
+              columnInfo.getName(),
+              columnInfo.getType().toString(),
+              columnInfo.isPrimary() == 1 ? "true" : "false"));
+    }
+    resp.setRowList(rows);
+    return resp;
+  }
+
   private ExecuteStatementResp showTables(String statement) {
     String[] tokens = statement.split("\\s+");
     if (tokens.length != 3) {

@@ -17,7 +17,7 @@ public class UpdateStatement extends Statement {
     this.where_ = where;
   }
 
-  public TableInfo getTableInfo() {
+  public TableInfo getTable() {
     return tableInfo_;
   }
 

@@ -1,3 +1,4 @@
+// This piece of code is (maybe not even) only guaranteed to work on Linux, and is not portable at all.
 #include <dirent.h>
 #include <fcntl.h>
 #include <signal.h>
