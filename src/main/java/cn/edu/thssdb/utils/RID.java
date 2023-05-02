@@ -51,4 +51,10 @@ public class RID implements java.io.Serializable {
   public String toString() {
     return String.format("RID(%d, %d)", pageId_, slotId_);
   }
+
+  // copy assign
+  public void assign(RID rid) {
+    pageId_ = rid.pageId_;
+    slotId_ = rid.slotId_;
+  }
 }

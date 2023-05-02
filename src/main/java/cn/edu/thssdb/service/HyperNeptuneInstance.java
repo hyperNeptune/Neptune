@@ -5,9 +5,9 @@ import cn.edu.thssdb.buffer.LRUReplacer;
 import cn.edu.thssdb.buffer.ReplaceAlgorithm;
 import cn.edu.thssdb.concurrency.Transaction;
 import cn.edu.thssdb.concurrency.TransactionManager;
+import cn.edu.thssdb.execution.ExecContext;
 import cn.edu.thssdb.execution.ExecutionEngine;
-import cn.edu.thssdb.execution.plan.LogicalGenerator;
-import cn.edu.thssdb.execution.plan.LogicalPlan;
+import cn.edu.thssdb.execution.Planner;
 import cn.edu.thssdb.parser.Binder;
 import cn.edu.thssdb.parser.statement.CreateTbStatement;
 import cn.edu.thssdb.parser.statement.DropTbStatement;
@@ -26,6 +26,7 @@ import cn.edu.thssdb.rpc.thrift.IService;
 import cn.edu.thssdb.rpc.thrift.Status;
 import cn.edu.thssdb.schema.*;
 import cn.edu.thssdb.storage.DiskManager;
+import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.type.*;
 import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.StatusUtil;
@@ -94,7 +95,7 @@ public class HyperNeptuneInstance implements IService.Iface {
     }
     try {
       Transaction txn = transactionManager_.begin();
-      ExecuteStatementResp resp = executeStatementTxn(req);
+      ExecuteStatementResp resp = executeStatementTxn(req, txn);
       transactionManager_.commit(txn);
       return resp;
     } catch (Exception e) {
@@ -104,31 +105,13 @@ public class HyperNeptuneInstance implements IService.Iface {
   }
 
   // we need this because we cannot afford to shut down the whole system when sql statement errs
-  public ExecuteStatementResp executeStatementTxn(ExecuteStatementReq req) throws Exception {
+  public ExecuteStatementResp executeStatementTxn(ExecuteStatementReq req, Transaction txn) throws Exception {
     if (req.getSessionId() < 0) {
       throw new Exception("You are not connected. Please connect first.");
     }
     // handle builtin commands
     if (req.statement.startsWith(builtinCommandIndicator)) {
-      if (req.statement.equals("㵘show databases")) {
-        return showDatabases();
-      }
-      if (req.statement.startsWith("㵘create database")) {
-        return createDatabase(req.statement);
-      }
-      if (req.statement.startsWith("㵘drop database")) {
-        return dropDatabase(req.statement);
-      }
-      if (req.statement.startsWith("㵘use database")) {
-        return useDatabase(req.statement);
-      }
-      if (req.statement.startsWith("㵘show tables")) {
-        return showTables(req.statement);
-      }
-      if (req.statement.startsWith("㵘help")) {
-        return help();
-      }
-      throw new Exception("Invalid builtin command.");
+      return executeBuiltinStatement(req);
     }
 
     // we finally came to the real SQL statements
@@ -167,10 +150,43 @@ public class HyperNeptuneInstance implements IService.Iface {
       // select
       // update
       // delete
-      LogicalPlan plan = LogicalGenerator.generate(stmt);
+      Planner planner = new Planner(curDB_);
+      planner.plan(stmt);
+      ExecContext execContext = makeExecContext(txn);
+      List<Tuple> result = executionEngine_.execute(planner.getPlan(), execContext);
+      Schema sh = planner.getPlan().getOutputSchema();
+
+      // output results
     }
 
     return null;
+  }
+
+  private ExecContext makeExecContext(Transaction txn) {
+    ExecContext execContext = new ExecContext(txn, curDB_, bufferPoolManager_);
+    return execContext;
+  }
+
+  private ExecuteStatementResp executeBuiltinStatement(ExecuteStatementReq req) throws Exception {
+    if (req.statement.equals("㵘show databases")) {
+      return showDatabases();
+    }
+    if (req.statement.startsWith("㵘create database")) {
+      return createDatabase(req.statement);
+    }
+    if (req.statement.startsWith("㵘drop database")) {
+      return dropDatabase(req.statement);
+    }
+    if (req.statement.startsWith("㵘use database")) {
+      return useDatabase(req.statement);
+    }
+    if (req.statement.startsWith("㵘show tables")) {
+      return showTables(req.statement);
+    }
+    if (req.statement.startsWith("㵘help")) {
+      return help();
+    }
+    throw new Exception("Invalid builtin command.");
   }
 
   // built-in

@@ -129,4 +129,13 @@ public class Tuple {
   public int getSize() {
     return size_;
   }
+
+  // copy assign
+  public void copyAssign(Tuple tuple) {
+    size_ = tuple.size_;
+    data_ = tuple.data_;
+    bitmapSize_ = tuple.bitmapSize_;
+    bitmap_ = tuple.bitmap_;
+    dataSize_ = tuple.dataSize_;
+  }
 }
