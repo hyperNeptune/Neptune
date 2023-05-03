@@ -18,7 +18,7 @@ public class Tuple {
   public static final int FIX_HDR_SIZE = 8;
 
   // default constructor
-  private Tuple() {
+  public Tuple() {
     size_ = 0;
     data_ = null;
   }

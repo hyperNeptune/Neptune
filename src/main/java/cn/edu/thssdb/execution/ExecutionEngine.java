@@ -20,7 +20,7 @@ public class ExecutionEngine {
     catalog_ = catalog;
   }
 
-  public List<Tuple> execute(Executor exec, ExecContext ctx) {
+  public List<Tuple> execute(Executor exec) {
     return null;
   }
 }

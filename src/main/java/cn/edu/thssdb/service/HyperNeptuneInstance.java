@@ -105,7 +105,8 @@ public class HyperNeptuneInstance implements IService.Iface {
   }
 
   // we need this because we cannot afford to shut down the whole system when sql statement errs
-  public ExecuteStatementResp executeStatementTxn(ExecuteStatementReq req, Transaction txn) throws Exception {
+  public ExecuteStatementResp executeStatementTxn(ExecuteStatementReq req, Transaction txn)
+      throws Exception {
     if (req.getSessionId() < 0) {
       throw new Exception("You are not connected. Please connect first.");
     }
@@ -150,10 +151,10 @@ public class HyperNeptuneInstance implements IService.Iface {
       // select
       // update
       // delete
-      Planner planner = new Planner(curDB_);
-      planner.plan(stmt);
       ExecContext execContext = makeExecContext(txn);
-      List<Tuple> result = executionEngine_.execute(planner.getPlan(), execContext);
+      Planner planner = new Planner(curDB_, execContext);
+      planner.plan(stmt);
+      List<Tuple> result = executionEngine_.execute(planner.getPlan());
       Schema sh = planner.getPlan().getOutputSchema();
 
       // output results

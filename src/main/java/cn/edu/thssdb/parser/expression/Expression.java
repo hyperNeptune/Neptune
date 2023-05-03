@@ -1,5 +1,7 @@
 package cn.edu.thssdb.parser.expression;
 
+import cn.edu.thssdb.schema.Schema;
+import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.type.Value;
 
 public abstract class Expression {
@@ -17,10 +19,12 @@ public abstract class Expression {
     return type;
   }
 
-  public abstract Value<?, ?> getValue();
+  // ColumnRefExpr must need tuple, schema. and others should have it
+  // for passing it to bottom col ref expr.
+  public abstract Value<?, ?> evaluation(Tuple tuple, Schema schema);
 
   @Override
   public String toString() {
-    return "You should not expecting this";
+    return "Expr: You should not expecting this";
   }
 }

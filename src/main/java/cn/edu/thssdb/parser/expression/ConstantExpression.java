@@ -1,5 +1,7 @@
 package cn.edu.thssdb.parser.expression;
 
+import cn.edu.thssdb.schema.Schema;
+import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.type.Type;
 import cn.edu.thssdb.type.Value;
 
@@ -13,7 +15,7 @@ public class ConstantExpression extends Expression {
     this.value = value;
   }
 
-  public Value<? extends Type, ?> getValue() {
+  public Value<? extends Type, ?> evaluation(Tuple tuple, Schema schema) {
     return value;
   }
 

@@ -1,4 +1,3 @@
 package cn.edu.thssdb.execution.executor;
 
-public class deleteExecutor {
-}
+public class deleteExecutor {}

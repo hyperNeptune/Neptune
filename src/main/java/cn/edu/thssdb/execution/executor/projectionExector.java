@@ -1,4 +1,3 @@
 package cn.edu.thssdb.execution.executor;
 
-public class projectionExector {
-}
+public class projectionExector {}

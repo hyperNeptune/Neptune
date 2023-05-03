@@ -24,6 +24,7 @@ public class Global {
   public static final int LONG_SIZE = 8;
   public static final int FLOAT_SIZE = 4;
   public static final int DOUBLE_SIZE = 8;
+  public static final int BOOL_SIZE = 1;
 
   // MAX & MIN value for types
   public static final int INT_MAX = 2147483647;

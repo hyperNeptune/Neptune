@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 public class DoubleType extends Type {
   public static DoubleType INSTANCE = new DoubleType();
 
+  // actually I don't know when this code will be executed.
   static {
     Type.TYPES.put(INSTANCE.getTypeCode(), INSTANCE);
     Type.TYPEDICT.put("double", INSTANCE);

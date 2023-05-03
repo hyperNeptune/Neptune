@@ -1,5 +1,7 @@
 package cn.edu.thssdb.parser.expression;
 
+import cn.edu.thssdb.schema.Schema;
+import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.type.Value;
 
 public class UnaryExpression extends Expression {
@@ -21,7 +23,7 @@ public class UnaryExpression extends Expression {
   }
 
   @Override
-  public Value<?, ?> getValue() {
+  public Value<?, ?> evaluation(Tuple tuple, Schema schema) {
     return null;
   }
 

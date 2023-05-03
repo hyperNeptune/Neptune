@@ -9,3 +9,5 @@ ThssDB 2023
 3. concurrency control
 
 4. crash recovery
+
+> codes entwined, a project woven anew each class, every thread a part of the whole.

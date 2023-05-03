@@ -1,4 +1,3 @@
 package cn.edu.thssdb.execution.executor;
 
-public class InsertExecutor {
-}
+public class InsertExecutor {}

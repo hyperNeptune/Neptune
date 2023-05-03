@@ -115,7 +115,7 @@ public class ParserTest {
       UpdateStatement updateStatement = (UpdateStatement) statement;
       assertEquals(updateStatement.getTable().getTableName(), "testp");
       assertEquals(updateStatement.getUpdateValue().left, "col2");
-      assertEquals(updateStatement.getUpdateValue().right.getValue().getValue(), 4.0);
+      assertEquals(updateStatement.getUpdateValue().right.evaluation(null, null).getValue(), 4.0);
     }
   }
 

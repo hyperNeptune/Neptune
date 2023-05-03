@@ -30,6 +30,16 @@ public class Column implements Comparable<Column> {
     this.offset_ = offset;
   }
 
+  // copy constructor
+  public Column(Column c) {
+    this.name_ = c.name_;
+    this.type_ = c.type_;
+    this.primary_ = c.primary_;
+    this.nullable_ = c.nullable_;
+    this.maxLength_ = c.maxLength_;
+    this.offset_ = c.offset_;
+  }
+
   @Override
   public int compareTo(Column e) {
     return name_.compareTo(e.name_);

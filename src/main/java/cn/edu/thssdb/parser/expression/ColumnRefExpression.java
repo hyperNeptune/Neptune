@@ -1,5 +1,7 @@
 package cn.edu.thssdb.parser.expression;
 
+import cn.edu.thssdb.schema.Schema;
+import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.type.Value;
 
 public class ColumnRefExpression extends Expression {
@@ -33,8 +35,12 @@ public class ColumnRefExpression extends Expression {
   }
 
   @Override
-  public Value<?, ?> getValue() {
-    return null;
+  public Value<?, ?> evaluation(Tuple tuple, Schema schema) {
+    if (tuple == null || schema == null) {
+      throw new RuntimeException("ColumnRefExpr: Tuple or schema is null!");
+    }
+    // find value
+    return tuple.getValue(schema, schema.getColumnOrder(column));
   }
 
   @Override

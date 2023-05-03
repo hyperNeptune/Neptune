@@ -1,5 +1,6 @@
 package cn.edu.thssdb.execution.executor;
 
+import cn.edu.thssdb.execution.ExecContext;
 import cn.edu.thssdb.schema.Schema;
 import cn.edu.thssdb.schema.TableInfo;
 import cn.edu.thssdb.storage.Tuple;
@@ -15,7 +16,8 @@ public class SeqScanExecutor extends Executor {
   RID rid_;
   Iterator<Pair<Tuple, RID>> iterator_;
 
-  public SeqScanExecutor(TableInfo tableInfo) {
+  public SeqScanExecutor(TableInfo tableInfo, ExecContext ctx) {
+    super(ctx);
     this.tableInfo_ = tableInfo;
     this.schema_ = tableInfo.getSchema();
   }

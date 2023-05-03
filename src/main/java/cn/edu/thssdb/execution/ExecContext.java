@@ -27,5 +27,4 @@ public class ExecContext {
   public BufferPoolManager getBufferPoolManager() {
     return bpm_;
   }
-
 }

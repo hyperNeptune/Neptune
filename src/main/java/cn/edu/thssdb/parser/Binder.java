@@ -362,7 +362,7 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
                   .getSchema()
                   .getColumn(uOrderToOrder[j])
                   .getType()
-                  .castFrom(expression.getValue());
+                  .castFrom(expression.evaluation(null, null));
         } else {
           throw new RuntimeException("not constant expression");
         }
