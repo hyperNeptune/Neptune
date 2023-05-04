@@ -5,6 +5,9 @@ import cn.edu.thssdb.parser.expression.Expression;
 import cn.edu.thssdb.schema.Column;
 import cn.edu.thssdb.schema.Schema;
 import cn.edu.thssdb.storage.Tuple;
+import cn.edu.thssdb.type.BoolType;
+import cn.edu.thssdb.type.BoolValue;
+import cn.edu.thssdb.type.Value;
 import cn.edu.thssdb.utils.RID;
 
 public class nestedLoopJoinExecutor extends Executor {
@@ -52,6 +55,8 @@ public class nestedLoopJoinExecutor extends Executor {
   public void init() throws Exception {
     left_.init();
     right_.init();
+    // why java sucks #2
+    // we need to allocate new objects by new, otherwise it will just be a null reference
     left_tuple_ = new Tuple();
     right_tuple_ = new Tuple();
     cur_tuple_ = new Tuple();
@@ -61,10 +66,35 @@ public class nestedLoopJoinExecutor extends Executor {
     left_.next(left_tuple_, left_rid_);
   }
 
+  // for this, RID is meaningless, because we are generating non-exist tuples.
   @Override
   public boolean next(Tuple tuple, RID rid) throws Exception {
-    // why java sucks #2
-    // we need to allocate new objects by new, otherwise it will just be a null reference
+    do {
+      if (!getNextPair()) {
+        return false;
+      }
+      // join the two tuples
+      // TODO: allow same column name, different table
+      // get values
+      Value[] valueJoin = new Value[joinOutSchema_.getColNum()];
+      int idx_join;
+      Schema left_schema = left_.getOutputSchema();
+      Schema right_schema = right_.getOutputSchema();
+      for (idx_join = 0; idx_join < left_schema.getColNum(); idx_join++) {
+        valueJoin[idx_join] = left_tuple_.getValue(left_schema, idx_join);
+      }
+      for (int idx = 0; idx < right_schema.getColNum(); idx++) {
+        valueJoin[idx_join++] = right_tuple_.getValue(right_schema, idx);
+      }
+      cur_tuple_ = new Tuple(valueJoin, joinOutSchema_);
+    } while (!((BoolValue) BoolType.INSTANCE.castFrom(on_.evaluation(cur_tuple_, joinOutSchema_)))
+        .getValue());
+
+    tuple.copyAssign(cur_tuple_);
+    return true;
+  }
+
+  private boolean getNextPair() throws Exception {
     if (!right_.next(right_tuple_, right_rid_)) {
       // end or left should + 1
       if (!left_.next(left_tuple_, left_rid_)) {
@@ -73,9 +103,7 @@ public class nestedLoopJoinExecutor extends Executor {
       right_.init();
       right_.next(right_tuple_, right_rid_);
     }
-    // join the two tuples
-
-    return false;
+    return true;
   }
 
   @Override

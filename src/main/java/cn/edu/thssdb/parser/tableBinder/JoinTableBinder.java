@@ -18,4 +18,16 @@ public class JoinTableBinder extends TableBinder {
   public String toString() {
     return "JoinTableBinder{}";
   }
+
+  public TableBinder getLeft() {
+    return left;
+  }
+
+  public TableBinder getRight() {
+    return right;
+  }
+
+  public Expression getOn() {
+    return on;
+  }
 }

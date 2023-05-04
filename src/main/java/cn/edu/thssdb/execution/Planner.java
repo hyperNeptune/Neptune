@@ -1,10 +1,12 @@
 package cn.edu.thssdb.execution;
 
-import cn.edu.thssdb.execution.executor.Executor;
-import cn.edu.thssdb.execution.executor.SeqScanExecutor;
+import cn.edu.thssdb.execution.executor.*;
+import cn.edu.thssdb.parser.expression.ConstantExpression;
 import cn.edu.thssdb.parser.statement.*;
 import cn.edu.thssdb.parser.tableBinder.*;
 import cn.edu.thssdb.schema.Catalog;
+import cn.edu.thssdb.schema.TableInfo;
+import cn.edu.thssdb.type.BoolValue;
 
 public class Planner {
   private final Catalog catalog_;
@@ -37,26 +39,57 @@ public class Planner {
   }
 
   private Executor planUpdate(UpdateStatement stmt) {
-    return null;
+    // plan FROM
+    TableInfo tab = stmt.getTable();
+    if (tab == null) {
+      throw new RuntimeException("unreachable. table should not be null");
+    }
+    plan_ = new SeqScanExecutor(tab, ctx_);
+    // plan WHERE
+    if (stmt.getWhere() != null) {
+      plan_ = new filterExecutor(plan_, stmt.getWhere(), ctx_);
+    }
+    // plan SET
+    return new UpdateExecutor(ctx_, plan_, stmt.getUpdateValue(), tab);
   }
 
   private Executor planDelete(DeleteStatement stmt) {
-    return null;
+    // plan FROM
+    TableInfo tab = stmt.getTable();
+    if (tab == null) {
+      throw new RuntimeException("unreachable. table should not be null");
+    }
+    plan_ = new SeqScanExecutor(tab, ctx_);
+    // plan WHERE
+    if (stmt.getExpression() != null) {
+      plan_ = new filterExecutor(plan_, stmt.getExpression(), ctx_);
+    }
+    // plan DELETE
+    return plan_ = new deleteExecutor(ctx_, plan_, tab);
   }
 
   private Executor planInsert(InsertStatement stmt) {
-    return null;
+    return plan_ = new InsertExecutor(ctx_, stmt.getTable(), stmt.getTuple());
   }
 
   private Executor planSelect(SelectStatement stmt) {
     Executor plan = null;
     // plan FROM
     TableBinder tab = stmt.getFrom();
-    if (tab.getType() != TableBinderType.EMPTY) {
+    if (tab != null && tab.getType() != TableBinderType.EMPTY) {
       // an empty table binder means a calculator database
       plan = planTable(tab);
     }
-    return null;
+    // plan WHERE
+    if (stmt.getWhere() != null) {
+      plan = new filterExecutor(plan, stmt.getWhere(), ctx_);
+    }
+    // plan SELECT
+    if (stmt.getSelectList() == null) {
+      throw new RuntimeException("unreachable. select list should not be null");
+    }
+    plan = new projectionExecutor(ctx_, plan, stmt.getSelectList());
+    return plan_ = plan;
   }
 
   private Executor planTable(TableBinder tab) {
@@ -76,12 +109,16 @@ public class Planner {
   }
 
   private Executor planCrossTable(CrossTableBinder tab) {
-    return null;
+    Executor cross_left = planTable(tab.getLeft());
+    Executor cross_right = planTable(tab.getRight());
+    return new nestedLoopJoinExecutor(
+        cross_left, cross_right, new ConstantExpression(BoolValue.ALWAYS_TRUE), ctx_);
   }
 
   private Executor planJoinTable(JoinTableBinder tab) {
-
-    return null;
+    Executor join_left = planTable(tab.getLeft());
+    Executor join_right = planTable(tab.getRight());
+    return new nestedLoopJoinExecutor(join_left, join_right, tab.getOn(), ctx_);
   }
 
   private Executor planRegularTable(RegularTableBinder tab) {

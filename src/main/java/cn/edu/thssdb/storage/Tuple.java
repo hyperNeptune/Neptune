@@ -23,6 +23,15 @@ public class Tuple {
     data_ = null;
   }
 
+  // constructor by another tuple
+  public Tuple(Tuple tuple) {
+    size_ = tuple.size_;
+    data_ = tuple.data_;
+    bitmapSize_ = tuple.bitmapSize_;
+    bitmap_ = tuple.bitmap_;
+    dataSize_ = tuple.dataSize_;
+  }
+
   // constructor by values and schema
   public Tuple(Value<?, ?>[] values, Schema schema) {
     // 1. we calculate true size of tuple

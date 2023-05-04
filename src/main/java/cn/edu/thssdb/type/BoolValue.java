@@ -5,6 +5,9 @@ import java.nio.ByteBuffer;
 public class BoolValue extends Value<BoolType, Boolean> {
   boolean value_;
   public static final BoolValue NULL_VALUE = new BoolValue(true);
+  public static final BoolValue ALWAYS_TRUE = new BoolValue(true);
+  public static final BoolValue ALWAYS_FALSE = new BoolValue(false);
+  public static final BoolValue DEFAULT_VALUE = ALWAYS_FALSE;
 
   public BoolValue(boolean b) {
     super(BoolType.INSTANCE);
