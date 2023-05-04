@@ -45,7 +45,7 @@ public class StringValue extends Value<StringType.VarCharType, String> {
     if (isNull_) {
       return "null (string)";
     }
-    return value_;
+    return trimZeros(value_);
   }
 
   static String trimZeros(String str) {

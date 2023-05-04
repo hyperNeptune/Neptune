@@ -63,6 +63,7 @@ public class projectionExecutor extends Executor {
 
     // some columns
     Column[] columns = new Column[select_.length];
+    child_father_mapping = new int[select_.length];
     int idx = 0;
     for (Expression e : select_) {
       ColumnRefExpression cre = (ColumnRefExpression) e;
@@ -101,7 +102,7 @@ public class projectionExecutor extends Executor {
 
     // projection for regular rows
     Tuple childTuple = new Tuple();
-    if (!child_.next(tuple, rid)) {
+    if (!child_.next(childTuple, rid)) {
       return false;
     }
     Value[] values = new Value[outputSchema_.getColNum()];

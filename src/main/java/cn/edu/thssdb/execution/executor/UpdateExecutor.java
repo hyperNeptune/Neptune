@@ -16,7 +16,8 @@ public class UpdateExecutor extends Executor {
   TableInfo tableInfo_;
   private int updatedIdx_;
 
-  public UpdateExecutor(ExecContext ctx, Executor plan, Pair<String, Expression> updateValue, TableInfo tab) {
+  public UpdateExecutor(
+      ExecContext ctx, Executor plan, Pair<String, Expression> updateValue, TableInfo tab) {
     super(ctx);
     child_ = plan;
     updateValue_ = updateValue;

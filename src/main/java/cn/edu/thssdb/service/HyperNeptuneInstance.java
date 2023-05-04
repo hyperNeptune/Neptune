@@ -66,6 +66,7 @@ public class HyperNeptuneInstance implements IService.Iface {
     DoubleType dt = new DoubleType();
     FloatType ft = new FloatType();
     LongType lt = new LongType();
+    BoolType bt = new BoolType();
     // discard them
   }
 
@@ -158,9 +159,14 @@ public class HyperNeptuneInstance implements IService.Iface {
       Schema sh = planner.getPlan().getOutputSchema();
 
       // output results
+      List lshdr = ResultWriter.writeHDR(sh);
+      List lstuple = ResultWriter.writeTBL(result, sh);
+      ExecuteStatementResp resp = new ExecuteStatementResp(StatusUtil.success(), true);
+      resp.setColumnsList(lshdr);
+      resp.setRowList(lstuple);
+      return resp;
     }
-
-    return null;
+    return new ExecuteStatementResp(StatusUtil.success(), false);
   }
 
   private ExecContext makeExecContext(Transaction txn) {

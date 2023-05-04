@@ -102,9 +102,9 @@ public class LongValue extends Value<LongType, Long> {
   protected int compareToImpl(Value<? extends Type, ?> other, boolean reverse) {
     if (other.getType() == LongType.INSTANCE) {
       if (reverse) {
-        return Long.compare(((IntValue) other).value_, value_);
+        return Long.compare(((LongValue) other).value_, value_);
       } else {
-        return Long.compare(value_, ((IntValue) other).value_);
+        return Long.compare(value_, ((LongValue) other).value_);
       }
     }
     return super.compareToImpl(other, reverse);

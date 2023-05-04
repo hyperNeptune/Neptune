@@ -8,6 +8,7 @@ public class DeleteStatement extends Statement {
   private final Expression expression;
 
   public DeleteStatement(TableInfo table, Expression expression) {
+    super(StatementType.DELETE);
     this.table = table;
     this.expression = expression;
   }

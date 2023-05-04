@@ -125,4 +125,20 @@ public abstract class Value<T extends Type, V>
   }
 
   public abstract V getValue();
+
+  // equals is not ==
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof Value) {
+      Value<?, ?> other = (Value<?, ?>) obj;
+      if (isNull_ && other.isNull_) {
+        return true;
+      }
+      if (isNull_ || other.isNull_) {
+        return false;
+      }
+      return compareTo(other) == 0;
+    }
+    return false;
+  }
 }
