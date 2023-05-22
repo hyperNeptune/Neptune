@@ -320,8 +320,15 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
 
   @Override
   public Statement visitInsertStmt(SQLParser.InsertStmtContext ctx) {
-    if (ctx.columnName().size() != ctx.valueEntry().size() && ctx.columnName().size() != 0) {
-      throw new RuntimeException("column size not match");
+    if (ctx.columnName().size() != 0) {
+      for (SQLParser.ValueEntryContext vectx : ctx.valueEntry()) {
+        if (ctx.columnName().size() != vectx.literalValue().size()) {
+          throw new RuntimeException(
+              String.format(
+                  "column size not match %d %d",
+                  ctx.columnName().size(), vectx.literalValue().size()));
+        }
+      }
     }
     TableInfo tableInfo = catalog.getTableInfo(ctx.tableName().getText());
     if (tableInfo == null) {

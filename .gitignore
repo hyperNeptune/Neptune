@@ -3,3 +3,4 @@ target
 .idea
 htmlReport
 .run
+tmp.db
