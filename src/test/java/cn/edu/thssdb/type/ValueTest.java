@@ -102,6 +102,16 @@ public class ValueTest {
     assertEquals(Global.PAGE_SIZE, page2.getData().position());
   }
 
+  void incTest(Integer i) {
+  }
+
+  @Test
+  public void IntTest() throws Exception {
+    Integer b = 1;
+    incTest(b);
+    assertEquals(b.intValue(), 2);
+  }
+
   // after test, delete the test.db file
   @After
   public void tearDown() throws Exception {
