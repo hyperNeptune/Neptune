@@ -1,0 +1,26 @@
+----------------------
+Starting ThssDB Client
+----------------------
+ThssDB2023>The statement is executed successfully.
+It costs 50 ms.
+ThssDB2023>No database exists.
+It costs 34 ms.
+ThssDB2023>The statement is executed successfully.
+It costs 11 ms.
+ThssDB2023>The statement is executed successfully.
+It costs 1 ms.
+ThssDB2023>The statement is executed successfully.
+It costs 80 ms.
+ThssDB2023>col1, col2, col3, col4, col5
+----------------------------------------------------------------
+1, 1.1, test, 1.1, 1
+It costs 0 ms.
+ThssDB2023>col1, col2, col3, col4, col5
+----------------------------------------------------------------
+2, 1.1, test2, 1.4, 4
+It costs 2 ms.
+ThssDB2023>col3
+----------------------------------------------------------------
+test2
+It costs 8 ms.
+ThssDB2023>
