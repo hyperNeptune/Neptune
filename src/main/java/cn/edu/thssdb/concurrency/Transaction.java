@@ -3,17 +3,19 @@ import cn.edu.thssdb.utils.RID;
 
 import java.util.HashMap;
 import java.util.HashSet;
-
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Transaction {
     private int txn_id;
     private long thread_id;
     private TransactionState state = TransactionState.GROWING;
     private IsolationLevel isolationLevel;
-    private HashSet<String> s_table_lock_set;
-    private HashSet<String> x_table_lock_set;
-    private HashMap<String, HashSet<RID>> s_row_lock_set;
-    private HashMap<String, HashSet<RID>> x_row_lock_set;
+    private final HashSet<String> s_table_lock_set;
+    private final HashSet<String> x_table_lock_set;
+    private final HashMap<String, HashSet<RID>> s_row_lock_set;
+    private final HashMap<String, HashSet<RID>> x_row_lock_set;
+
+    private final ReentrantLock latch = new ReentrantLock();
 
     public Transaction(int txn_id, IsolationLevel iso_lvl){
         this.txn_id = txn_id;
@@ -64,5 +66,28 @@ public class Transaction {
             return ridSet.contains(rid);
         }
     }
+
+    public void lockTxn() {
+        latch.lock();
+    }
+
+    public void unlockTxn() {
+        latch.unlock();
+    }
+
+    public void setIsolationLevel(IsolationLevel isolationLevel) {
+        this.isolationLevel = isolationLevel;
+    }
+
+    public void setState(TransactionState state) {
+        this.state = state;
+    }
+
+    public HashSet<String> getSharedTableLockSet(){return s_table_lock_set;}
+    public HashSet<String> getExclusiveTableLockSet(){ return x_table_lock_set;}
+    public HashMap<String, HashSet<RID>> getSharedRowLockSet(){ return s_row_lock_set;}
+    public HashMap<String, HashSet<RID>> getExclusiveRowLockSet() {return x_row_lock_set;}
+
+    public static int INVALID_TXN_ID = -1;
 }
 
