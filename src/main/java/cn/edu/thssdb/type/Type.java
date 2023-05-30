@@ -7,6 +7,7 @@ import java.util.Map;
 // THE CANONICAL NAME OF THESE TYPES ARE:
 // INTEGER, BIGINT, DECIMAL, VARCHAR
 // type can be an abstract factory
+// TODO(wj): refactor null values as a new type
 public abstract class Type {
   public static Map<Byte, Type> TYPES = new HashMap<>();
   public static Map<String, Type> TYPEDICT = new HashMap<>();

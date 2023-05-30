@@ -106,4 +106,18 @@ public class FloatValue extends Value<FloatType, Float> {
     }
     return super.compareToImpl(other, reverse);
   }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof DoubleValue) {
+      if (((DoubleValue) obj).getValue() > Global.FLOAT_MAX) {
+        return false;
+      } else if (((DoubleValue) obj).getValue() < Global.FLOAT_MIN) {
+        return false;
+      } else {
+        return value_ == ((DoubleValue) obj).getValue();
+      }
+    }
+    return super.equals(obj);
+  }
 }
