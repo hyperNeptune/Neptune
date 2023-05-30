@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class BufferPoolManager {
   private final Page[] pages_;
@@ -16,6 +17,8 @@ public class BufferPoolManager {
   private final DiskManager disk_manager_;
   private final Map<Integer, Integer> page_table_; // <page_id, frame_id>
   private final ReplaceAlgorithm replacer_;
+  // latch
+  private final ReentrantLock latch_ = new ReentrantLock(true);
 
   public BufferPoolManager(int pool_size, DiskManager disk_manager, ReplaceAlgorithm replacer) {
     pages_ = new Page[pool_size];

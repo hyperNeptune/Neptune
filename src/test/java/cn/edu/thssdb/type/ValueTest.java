@@ -102,14 +102,13 @@ public class ValueTest {
     assertEquals(Global.PAGE_SIZE, page2.getData().position());
   }
 
-  void incTest(Integer i) {
-  }
+  void allegro(Integer i) {}
 
   @Test
   public void IntTest() throws Exception {
     Integer b = 1;
-    incTest(b);
-    assertEquals(b.intValue(), 2);
+    allegro(b);
+    assertEquals(b.intValue(), 1);
   }
 
   // after test, delete the test.db file
