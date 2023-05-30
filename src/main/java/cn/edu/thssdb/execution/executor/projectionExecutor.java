@@ -44,6 +44,7 @@ public class projectionExecutor extends Executor {
     }
 
     Schema childS = child_.getOutputSchema();
+
     // select *?
     for (Expression e : select_) {
       ColumnRefExpression colRef = (ColumnRefExpression) e;
@@ -72,11 +73,12 @@ public class projectionExecutor extends Executor {
       }
       String colName = cre.getColumn();
       int colIdx = childS.getColumnOrder(colName);
-      columns[idx] = childS.getColumns()[colIdx];
+      // copy!! don't use the same column
+      columns[idx] = new Column(childS.getColumns()[colIdx]);
       child_father_mapping[idx] = colIdx;
       idx++;
-      outputSchema_ = new Schema(columns);
     }
+    outputSchema_ = new Schema(columns);
   }
 
   @Override

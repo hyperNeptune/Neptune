@@ -106,4 +106,18 @@ public class IntValue extends Value<IntType, Integer> {
     }
     return super.compareToImpl(other, reverse);
   }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof LongValue) {
+      if (((LongValue) obj).getValue() > Global.INT_MAX) {
+        return false;
+      }
+      if (((LongValue) obj).getValue() < Global.INT_MIN) {
+        return false;
+      }
+      return value_ == ((LongValue) obj).getValue();
+    }
+    return super.equals(obj);
+  }
 }
