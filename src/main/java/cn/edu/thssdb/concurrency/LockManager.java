@@ -110,9 +110,11 @@ public class LockManager {
             LockRequestQueue queue = tableLockMap.get(tableName);
             currentQueue = queue;
 
+            queue.latch.lock();
             Optional<LockRequest> oLockRequest = queue.requestQueue.stream()
                     .filter(lockRequest -> lockRequest.tableName.equals(tableName))
                     .findFirst();
+            queue.latch.unlock();
 
             // 是一次锁升级
             if (oLockRequest.isPresent()
@@ -149,6 +151,7 @@ public class LockManager {
         // 获取锁
         currentQueue.latch.lock();
         try{
+
             while (!grantLock(currentQueue, currentRequest)) {
                 try {
                     currentQueue.latchCondition.await();
@@ -165,6 +168,7 @@ public class LockManager {
     }
 
     private boolean grantLock(LockRequestQueue lockRequestQueue, LockRequest currentRequest) {
+        //System.out.println(t + ": try grant lock");
         //判断兼容性。遍历请求队列，查看当前锁请求是否与所有的已经 granted 的请求兼容。
         for(LockRequest request : lockRequestQueue.requestQueue) {
             if (request != currentRequest && request.granted) {
@@ -232,12 +236,13 @@ public class LockManager {
         if (lockRequestQueue.requestQueue.stream().noneMatch(lockRequest -> lockRequest.txn_id == txn.getTxn_id()))
         {
             lockRequestQueue.latch.unlock();
+            System.out.println(txn.getTxn_id() + "????????????");
             // ATTEMPTED_UNLOCK_BUT_NO_LOCK_HELD
             return false;
         }
         // 遍历请求队列，找到 unlock 对应的 granted 请求
         Optional<LockRequest> oRequest = lockRequestQueue.requestQueue.stream()
-                .filter(lockRequest -> lockRequest.tableName.equals(tableName))
+                .filter(lockRequest -> lockRequest.tableName.equals(tableName) && lockRequest.txn_id == txn.getTxn_id())
                 .findFirst();
         if (oRequest.isPresent()) {
             LockRequest request = oRequest.get();
