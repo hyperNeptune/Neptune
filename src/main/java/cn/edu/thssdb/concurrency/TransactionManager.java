@@ -44,11 +44,7 @@ public class TransactionManager {
     return txn;
   }
 
-  public void commit(Transaction txn) {
-
-  }
+  public void commit(Transaction txn) {}
 
   public void abort(Transaction txn) {}
-
-
 }

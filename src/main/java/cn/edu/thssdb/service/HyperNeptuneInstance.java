@@ -31,6 +31,7 @@ import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.type.*;
 import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.StatusUtil;
+import cn.edu.thssdb.utils.exception.NotBuiltinCommandException;
 import org.apache.thrift.TException;
 
 import java.nio.file.Paths;
@@ -50,7 +51,7 @@ public class HyperNeptuneInstance implements IService.Iface {
   private ExecutionEngine executionEngine_;
   private TransactionManager transactionManager_;
   private LogManager logManager_;
-  private static final String builtinCommandIndicator = "㵘";
+  private static final String builtinCommandIndicator = "";
 
   public HyperNeptuneInstance(String db_file_name) throws Exception {
     diskManager_ = new DiskManager(Paths.get(db_file_name));
@@ -113,8 +114,10 @@ public class HyperNeptuneInstance implements IService.Iface {
       throw new Exception("You are not connected. Please connect first.");
     }
     // handle builtin commands
-    if (req.statement.startsWith(builtinCommandIndicator)) {
+    try {
       return executeBuiltinStatement(req);
+    } catch (NotBuiltinCommandException e) {
+      // not builtin command, continue
     }
 
     // we finally came to the real SQL statements
@@ -176,25 +179,27 @@ public class HyperNeptuneInstance implements IService.Iface {
   }
 
   private ExecuteStatementResp executeBuiltinStatement(ExecuteStatementReq req) throws Exception {
-    if (req.statement.equals("㵘show databases")) {
+    // trailing semicolon is removed
+    String cmd = req.statement.substring(0, req.statement.length() - 1);
+    if (cmd.equals("show databases")) {
       return showDatabases();
     }
-    if (req.statement.startsWith("㵘create database")) {
+    if (cmd.startsWith("create database")) {
       return createDatabase(req.statement);
     }
-    if (req.statement.startsWith("㵘drop database")) {
+    if (cmd.startsWith("drop database")) {
       return dropDatabase(req.statement);
     }
-    if (req.statement.startsWith("㵘use database")) {
+    if (cmd.startsWith("use")) {
       return useDatabase(req.statement);
     }
-    if (req.statement.startsWith("㵘show tables")) {
+    if (cmd.startsWith("show tables")) {
       return showTables(req.statement);
     }
-    if (req.statement.startsWith("㵘help")) {
+    if (cmd.startsWith("help")) {
       return help();
     }
-    throw new Exception("Invalid builtin command.");
+    throw new NotBuiltinCommandException();
   }
 
   // built-in
@@ -290,10 +295,10 @@ public class HyperNeptuneInstance implements IService.Iface {
 
   private ExecuteStatementResp useDatabase(String statement) {
     String[] tokens = statement.split("\\s+");
-    if (tokens.length != 3) {
+    if (tokens.length != 2) {
       return new ExecuteStatementResp(StatusUtil.fail("Invalid statement."), false);
     }
-    String dbName = tokens[2];
+    String dbName = tokens[1];
     if (!cdi_.hasDatabase(dbName)) {
       return new ExecuteStatementResp(StatusUtil.fail("Database does not exist."), false);
     }

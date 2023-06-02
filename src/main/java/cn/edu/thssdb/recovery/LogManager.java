@@ -11,17 +11,15 @@ import java.util.concurrent.locks.ReentrantLock;
 public class LogManager {
   private final ByteBuffer logBuffer = ByteBuffer.allocate(45056);
   private final DiskManager diskManager;
-  public void runFlushThread(){
 
-  }
-  public void stopFlushThread(){
+  public void runFlushThread() {}
 
-  }
+  public void stopFlushThread() {}
 
   private int currentLsn;
   private final ReentrantLock lsn_latch = new ReentrantLock();
 
-  public int appendLogRecord(LogRecord logRecord){
+  public int appendLogRecord(LogRecord logRecord) {
     // 20 HEADER
     // | size | LSN | transID | prevLSN | LogType |
     int lsn = assignLsn();
@@ -34,8 +32,7 @@ public class LogManager {
 
     // INSERT
     // RID: PageID, SlotID
-    if (logRecord.getLogRecordType() == LogRecordType.INSERT)
-    {
+    if (logRecord.getLogRecordType() == LogRecordType.INSERT) {
       logBuffer.putInt(logRecord.getInsert_rid().getPageId());
       logBuffer.putInt(logRecord.getInsert_rid().getSlotId());
       Tuple l_tuple = logRecord.getInsert_tuple();
@@ -46,10 +43,9 @@ public class LogManager {
     }
 
     // DELETE
-    if (logRecord.getLogRecordType() == LogRecordType.APPLYDELETE ||
-        logRecord.getLogRecordType() == LogRecordType.MARKDELETE ||
-        logRecord.getLogRecordType() == LogRecordType.ROLLBACKDELETE)
-    {
+    if (logRecord.getLogRecordType() == LogRecordType.APPLYDELETE
+        || logRecord.getLogRecordType() == LogRecordType.MARKDELETE
+        || logRecord.getLogRecordType() == LogRecordType.ROLLBACKDELETE) {
       logBuffer.putInt(logRecord.getDelete_rid().getPageId());
       logBuffer.putInt(logRecord.getDelete_rid().getSlotId());
       Tuple l_tuple = logRecord.getDelete_tuple();
@@ -60,9 +56,8 @@ public class LogManager {
     }
 
     // UPDATE
-    if (logRecord.getLogRecordType() == LogRecordType.UPDATE)
-    {
-      //| HEADER | tuple_rid | tuple_size | old_tuple_data | tuple_size | new_tuple_data |
+    if (logRecord.getLogRecordType() == LogRecordType.UPDATE) {
+      // | HEADER | tuple_rid | tuple_size | old_tuple_data | tuple_size | new_tuple_data |
       logBuffer.putInt(logRecord.getUpdate_rid().getPageId());
       logBuffer.putInt(logRecord.getUpdate_rid().getSlotId());
       Tuple o_tuple = logRecord.getOld_tuple();
@@ -78,8 +73,7 @@ public class LogManager {
     }
 
     // NEW PAGE
-    if (logRecord.getLogRecordType() == LogRecordType.NEWPAGE)
-    {
+    if (logRecord.getLogRecordType() == LogRecordType.NEWPAGE) {
       logBuffer.putInt(logRecord.getPrev_page_id());
       logBuffer.putInt(logRecord.getPage_id());
     }
@@ -94,10 +88,9 @@ public class LogManager {
 
   private int assignLsn() {
     lsn_latch.lock();
-    currentLsn ++;
+    currentLsn++;
     int result = currentLsn;
     lsn_latch.unlock();
     return result;
   }
-
 }
