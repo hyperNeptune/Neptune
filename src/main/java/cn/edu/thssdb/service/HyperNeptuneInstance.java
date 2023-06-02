@@ -3,6 +3,7 @@ package cn.edu.thssdb.service;
 import cn.edu.thssdb.buffer.BufferPoolManager;
 import cn.edu.thssdb.buffer.LRUReplacer;
 import cn.edu.thssdb.buffer.ReplaceAlgorithm;
+import cn.edu.thssdb.concurrency.IsolationLevel;
 import cn.edu.thssdb.concurrency.Transaction;
 import cn.edu.thssdb.concurrency.TransactionManager;
 import cn.edu.thssdb.execution.ExecContext;
@@ -95,7 +96,7 @@ public class HyperNeptuneInstance implements IService.Iface {
           StatusUtil.fail("You are not connected. Please connect first."), false);
     }
     try {
-      Transaction txn = transactionManager_.begin();
+      Transaction txn = transactionManager_.create_and_begin(IsolationLevel.READ_COMMITTED);
       ExecuteStatementResp resp = executeStatementTxn(req, txn);
       transactionManager_.commit(txn);
       return resp;

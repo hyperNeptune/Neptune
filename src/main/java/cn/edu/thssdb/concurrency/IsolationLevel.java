@@ -1,6 +1,6 @@
 package cn.edu.thssdb.concurrency;
 
-enum IsolationLevel {
+public enum IsolationLevel {
     READ_COMMITTED,
     SERIALIZED,
     READ_UNCOMMITTED,

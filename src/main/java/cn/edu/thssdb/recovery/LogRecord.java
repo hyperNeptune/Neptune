@@ -4,18 +4,7 @@ import cn.edu.thssdb.concurrency.Transaction;
 import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.utils.RID;
 
-enum LogRecordType {
-    INVALID,
-    INSERT,
-    MARKDELETE,
-    APPLYDELETE,
-    ROLLBACKDELETE,
-    UPDATE,
-    BEGIN,
-    COMMIT,
-    ABORT,
-    NEWPAGE,
-};
+;
 
 /**
  * For every write operation on the table page, you should write ahead a corresponding log record.

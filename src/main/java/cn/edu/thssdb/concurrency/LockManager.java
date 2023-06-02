@@ -78,17 +78,21 @@ public class LockManager {
             if (txn.getIsolationLevel() == IsolationLevel.REPEATABLE_READ)
                 // LOCK_ON_SHRINKING
                 return false;
-            if (txn.getIsolationLevel() == IsolationLevel.READ_COMMITTED && lockMode == LockMode.EXCLUSIVE)
+            if (txn.getIsolationLevel() == IsolationLevel.READ_COMMITTED
+                && (lockMode != LockMode.SHARED && lockMode != LockMode.INTENTION_SHARED))
                 // LOCK_ON_SHRINKING
                 return false;
         }
 
         // 另外考虑 READ_UNCOMMITTED 无法获得 S
-        if (txn.getIsolationLevel() == IsolationLevel.READ_UNCOMMITTED && lockMode == LockMode.SHARED)
+        if (txn.getIsolationLevel() == IsolationLevel.READ_UNCOMMITTED
+                && (lockMode == LockMode.SHARED || lockMode == LockMode.INTENTION_SHARED
+                    || lockMode == LockMode.SHARED_INTENTION_EXCLUSIVE))
             // LOCK_SHARED_ON_READ_UNCOMMITTED
             return false;
 
         // 检查是否已经有同级或更高级锁
+        // TODO
         if (lockMode == LockMode.SHARED && (txn.IsTableSharedLocked(tableName) || txn.IsTableExclusiveLocked(tableName)))
             return true;
 
@@ -128,8 +132,8 @@ public class LockManager {
                 }
 
                 // 释放当前已经持有的锁，并在 queue 中标记正在尝试升级。
-                unlockTable(txn, tableName);
                 queue.latch.lock();
+                unlockTable(txn, tableName);        // TODO: 这里改过，可能爆炸
                 queue.upgrading = txn.getTxn_id();
                 queue.latch.unlock();
                 removeTxnTableLockSet(txn, tableName);
@@ -287,12 +291,173 @@ public class LockManager {
         return true;
     }
 
-    public void lockRow(Transaction txn, LockMode lock_mode, String table_name, RID rid) {
+    public boolean lockRow(Transaction txn, LockMode lock_mode, String table_name, RID rid) {
+        // 暂时没有考虑 SERIALIZABLE
 
+        // 必须先持有 table lock 再持有 row lock
+        // TODO: 先不检查了
+
+        // ABORT 或者 COMMITTED 直接干掉
+        if (txn.getState() == TransactionState.ABORTED || txn.getState() == TransactionState.COMMITTED)
+            return false;
+
+        // SHRINKING
+        if (txn.getState() == TransactionState.SHRINKING) {
+            if (txn.getIsolationLevel() == IsolationLevel.REPEATABLE_READ)
+                // LOCK_ON_SHRINKING
+                return false;
+            if (txn.getIsolationLevel() == IsolationLevel.READ_COMMITTED
+                    && (lock_mode != LockMode.SHARED && lock_mode != LockMode.INTENTION_SHARED))
+                // LOCK_ON_SHRINKING
+                return false;
+        }
+
+        // 另外考虑 READ_UNCOMMITTED 无法获得 S
+        if (txn.getIsolationLevel() == IsolationLevel.READ_UNCOMMITTED
+                && (lock_mode == LockMode.SHARED || lock_mode == LockMode.INTENTION_SHARED
+                    || lock_mode == LockMode.SHARED_INTENTION_EXCLUSIVE))
+            // LOCK_SHARED_ON_READ_UNCOMMITTED
+            return false;
+
+        // 检查是否已经有同级或更高级锁
+        // TODO
+        if (lock_mode == LockMode.SHARED && (txn.IsRowSharedLocked(table_name, rid) || txn.IsRowExclusiveLocked(table_name, rid)))
+            return true;
+
+        // 检查对应的 rowLockMap 是否已经有其他的锁
+        LockRequestQueue currentQueue;
+        LockRequest currentRequest = new LockRequest(txn.getTxn_id(), lock_mode, table_name, rid);
+        rowLockMapLatch.lock();
+        if(rowLockMap.get(rid) == null) {
+            // 没有，新建一个 RequestQueue
+            LockRequestQueue newQueue = new LockRequestQueue();
+            newQueue.latch.lock();
+            newQueue.requestQueue.add(currentRequest);
+            currentQueue = newQueue;
+            newQueue.latch.unlock();
+            rowLockMap.put(rid, newQueue);
+        }
+        else {
+            // 有，在已有的 RequestQueue 上添加
+            LockRequestQueue queue = rowLockMap.get(rid);
+            currentQueue = queue;
+
+            queue.latch.lock();
+            Optional<LockRequest> oLockRequest = queue.requestQueue.stream()
+                    .filter(lockRequest -> lockRequest.rid.equals(rid) && lockRequest.tableName.equals(table_name)) //TODO: 要检查tablename吗
+                    .findFirst();
+            queue.latch.unlock();
+
+            // 是一次锁升级
+            if (oLockRequest.isPresent()
+                    && oLockRequest.get().lockMode == LockMode.SHARED
+                    && lock_mode == LockMode.EXCLUSIVE
+                    && oLockRequest.get().txn_id == txn.getTxn_id()) {
+                // 检查是否可以升级：升级条件 没有其他事务在同一资源上升级
+                if (queue.upgrading != Transaction.INVALID_TXN_ID) {
+                    // UPGRADE_CONFLICT
+                    return false;
+                }
+
+                // 释放当前已经持有的锁，并在 queue 中标记正在尝试升级。
+                queue.latch.lock();
+                unlockRow(txn, table_name, rid);
+                queue.upgrading = txn.getTxn_id();
+                queue.latch.unlock();
+
+                // 等待直到新锁被授予。
+                queue.latch.lock();
+                queue.requestQueue.add(currentRequest);
+                queue.upgrading = Transaction.INVALID_TXN_ID;
+                queue.latch.unlock();
+            }
+            else {
+                queue.latch.lock();
+                queue.requestQueue.add(currentRequest);
+                queue.latch.unlock();
+            }
+        }
+        rowLockMapLatch.unlock();
+
+        // 获取锁
+        currentQueue.latch.lock();
+        try{
+            while (!grantLock(currentQueue, currentRequest)) {
+                try {
+                    currentQueue.latchCondition.await();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        } finally {
+            currentQueue.latch.unlock();
+        }
+
+        // TODO: txn book keeping
+        return true;
     }
 
-    public void unlockRow(Transaction txn, String table_name, RID rid) {
+    public boolean unlockRow(Transaction txn, String table_name, RID rid) {
+        // 获取对应的 lock request queue
+        rowLockMapLatch.lock();
+        LockRequestQueue lockRequestQueue = rowLockMap.get(rid);
+        rowLockMapLatch.unlock();
+        lockRequestQueue.latch.lock();
+        if (lockRequestQueue.requestQueue.stream().noneMatch(lockRequest -> lockRequest.txn_id == txn.getTxn_id()))
+        {
+            lockRequestQueue.latch.unlock();
+            System.out.println(txn.getTxn_id() + "????????????");
+            // ATTEMPTED_UNLOCK_BUT_NO_LOCK_HELD
+            return false;
+        }
+        // 遍历请求队列，找到 unlock 对应的 granted 请求
+        Optional<LockRequest> oRequest = lockRequestQueue.requestQueue.stream()
+                .filter(lockRequest ->
+                        lockRequest.tableName.equals(table_name)
+                        && lockRequest.rid.equals(rid)
+                        && lockRequest.txn_id == txn.getTxn_id())
+                .findFirst();
+        if (oRequest.isPresent()) {
+            LockRequest request = oRequest.get();
+            if (txn.getIsolationLevel() == IsolationLevel.REPEATABLE_READ)
+            {
+                // 当隔离级别为 REPEATABLE_READ 时，S/X 锁释放会使事务进入 Shrinking 状态。
+                if (request.lockMode == LockMode.SHARED || request.lockMode == LockMode.EXCLUSIVE)
+                {
+                    txn.lockTxn();
+                    txn.setState(TransactionState.SHRINKING);
+                    txn.unlockTxn();
+                }
+            }
+            if (txn.getIsolationLevel() == IsolationLevel.READ_COMMITTED)
+            {
+                // 当为 READ_COMMITTED 时，只有 X 锁释放使事务进入 Shrinking 状态。
+                if (request.lockMode == LockMode.EXCLUSIVE)
+                {
+                    txn.lockTxn();
+                    txn.setState(TransactionState.SHRINKING);
+                    txn.unlockTxn();
+                }
+            }
+            if (txn.getIsolationLevel() == IsolationLevel.READ_UNCOMMITTED)
+            {
+                // 当为 READ_UNCOMMITTED 时，X 锁释放使事务 Shrinking，S 锁不会出现。
+                if (request.lockMode == LockMode.EXCLUSIVE)
+                {
+                    txn.lockTxn();
+                    txn.setState(TransactionState.SHRINKING);
+                    txn.unlockTxn();
+                }
+            }
+            request.granted = false;
+            lockRequestQueue.requestQueue.remove(request);
+        }
+        lockRequestQueue.latchCondition.signalAll();
+        lockRequestQueue.latch.unlock();
 
+
+        // TODO: txn book keeping
+        return true;
     }
 
     private void addTxnTableLockSet(Transaction txn, LockMode lockMode, String tableName) {

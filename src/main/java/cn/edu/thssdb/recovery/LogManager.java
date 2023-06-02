@@ -4,39 +4,23 @@ import cn.edu.thssdb.storage.DiskManager;
 import cn.edu.thssdb.storage.Tuple;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.locks.ReentrantLock;
 
 // French historian
 // Log Manager
 public class LogManager {
-  private ByteBuffer logBuffer = ByteBuffer.allocate(45056);
+  private final ByteBuffer logBuffer = ByteBuffer.allocate(45056);
+  private final DiskManager diskManager;
   public void runFlushThread(){
 
   }
   public void stopFlushThread(){
 
   }
-  /**
-   * For EACH log record, HEADER is like (5 fields in common, 20 bytes in total).
-   *---------------------------------------------
-   * | size | LSN | transID | prevLSN | LogType |
-   *---------------------------------------------
-   * For insert type log record
-   *---------------------------------------------------------------
-   * | HEADER | tuple_rid | tuple_size | tuple_data |
-   *---------------------------------------------------------------
-   * For delete type (including markdelete, rollbackdelete, applydelete)
-   *----------------------------------------------------------------
-   * | HEADER | tuple_rid | tuple_size | tuple_data |
-   *---------------------------------------------------------------
-   * For update type log record
-   *-----------------------------------------------------------------------------------
-   * | HEADER | tuple_rid | tuple_size | old_tuple_data | tuple_size | new_tuple_data |
-   *-----------------------------------------------------------------------------------
-   * For new page type log record
-   *------------------------------------
-   * | HEADER | prev_page_id | page_id |
-   *------------------------------------
-   */
+
+  private int currentLsn;
+  private final ReentrantLock lsn_latch = new ReentrantLock();
+
   public int appendLogRecord(LogRecord logRecord){
     // 20 HEADER
     // | size | LSN | transID | prevLSN | LogType |
@@ -103,10 +87,17 @@ public class LogManager {
     return lsn;
   }
 
-  public LogManager(DiskManager diskManager) {}
+  public LogManager(DiskManager diskManager) {
+    currentLsn = 0;
+    this.diskManager = diskManager;
+  }
 
   private int assignLsn() {
-    return LogRecord.INVALID_LSN_ID;
+    lsn_latch.lock();
+    currentLsn ++;
+    int result = currentLsn;
+    lsn_latch.unlock();
+    return result;
   }
 
 }

@@ -10,7 +10,7 @@ enum WType {INSERT, DELETE, UPDATE}
 public class Transaction {
     private final int txn_id;
     private long thread_id;
-    private int prev_lsn;
+    private int prev_lsn; // the LSN of the last record written by the transaction
     private TransactionState state = TransactionState.GROWING;
     private IsolationLevel isolationLevel;
     private final HashSet<String> s_table_lock_set;
