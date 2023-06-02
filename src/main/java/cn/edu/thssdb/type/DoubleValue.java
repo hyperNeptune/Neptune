@@ -87,6 +87,15 @@ public class DoubleValue extends Value<DoubleType, Double> {
         return new DoubleValue(value_ % ((DoubleValue) other).getValue());
       }
     }
+
+    if (other.getType() == FloatType.INSTANCE) {
+      if (reverse) {
+        return new DoubleValue(((FloatValue) other).getValue() % value_);
+      } else {
+        return new DoubleValue(value_ % ((FloatValue) other).getValue());
+      }
+    }
+
     return super.modImpl(other, reverse);
   }
 

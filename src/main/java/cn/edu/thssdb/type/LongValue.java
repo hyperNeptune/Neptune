@@ -107,6 +107,24 @@ public class LongValue extends Value<LongType, Long> {
         return Long.compare(value_, ((LongValue) other).value_);
       }
     }
+
+    if (other.getType() == DoubleType.INSTANCE) {
+      if (reverse) {
+        return Double.compare(((DoubleValue) other).value_, value_);
+      } else {
+        return Double.compare(value_, ((DoubleValue) other).value_);
+      }
+    }
+
+    // float
+    if (other.getType() == FloatType.INSTANCE) {
+      if (reverse) {
+        return Float.compare(((FloatValue) other).value_, value_);
+      } else {
+        return Float.compare(value_, ((FloatValue) other).value_);
+      }
+    }
+
     return super.compareToImpl(other, reverse);
   }
 }
