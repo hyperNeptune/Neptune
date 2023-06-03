@@ -1,4 +1,4 @@
-package cn.edu.thssdb.index;
+package cn.edu.thssdb.storage.index;
 
 import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.exception.DuplicateKeyException;
