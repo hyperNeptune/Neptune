@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 // separated by comma. so name can't contain comma
 public class Column implements Comparable<Column> {
   private final String name_;
+  private String fullname_;
   private final Type type_;
   private byte primary_;
   private final byte nullable_;
@@ -38,6 +39,34 @@ public class Column implements Comparable<Column> {
     this.nullable_ = c.nullable_;
     this.maxLength_ = c.maxLength_;
     this.offset_ = c.offset_;
+    if (fullname_ != null) {
+      this.fullname_ = c.fullname_;
+    }
+  }
+
+  // rename factory
+  public static Column ColumnRenameFactory(Column c, String newName) {
+    Column col = new Column(
+        newName,
+        c.type_,
+        c.primary_,
+        c.nullable_,
+        c.maxLength_,
+        c.offset_);
+    col.setFullname(c.getFullname());
+    return col;
+  }
+
+  public void setFullNameByTable(String tableName) {
+    this.fullname_ = tableName + "." + name_;
+  }
+  public void setFullname(String fullname) {
+    this.fullname_ = fullname;
+  }
+
+  // must check whether retv == null
+  public String getFullname() {
+    return fullname_;
   }
 
   @Override

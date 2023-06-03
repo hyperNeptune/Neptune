@@ -138,7 +138,8 @@ public class HyperNeptuneInstance implements IService.Iface {
         case CREATE_TABLE:
           CreateTbStatement createTableStatement = (CreateTbStatement) stmt;
           curDB_.createTable(
-              createTableStatement.getTableName(), new Schema(createTableStatement.getColumns()));
+              createTableStatement.getTableName(),
+              new Schema(createTableStatement.getColumns(), createTableStatement.getTableName()));
           return new ExecuteStatementResp(StatusUtil.success(), false);
         case DROP_TABLE:
           DropTbStatement dropTableStatement = (DropTbStatement) stmt;

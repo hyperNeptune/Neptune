@@ -390,7 +390,16 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
     boolean distinct = ctx.K_DISTINCT() != null;
     List<ColumnRefExpression> selectList = new ArrayList<>();
     for (SQLParser.ResultColumnContext rcctx : ctx.resultColumn()) {
-      selectList.add(new ColumnRefExpression(rcctx.getText()));
+      // selectList.add(new ColumnRefExpression(rcctx.getText()));
+      if (rcctx.columnFullName() != null) {
+        selectList.add((ColumnRefExpression) visitColumnRef(rcctx.columnFullName()));
+      } else if (rcctx.tableName() != null) {
+         selectList.add(
+              new ColumnRefExpression(
+                  rcctx.tableName().getText(), "*"));
+      } else {
+        selectList.add(new ColumnRefExpression("*"));
+      }
     }
     TableBinder tableBinder = visitTableQLS(ctx.tableQuery());
     Expression where = null;
