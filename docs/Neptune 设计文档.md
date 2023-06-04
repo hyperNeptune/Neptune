@@ -286,6 +286,7 @@ Catalog 用于管理数据库中所有的表的信息，也就是所有的 `Tabl
 ### 语法解析
 
 通过 `ANTLR4` 的语法分析树，一条 `SQL` 语句被解析为一个 Statement，并且绑定了数据库对象。下面列举 Statement 的种类，并说明它们的作用。
+
 - CREATE_TABLE, 
 	- 创建表语句。包含信息：所有的列信息、表的名称。
 - DROP_TABLE,  
@@ -300,6 +301,60 @@ Catalog 用于管理数据库中所有的表的信息，也就是所有的 `Tabl
 	- 更新语句。包含信息：表的 `TableInfo`，更新的值，更新需要满足的条件
 - SELECT
 	- 查询语句。包含信息：表的组合 `TableBinder`，是否去重，投影列表，过滤器的谓词。
+
+当我们处理 `ON`,  `WHERE`, `SELECT` 的时候，需要构建一棵表达式树。我们一共有四种表达式：
+
+- BINARY
+	- 二元表达式，支持各种各样的二元运算符。
+- CONSTANT 
+	- 常量表达式，放置解析出来的数值，字符串等常量。
+- UNARY
+	- 一元表达式，目前还没有用。
+- COLUMN_REF
+	- 列引用表达式，代表引用数据库中，一个列的值。
+
+因为表可以 `JOIN` ，因此表也需要被表示为一棵树。我们的 `TableBinder` 一共有这几种：
+
+- JOIN
+	- 连接绑定。成员：左 `TableBinder`，右 `TableBinder`，Join 条件
+- REGULAR
+	- 普通表。一般是叶子节点。成员：一个 `TableInfo`
+- CROSS
+	- 笛卡尔积。成员：左 `TableBinder`，右 `TableBinder`
+- EMPTY
+	- 空。在没有表的情况下，`SELECT` 只可以用来做计算器。
+
+总之，语法分析模块会返回一颗以 `Statement` 为根，其中混杂 `Expression` 和 `TableBinder` 的树。
+
+### 查询系统
+
+查询处理模块仅仅处理四种复杂的 SQL 语句。因为其他的 SQL 语句不需要处理就可以直接执行。这四种语句分别为：
+
+```SQL
+SELECT
+UPDATE
+INSERT
+DELETE
+```
+
+查询处理模块采用火山模型 (`volcano model`)，也就是迭代器模型。根部的执行器调用子执行器的 `next()` 函数，然后子执行器再调用自己的子执行器的 `next()`，以此类推，最后再把结果一层层向上返回，最后交给用户。我们会用 `Planner` 遍历一次从语法分析中获得的 `Statement`，然后组装出一个 `Executor` 组成的树，返回它根部的 `Executor` 给用户。
+
+我们一共有以下几种 `Executor`: 
+
+- `deleteExecutor`，用来删除一条记录。
+- `filterExecutor`，不断从下层抽取记录，直到满足条件，或者 `EOF`。
+- `indexScanExecutor`，扫描数据库索引，按照向上层提供记录。
+- `insertExecutor`，用来插入一条记录。
+- `nestedLoopJoinExecutor`，用来连接两张表。
+- `projectionExecutor`，用来投影，去除查询中不需要的属性。
+- `seqScanExecutor`，顺序扫描一张表，向上层提供记录。
+- `updateExecutor`，用来更新一条记录。
+
+每个 `Executor` 中都包含一个 `ExecContext`，其中包含本次查询相关的上下文信息，例如这次查询归属的事务，缓存池管理器以及总目录等等。
+
+最后，`Executor` 交由 `ExecutionEngine`，它会不断调用根执行器的 `next()` 方法，把结果保存到一个数组里，直到根执行器枯竭。
+
+当结果完整、正确地送到用户手中的时候，这条 SQL 语句就终结了自己的历史使命。其中包含着各种各样精巧的设计：并发控制、查询优化、数据组织…… 为了构建可扩展、可维护和可靠的软件系统，数据库系统设计者孜孜不倦，绞尽脑汁。正所谓：“桃李春风一杯酒，江湖夜雨十年灯”。
 
 ## 事务系统（并发控制模块）
 
