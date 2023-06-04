@@ -12,12 +12,13 @@ import java.util.Iterator;
 // | BitMap of allocation of tuples |
 //
 public class TablePageSlot extends Page implements TablePage {
-  private static final int PREV_PAGE_ID_OFFSET = 4;
-  private static final int NEXT_PAGE_ID_OFFSET = 8;
-  private static final int FREE_SPACE_POINTER_OFFSET = 12;
-  private static final int TUPLE_COUNT_OFFSET = 16;
-  private static final int TUPLE_LENGTH_OFFSET = 20;
-  public static final int PAGE_HEADER_SIZE = 24;
+  private static final int PREV_PAGE_ID_OFFSET = 0;
+  private static final int NEXT_PAGE_ID_OFFSET = 4;
+  private static final int FREE_SPACE_POINTER_OFFSET = 8;
+  private static final int TUPLE_COUNT_OFFSET = 12;
+  private static final int TUPLE_LENGTH_OFFSET = 16;
+  public static final int TABLE_PAGE_SLOT_HEADER_SIZE = 20;
+  public static final int ALL_HEADER_SIZE = TABLE_PAGE_SLOT_HEADER_SIZE + PAGE_HEADER_SIZE;
 
   public TablePageSlot(int page_id, int tupleLength) {
     super(page_id);
@@ -34,70 +35,65 @@ public class TablePageSlot extends Page implements TablePage {
 
   // setters
   public void setPrevPageId(int prev_page_id) {
-    data_.putInt(PREV_PAGE_ID_OFFSET, prev_page_id);
+    data_.putInt(PAGE_HEADER_SIZE + PREV_PAGE_ID_OFFSET, prev_page_id);
   }
 
   public void setNextPageId(int next_page_id) {
-    data_.putInt(NEXT_PAGE_ID_OFFSET, next_page_id);
+    data_.putInt(PAGE_HEADER_SIZE + NEXT_PAGE_ID_OFFSET, next_page_id);
   }
 
   public void setFreeSpacePointer(int freeSpacePointer) {
-    data_.putInt(FREE_SPACE_POINTER_OFFSET, freeSpacePointer);
+    data_.putInt(PAGE_HEADER_SIZE + FREE_SPACE_POINTER_OFFSET, freeSpacePointer);
   }
 
   public void setTupleCount(int tupleCount) {
-    data_.putInt(TUPLE_COUNT_OFFSET, tupleCount);
+    data_.putInt(PAGE_HEADER_SIZE + TUPLE_COUNT_OFFSET, tupleCount);
   }
 
   public void setTupleLength(int tupleLength) {
-    data_.putInt(TUPLE_LENGTH_OFFSET, tupleLength);
+    data_.putInt(PAGE_HEADER_SIZE + TUPLE_LENGTH_OFFSET, tupleLength);
   }
 
   // getters
   public int getPrevPageId() {
-    return data_.getInt(PREV_PAGE_ID_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + PREV_PAGE_ID_OFFSET);
   }
 
   public int getNextPageId() {
-    return data_.getInt(NEXT_PAGE_ID_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + NEXT_PAGE_ID_OFFSET);
   }
 
   public int getFreeSpacePointer() {
-    return data_.getInt(FREE_SPACE_POINTER_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + FREE_SPACE_POINTER_OFFSET);
   }
 
   public int getTupleCount() {
-    return data_.getInt(TUPLE_COUNT_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + TUPLE_COUNT_OFFSET);
   }
 
   public int getTupleLength() {
-    return data_.getInt(TUPLE_LENGTH_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + TUPLE_LENGTH_OFFSET);
   }
 
   // remaining free space
   public int getFreeSpace() {
-    return getFreeSpacePointer() - PAGE_HEADER_SIZE - bitmapAreaSpace();
+    return getFreeSpacePointer() - ALL_HEADER_SIZE - bitmapAreaSpace();
   }
 
   private boolean slotEmpty(int slotId) {
-    // System.out.println(slotId + " slot empty " + ((data_.get(PAGE_HEADER_SIZE + slotId / 8) & (1
-    // << slotId % 8)) != 1));
-    // System.out.println("slot empty " + (data_.get(PAGE_HEADER_SIZE + slotId / 8) & (1 << slotId %
-    // 8)));
-    return (data_.get(PAGE_HEADER_SIZE + slotId / 8) & (1 << (slotId % 8))) == 0;
+    return (data_.get(ALL_HEADER_SIZE + slotId / 8) & (1 << (slotId % 8))) == 0;
   }
 
   private void setSlot(int slotId) {
-    // System.out.println("set slot " + slotId + " " + data_.get(PAGE_HEADER_SIZE + slotId / 8));
     data_.put(
-        PAGE_HEADER_SIZE + slotId / 8,
-        (byte) (data_.get(PAGE_HEADER_SIZE + slotId / 8) | (1 << (slotId % 8))));
+        ALL_HEADER_SIZE + slotId / 8,
+        (byte) (data_.get(ALL_HEADER_SIZE + slotId / 8) | (1 << (slotId % 8))));
   }
 
   private void clearSlot(int slotId) {
     data_.put(
-        PAGE_HEADER_SIZE + slotId / 8,
-        (byte) (data_.get(PAGE_HEADER_SIZE + slotId / 8) & ~(1 << slotId % 8)));
+        ALL_HEADER_SIZE + slotId / 8,
+        (byte) (data_.get(ALL_HEADER_SIZE + slotId / 8) & ~(1 << slotId % 8)));
   }
 
   // bitmap area space

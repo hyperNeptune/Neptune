@@ -26,11 +26,6 @@ public abstract class Value<T extends Type, V>
     return type_;
   }
 
-  // get type name
-  public String getTypeName() {
-    return type_.toString();
-  };
-
   // get size
   public abstract int getSize();
 

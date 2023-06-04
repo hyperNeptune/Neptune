@@ -12,7 +12,9 @@ public class Page {
   protected ByteBuffer data_;
   // for mutable runtime data
   private final PageRuntimeData runtime_data_;
-  private static final int PAGE_ID_OFFSET = 0;
+  public static final int PAGE_ID_OFFSET = 0;
+  public static final int LSN_OFFSET = 4;
+  public static final int PAGE_HEADER_SIZE = 8;
 
   public void resetMemory() {
     // clear means we reset the position to 0
@@ -32,6 +34,7 @@ public class Page {
   }
 
   // copy constructor
+  // shallow copy
   public Page(Page page) {
     data_ = page.data_;
     runtime_data_ = page.runtime_data_;
@@ -50,7 +53,9 @@ public class Page {
   }
 
   public void setDirty(boolean is_dirty) {
-    if (is_dirty) runtime_data_.is_dirty_ = true;
+    if (is_dirty) {
+      runtime_data_.is_dirty_ = true;
+    }
   }
 
   public int getPinCount() {
@@ -68,7 +73,7 @@ public class Page {
 
   // decrease pin count by 1
   public void unpin() {
-    if (runtime_data_.pin_count_ > 0) runtime_data_.pin_count_--;
+    if (runtime_data_.pin_count_ > 0) {runtime_data_.pin_count_--;}
   }
 
   // evict able
@@ -85,13 +90,22 @@ public class Page {
     data_.putInt(PAGE_ID_OFFSET, page_id);
   }
 
+  public int getLSN() {
+    return data_.getInt(LSN_OFFSET);
+  }
+
+  public void setLSN(int lsn) {
+    data_.putInt(LSN_OFFSET, lsn);
+  }
+
   // print
   public void print() {
     // invalid page id say invalid
-    if (getPageId() == -1) {
+    if (getPageId() == Global.PAGE_ID_INVALID) {
       System.out.println("invalid page");
       return;
     }
-    System.out.println("page id: " + getPageId());
+    System.out.println("page id: " + getPageId() + ", pin count: " +
+      getPinCount() + ", is dirty: " + isDirty() + "log sequence number: " + getLSN());
   }
 }

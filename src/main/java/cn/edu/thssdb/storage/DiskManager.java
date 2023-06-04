@@ -62,8 +62,6 @@ public class DiskManager {
 
   // allocatePage
   public int allocatePage() {
-    int page_id = numPages_;
-    numPages_++;
-    return page_id;
+    return numPages_++;
   }
 }

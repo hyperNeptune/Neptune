@@ -12,12 +12,14 @@ import java.util.Iterator;
 // for now, tuple flags are all about whether the tuple is allocated or not
 //
 public class TablePageVar extends Page implements TablePage {
-  private static final int PREV_PAGE_ID_OFFSET = 4;
-  private static final int NEXT_PAGE_ID_OFFSET = 8;
-  private static final int FREE_SPACE_POINTER_OFFSET = 12;
-  private static final int SLOT_COUNT_OFFSET = 16;
-  private static final int TUPLE_COUNT_OFFSET = 20;
-  public static final int PAGE_HEADER_SIZE = 24;
+  private static final int PREV_PAGE_ID_OFFSET = 0;
+  private static final int NEXT_PAGE_ID_OFFSET = 4;
+  private static final int FREE_SPACE_POINTER_OFFSET = 8;
+  private static final int SLOT_COUNT_OFFSET = 12;
+  private static final int TUPLE_COUNT_OFFSET = 16;
+  public static final int TABLE_PAGE_VAR_HEADER_SIZE = 20;
+  public static final int ALL_HEADER_SIZE = TABLE_PAGE_VAR_HEADER_SIZE + PAGE_HEADER_SIZE;
+  // dynamic part
   public static final int TUPLE_META_SIZE = 12;
   public static final int TUPLE_OFFSET_OFFSET = 0;
   public static final int TUPLE_SIZE_OFFSET = 4;
@@ -40,35 +42,35 @@ public class TablePageVar extends Page implements TablePage {
 
   // setters
   public void setPrevPageId(int prev_page_id) {
-    data_.putInt(PREV_PAGE_ID_OFFSET, prev_page_id);
+    data_.putInt(PAGE_HEADER_SIZE + PREV_PAGE_ID_OFFSET, prev_page_id);
   }
 
   public void setNextPageId(int next_page_id) {
-    data_.putInt(NEXT_PAGE_ID_OFFSET, next_page_id);
+    data_.putInt(PAGE_HEADER_SIZE + NEXT_PAGE_ID_OFFSET, next_page_id);
   }
 
   public void setFreeSpacePointer(int freeSpacePointer) {
-    data_.putInt(FREE_SPACE_POINTER_OFFSET, freeSpacePointer);
+    data_.putInt(PAGE_HEADER_SIZE + FREE_SPACE_POINTER_OFFSET, freeSpacePointer);
   }
 
   public void setSlotCount(int slotCount) {
-    data_.putInt(SLOT_COUNT_OFFSET, slotCount);
+    data_.putInt(PAGE_HEADER_SIZE + SLOT_COUNT_OFFSET, slotCount);
   }
 
   public void setTupleCount(int tupleCount) {
-    data_.putInt(TUPLE_COUNT_OFFSET, tupleCount);
+    data_.putInt(PAGE_HEADER_SIZE + TUPLE_COUNT_OFFSET, tupleCount);
   }
 
   public void setTupleLength(int slotId, int size) {
-    data_.putInt(PAGE_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_SIZE_OFFSET, size);
+    data_.putInt(ALL_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_SIZE_OFFSET, size);
   }
 
   public void setTupleOffset(int slotId, int offset) {
-    data_.putInt(PAGE_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_OFFSET_OFFSET, offset);
+    data_.putInt(ALL_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_OFFSET_OFFSET, offset);
   }
 
   public void setTupleFlags(int slotId, int flags) {
-    data_.putInt(PAGE_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_FLAGS_OFFSET, flags);
+    data_.putInt(ALL_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_FLAGS_OFFSET, flags);
   }
 
   // mark delete
@@ -89,35 +91,35 @@ public class TablePageVar extends Page implements TablePage {
 
   // getters
   public int getPrevPageId() {
-    return data_.getInt(PREV_PAGE_ID_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + PREV_PAGE_ID_OFFSET);
   }
 
   public int getNextPageId() {
-    return data_.getInt(NEXT_PAGE_ID_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + NEXT_PAGE_ID_OFFSET);
   }
 
   public int getFreeSpacePointer() {
-    return data_.getInt(FREE_SPACE_POINTER_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + FREE_SPACE_POINTER_OFFSET);
   }
 
   public int getSlotCount() {
-    return data_.getInt(SLOT_COUNT_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + SLOT_COUNT_OFFSET);
   }
 
   public int getTupleCount() {
-    return data_.getInt(TUPLE_COUNT_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + TUPLE_COUNT_OFFSET);
   }
 
   public int getTupleLength(int slotId) {
-    return data_.getInt(PAGE_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_SIZE_OFFSET);
+    return data_.getInt(ALL_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_SIZE_OFFSET);
   }
 
   public int getTupleOffset(int slotId) {
-    return data_.getInt(PAGE_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_OFFSET_OFFSET);
+    return data_.getInt(ALL_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_OFFSET_OFFSET);
   }
 
   public int getTupleFlags(int slotId) {
-    return data_.getInt(PAGE_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_FLAGS_OFFSET);
+    return data_.getInt(ALL_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_FLAGS_OFFSET);
   }
 
   // tuple is allocated
@@ -127,7 +129,7 @@ public class TablePageVar extends Page implements TablePage {
 
   // remaining free space
   public int getFreeSpace() {
-    return getFreeSpacePointer() - PAGE_HEADER_SIZE - MetaAreaSpace();
+    return getFreeSpacePointer() - ALL_HEADER_SIZE - MetaAreaSpace();
   }
 
   // meta info area space

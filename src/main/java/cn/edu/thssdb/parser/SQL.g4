@@ -53,6 +53,7 @@ typeName :
     | T_LONG
     | T_FLOAT
     | T_DOUBLE
+    | T_BOOL
     | T_STRING '(' INTEGER_LITERAL ')' ;
 
 columnConstraint :
@@ -90,6 +91,7 @@ literalValue :
     INTEGER_LITERAL
     | FLOAT_LITERAL
     | STRING_LITERAL
+    | BOOL_LITERAL
     | K_NULL ;
 
 columnFullName:
@@ -125,6 +127,7 @@ T_LONG : L O N G;
 T_FLOAT : F L O A T;
 T_DOUBLE : D O U B L E;
 T_STRING : S T R I N G;
+T_BOOL : B O O L;
 
 K_ADD : A D D;
 K_ALL : A L L;
@@ -167,11 +170,15 @@ K_WHERE : W H E R E;
 IDENTIFIER :
     [a-zA-Z_] [a-zA-Z_0-9]* ;
 
+BOOL_LITERAL :
+      T R U E
+    | F A L S E ;
+
 INTEGER_LITERAL :
     DIGIT+ EXPONENT?;
 
 FLOAT_LITERAL :
-    | DIGIT+ '.' DIGIT* EXPONENT?
+    DIGIT+ '.' DIGIT* EXPONENT?
     | '.' DIGIT+ EXPONENT? ;
 
 EXPONENT :

@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.locks.ReentrantLock;
 
 // French historian
-// Log Manager
+// Aries
 public class LogManager {
   private final ByteBuffer logBuffer = ByteBuffer.allocate(45056);
   private final DiskManager diskManager;

@@ -49,6 +49,6 @@ public class SlotTable extends Table {
 
   @Override
   protected int getPageMaxTupleSize() {
-    return Global.PAGE_SIZE - TablePageSlot.PAGE_HEADER_SIZE - 1;
+    return Global.PAGE_SIZE - TablePageSlot.TABLE_PAGE_SLOT_HEADER_SIZE - 1;
   }
 }
