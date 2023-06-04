@@ -89,7 +89,4 @@ public class TableInfo {
     return tableHeap_;
   }
 
-  public int getFirstPageId() {
-    return tableHeap_.getFirstPageId();
-  }
 }

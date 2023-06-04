@@ -43,15 +43,15 @@ public class nestedLoopJoinExecutor extends Executor {
     // Whereas Java does not believe the programmer. Its memory model sucks. Writing
     // with Java objects is like struggling with the Phantom of the Opera.
     for (Column c : leftS) {
-      if (c.getFullname() != null) {
-        schemaC[idx++] = Column.ColumnRenameFactory(c, c.getFullname());
+      if (c.getFullName() != null) {
+        schemaC[idx++] = Column.ColumnRenameFactory(c, c.getFullName());
       } else {
         schemaC[idx++] = new Column(c);
       }
     }
     for (Column c : rightS) {
-      if (c.getFullname() != null) {
-        schemaC[idx++] = Column.ColumnRenameFactory(c, c.getFullname());
+      if (c.getFullName() != null) {
+        schemaC[idx++] = Column.ColumnRenameFactory(c, c.getFullName());
       } else {
         schemaC[idx++] = new Column(c);
       }

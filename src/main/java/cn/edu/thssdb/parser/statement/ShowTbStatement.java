@@ -7,7 +7,7 @@ public class ShowTbStatement extends Statement {
 
   // constructor with 3 params
   public ShowTbStatement(TableInfo ti) {
-    super(StatementType.SHOW_TABLES);
+    super(StatementType.SHOW_TABLE);
     this.tableInfo = ti;
   }
 

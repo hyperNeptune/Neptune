@@ -31,15 +31,8 @@ public class Schema implements Serializable {
   }
 
   public Schema(Column[] columns, String tableName) {
-    columns_ = columns;
-    colNum = columns_.length;
-    int offset = 0;
-    for (Column column : columns) {
-      column.offset_ = offset;
-      offset += column.getMaxLength();
-      schemaSize_ += column.getColMetaSize();
-    }
-    dataSize_ = offset;
+    // call the constructor above
+    this(columns);
     for (Column column : columns) {
       column.setFullNameByTable(tableName);
     }
@@ -48,25 +41,6 @@ public class Schema implements Serializable {
   // getters
   public Column[] getColumns() {
     return columns_;
-  }
-
-  public Column getColumn(String name) {
-    if (name.contains(".")) {
-      // full name search
-      for (Column column : columns_) {
-        if (column.getFullname().equals(name)) {
-          return column;
-        }
-      }
-    } else {
-      // name search
-      for (Column column : columns_) {
-        if (column.getName().equals(name)) {
-          return column;
-        }
-      }
-    }
-    return null;
   }
 
   public Column getColumn(int index) {
@@ -99,7 +73,7 @@ public class Schema implements Serializable {
     if (name.contains(".")) {
       // full name search
       for (int i = 0; i < columns_.length; i++) {
-        if (columns_[i].getFullname().equals(name)) {
+        if (columns_[i].getFullName().equals(name)) {
           return i;
         }
       }
@@ -109,15 +83,6 @@ public class Schema implements Serializable {
         if (columns_[i].getName().equals(name)) {
           return i;
         }
-      }
-    }
-    return -1;
-  }
-
-  public int getOffset(String name) {
-    for (Column column : columns_) {
-      if (column.getName().equals(name)) {
-        return column.offset_;
       }
     }
     return -1;
@@ -150,7 +115,8 @@ public class Schema implements Serializable {
   }
 
   // WARNING: offset is changed after calling this function
-  public static Pair<Schema, Integer> deserialize(ByteBuffer buffer, Integer offset, String tableName) {
+  public static Pair<Schema, Integer> deserialize(
+      ByteBuffer buffer, Integer offset, String tableName) {
     // column one by one until end
     // column format: name,type,primary nullable maxLength offset
     // not all separated by comma
@@ -172,5 +138,4 @@ public class Schema implements Serializable {
   public static Pair<Schema, Integer> deserialize(ByteBuffer buffer, Integer offset) {
     return deserialize(buffer, offset, null);
   }
-
 }

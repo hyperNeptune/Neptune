@@ -394,9 +394,7 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
       if (rcctx.columnFullName() != null) {
         selectList.add((ColumnRefExpression) visitColumnRef(rcctx.columnFullName()));
       } else if (rcctx.tableName() != null) {
-         selectList.add(
-              new ColumnRefExpression(
-                  rcctx.tableName().getText(), "*"));
+        selectList.add(new ColumnRefExpression(rcctx.tableName().getText(), "*"));
       } else {
         selectList.add(new ColumnRefExpression("*"));
       }

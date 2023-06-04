@@ -145,7 +145,7 @@ public class HyperNeptuneInstance implements IService.Iface {
           DropTbStatement dropTableStatement = (DropTbStatement) stmt;
           curDB_.dropTable(dropTableStatement.tableName);
           return new ExecuteStatementResp(StatusUtil.success(), false);
-        case SHOW_TABLES:
+        case SHOW_TABLE:
           ShowTbStatement showMetaStatement = (ShowTbStatement) stmt;
           return showTable(showMetaStatement.getTableInfo());
         default:

@@ -24,6 +24,7 @@ public class Tuple {
   }
 
   // constructor by another tuple
+  // shallow
   public Tuple(Tuple tuple) {
     size_ = tuple.size_;
     data_ = tuple.data_;
@@ -64,6 +65,7 @@ public class Tuple {
   }
 
   // constructor by sole schema
+  // writes the schema into the tuple
   public Tuple(Schema schema) {
     ByteBuffer data = ByteBuffer.allocate(schema.getSchemaSize());
     schema.serialize(data, 0);

@@ -8,7 +8,7 @@ import java.util.Iterator;
 
 //
 // | Page_id | Prev_page_id | Next_page_id | freeSpacePointer | slotCount | tupleCount |
-// | meta info about all Tuples: (Tuple offset, Tuple size, Tuple flags) |
+// | meta info about all slots: (slot offset, slot size, slot flags) |
 // for now, tuple flags are all about whether the tuple is allocated or not
 //
 public class TablePageVar extends Page implements TablePage {
@@ -20,20 +20,16 @@ public class TablePageVar extends Page implements TablePage {
   public static final int TABLE_PAGE_VAR_HEADER_SIZE = 20;
   public static final int ALL_HEADER_SIZE = TABLE_PAGE_VAR_HEADER_SIZE + PAGE_HEADER_SIZE;
   // dynamic part
-  public static final int TUPLE_META_SIZE = 12;
-  public static final int TUPLE_OFFSET_OFFSET = 0;
-  public static final int TUPLE_SIZE_OFFSET = 4;
-  public static final int TUPLE_FLAGS_OFFSET = 8;
+  public static final int SLOT_META_SIZE = 12;
+  public static final int SLOT_OFFSET_OFFSET = 0;
+  public static final int SLOT_SIZE_OFFSET = 4;
+  public static final int SLOT_FLAGS_OFFSET = 8;
   public static final int SLOT_DELETED = 0;
   public static final int SLOT_ALLOCATED = 1;
 
   public TablePageVar(int page_id) {
     super(page_id);
-    setPrevPageId(Global.PAGE_ID_INVALID);
-    setNextPageId(Global.PAGE_ID_INVALID);
-    setFreeSpacePointer(Global.PAGE_SIZE);
-    setSlotCount(0);
-    setTupleCount(0);
+    init(null);
   }
 
   public TablePageVar(Page page) {
@@ -61,32 +57,32 @@ public class TablePageVar extends Page implements TablePage {
     data_.putInt(PAGE_HEADER_SIZE + TUPLE_COUNT_OFFSET, tupleCount);
   }
 
-  public void setTupleLength(int slotId, int size) {
-    data_.putInt(ALL_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_SIZE_OFFSET, size);
+  public void setSlotLength(int slotId, int size) {
+    data_.putInt(ALL_HEADER_SIZE + slotId * SLOT_META_SIZE + SLOT_SIZE_OFFSET, size);
   }
 
-  public void setTupleOffset(int slotId, int offset) {
-    data_.putInt(ALL_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_OFFSET_OFFSET, offset);
+  public void setSlotOffset(int slotId, int offset) {
+    data_.putInt(ALL_HEADER_SIZE + slotId * SLOT_META_SIZE + SLOT_OFFSET_OFFSET, offset);
   }
 
-  public void setTupleFlags(int slotId, int flags) {
-    data_.putInt(ALL_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_FLAGS_OFFSET, flags);
+  public void setSlotFlags(int slotId, int flags) {
+    data_.putInt(ALL_HEADER_SIZE + slotId * SLOT_META_SIZE + SLOT_FLAGS_OFFSET, flags);
   }
 
   // mark delete
   public void markDelete(int slotId) {
-    setTupleFlags(slotId, SLOT_DELETED);
+    setSlotFlags(slotId, SLOT_DELETED);
   }
 
   // mark allocated
   public void markAllocated(int slotId) {
-    setTupleFlags(slotId, SLOT_ALLOCATED);
+    setSlotFlags(slotId, SLOT_ALLOCATED);
   }
 
-  public void setTupleMeta(int slotId, int offset, int size, int flags) {
-    setTupleOffset(slotId, offset);
-    setTupleLength(slotId, size);
-    setTupleFlags(slotId, flags);
+  public void setSlotMeta(int slotId, int offset, int size, int flags) {
+    setSlotOffset(slotId, offset);
+    setSlotLength(slotId, size);
+    setSlotFlags(slotId, flags);
   }
 
   // getters
@@ -110,21 +106,21 @@ public class TablePageVar extends Page implements TablePage {
     return data_.getInt(PAGE_HEADER_SIZE + TUPLE_COUNT_OFFSET);
   }
 
-  public int getTupleLength(int slotId) {
-    return data_.getInt(ALL_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_SIZE_OFFSET);
+  public int getSlotLength(int slotId) {
+    return data_.getInt(ALL_HEADER_SIZE + slotId * SLOT_META_SIZE + SLOT_SIZE_OFFSET);
   }
 
-  public int getTupleOffset(int slotId) {
-    return data_.getInt(ALL_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_OFFSET_OFFSET);
+  public int getSlotOffset(int slotId) {
+    return data_.getInt(ALL_HEADER_SIZE + slotId * SLOT_META_SIZE + SLOT_OFFSET_OFFSET);
   }
 
-  public int getTupleFlags(int slotId) {
-    return data_.getInt(ALL_HEADER_SIZE + slotId * TUPLE_META_SIZE + TUPLE_FLAGS_OFFSET);
+  public int getSlotFlags(int slotId) {
+    return data_.getInt(ALL_HEADER_SIZE + slotId * SLOT_META_SIZE + SLOT_FLAGS_OFFSET);
   }
 
   // tuple is allocated
   public boolean isAllocated(int slotId) {
-    return (getTupleFlags(slotId) & SLOT_ALLOCATED) == 1;
+    return (getSlotFlags(slotId) & SLOT_ALLOCATED) == 1;
   }
 
   // remaining free space
@@ -134,11 +130,7 @@ public class TablePageVar extends Page implements TablePage {
 
   // meta info area space
   private int MetaAreaSpace() {
-    return getSlotCount() * TUPLE_META_SIZE;
-  }
-
-  private int slotAreaSpace() {
-    return Global.PAGE_SIZE - getFreeSpacePointer();
+    return getSlotCount() * SLOT_META_SIZE;
   }
 
   // has deleted slots, use them if no free space.
@@ -150,7 +142,7 @@ public class TablePageVar extends Page implements TablePage {
   private int findDeletedSlot(int slotSize) {
     int slotId = 0;
     while (slotId < getTupleCount()) {
-      if (!isAllocated(slotId) && getTupleLength(slotId) >= slotSize) {
+      if (!isAllocated(slotId) && getSlotLength(slotId) >= slotSize) {
         return slotId;
       }
       slotId++;
@@ -167,7 +159,7 @@ public class TablePageVar extends Page implements TablePage {
   // check if there is enough space for a new tuple
   public hasEnoughSpaceResult hasEnoughSpace(int size) {
     // has sufficient free space, return
-    if (getFreeSpace() > size + TUPLE_META_SIZE) {
+    if (getFreeSpace() > size + SLOT_META_SIZE) {
       return hasEnoughSpaceResult.HAS_ENOUGH_SPACE;
     }
     // has deleted slots, use them if no free space.
@@ -190,13 +182,16 @@ public class TablePageVar extends Page implements TablePage {
     if (result == hasEnoughSpaceResult.HAS_ENOUGH_SPACE) {
       setFreeSpacePointer(getFreeSpacePointer() - tuple.getSize());
       tuple.serialize(data_, getFreeSpacePointer());
-      setTupleMeta(slotId = getSlotCount(), getFreeSpacePointer(), tuple.getSize(), SLOT_ALLOCATED);
+      setSlotMeta(slotId = getSlotCount(), getFreeSpacePointer(), tuple.getSize(), SLOT_ALLOCATED);
       setSlotCount(getSlotCount() + 1);
     } else {
       // insert into deleted slots
       slotId = findDeletedSlot(tuple.getSize());
-      tuple.serialize(data_, getTupleOffset(slotId));
-      setTupleLength(slotId, tuple.getSize());
+      if (slotId == -1) {
+        return -1;
+      }
+      tuple.serialize(data_, getSlotOffset(slotId));
+      setSlotLength(slotId, tuple.getSize());
       markAllocated(slotId);
     }
     setTupleCount(getTupleCount() + 1);
@@ -230,7 +225,7 @@ public class TablePageVar extends Page implements TablePage {
     if (!isAllocated(slotId)) {
       return null;
     }
-    return Tuple.deserialize(data_, getTupleOffset(slotId), getTupleLength(slotId));
+    return Tuple.deserialize(data_, getSlotOffset(slotId), getSlotLength(slotId));
   }
 
   // update tuple by slot id
@@ -241,7 +236,7 @@ public class TablePageVar extends Page implements TablePage {
     if (!isAllocated(slotId)) {
       return false;
     }
-    tuple.serialize(data_, getTupleOffset(slotId));
+    tuple.serialize(data_, getSlotOffset(slotId));
     return true;
   }
 
@@ -293,9 +288,9 @@ public class TablePageVar extends Page implements TablePage {
     System.out.println("tupleCount: " + getTupleCount());
     for (int i = 0; i < getSlotCount(); i++) {
       System.out.println("slotId: " + i);
-      System.out.println("tupleOffset: " + getTupleOffset(i));
-      System.out.println("tupleLength: " + getTupleLength(i));
-      System.out.println("tupleFlags: " + getTupleFlags(i));
+      System.out.println("tupleOffset: " + getSlotOffset(i));
+      System.out.println("tupleLength: " + getSlotLength(i));
+      System.out.println("tupleFlags: " + getSlotFlags(i));
     }
   }
 

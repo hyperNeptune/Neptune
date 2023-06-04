@@ -73,7 +73,9 @@ public class Page {
 
   // decrease pin count by 1
   public void unpin() {
-    if (runtime_data_.pin_count_ > 0) {runtime_data_.pin_count_--;}
+    if (runtime_data_.pin_count_ > 0) {
+      runtime_data_.pin_count_--;
+    }
   }
 
   // evict able
@@ -105,7 +107,14 @@ public class Page {
       System.out.println("invalid page");
       return;
     }
-    System.out.println("page id: " + getPageId() + ", pin count: " +
-      getPinCount() + ", is dirty: " + isDirty() + "log sequence number: " + getLSN());
+    System.out.println(
+        "page id: "
+            + getPageId()
+            + ", pin count: "
+            + getPinCount()
+            + ", is dirty: "
+            + isDirty()
+            + "log sequence number: "
+            + getLSN());
   }
 }

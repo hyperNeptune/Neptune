@@ -43,6 +43,8 @@ public class VarTable extends Table {
 
   @Override
   protected int getPageMaxTupleSize() {
-    return Global.PAGE_SIZE - TablePageVar.TABLE_PAGE_VAR_HEADER_SIZE - TablePageVar.TUPLE_META_SIZE;
+    return Global.PAGE_SIZE
+        - TablePageVar.TABLE_PAGE_VAR_HEADER_SIZE
+        - TablePageVar.SLOT_META_SIZE;
   }
 }
