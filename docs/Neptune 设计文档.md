@@ -67,6 +67,7 @@ DELETE
 `Type` 是一个抽象工厂。所有具体类型继承 `Type`，成为具体工厂。然后，`Type` 可以制造出 `Value` 。因为 Type 是一个抽象类，所以并不存在抽象的 `Value`，而 `Value` 只是所有数据共享的一个接口。所有具体数值都继承实现了这个抽象类。
 
 `Type` 主要提供如下功能：
+
 - 序列化和反序列化自身
 - 类型转换
 - 反序列化 `Value` ( 因为 `Type` 是 `Value` 的工厂 )
@@ -88,7 +89,7 @@ DELETE
 
 ### 数据库文件
 
-我们使用单一文件存储所有的数据库信息，通过计算数据库文件的大小来确定数据库文件的⻚数。我们用一个 `DiskManager` 类管理数据库文件。`DiskManager` 是对 `java.nio` 的一层封装。它提供读写⻚的接口：
+我们使用单一文件存储所有的数据库信息，通过计算数据库文件的大小来确定数据库文件的页数。我们用一个 `DiskManager` 类管理数据库文件。`DiskManager` 是对 `java.nio` 的一层封装。它提供读写页的接口：
 - 读入指定页号的页。
 - 将页写入指定的页号位置。
 
@@ -98,7 +99,7 @@ DELETE
 
 数据库中的一行在 `Neptune` 中称为 `Tuple`，中文称为“元组”，对应原来框架中的 `Row`。当新旧代码并存的时候，我们需要更名新的类名，防止和原来框架的重复。
 
-行是组成⻚的基本单元。它由一个 header 和一个 payload 组成。header 用于存储这一行的元数据，包含三个内容：
+行是组成页的基本单元。它由一个 header 和一个 payload 组成。header 用于存储这一行的元数据，包含三个内容：
 - 这一行中存在几个字段
 - 每个字段是否为 null (Bitmap)。
 - 数据的大小
@@ -107,50 +108,50 @@ DELETE
 - 序列化和反序列化。
 - 根据 `Schema` 和列在 `Schema` 中的位置取出一个值。
 
-### ⻚  
+### 页
 
 我们使用分页机制处理内存和磁盘之间的关系。内存以 `Global.PAGE_SIZE` 为单页大小从磁盘中载入和写入数据。
 
-抽象类 `Page` 用于表示数据库中的⻚。它的头部含有两个字段，即⻚号和 `LSN(Log Sequence Number)`。当页面在内存中的时候，它还有额外的两个运行时数据：页面是否脏、页面引用计数。
+抽象类 `Page` 用于表示数据库中的页。它的头部含有两个字段，即页号和 `LSN(Log Sequence Number)`。当页面在内存中的时候，它还有额外的两个运行时数据：页面是否脏、页面引用计数。
 
 所有页面共享的头数据如下所示：
 
 |字段|大小|描述|
 |---|---|---|
-|page_id | 4 bytes| ⻚号|  
+|page_id | 4 bytes| 页号|
 | LSN | 4 bytes | Log Sequence Number|
 
-`TablePage` 用于表示数据表⻚。为了分离策略和机制，它是一个接口。`TablePage` 只需要支持如下功能：
-- 获得这张表下一⻚和前一⻚的 ID
+`TablePage` 用于表示数据表页。为了分离策略和机制，它是一个接口。`TablePage` 只需要支持如下功能：
+- 获得这张表下一页和前一页的 ID
 - 设置上一张表和下一张表 ID
 - 根据 schema 获得一个 Tuple
 - 更新删除和插入 Tuple。
 - 迭代器
 
-默认提供一个最简单的 `TablePage` 实现，称作 `TablePageSlot`，这个⻚的结构如下：
+默认提供一个最简单的 `TablePage` 实现，称作 `TablePageSlot`，这个页的结构如下：
 
 |字段|大小|描述|
 |---|---|---|
-|prev_page_id |4 bytes |上一⻚号|  
-|next_page_id| 4 bytes| 下一⻚号|  
-|free_space_pointer |4 bytes |空闲空间指针|  
-|tuple_count| 4 bytes| tuple 数量|  
-|tuple_length |4 bytes| tuple ⻓度|
+|prev_page_id |4 bytes |上一页号|
+|next_page_id| 4 bytes| 下一页号|
+|free_space_pointer |4 bytes |空闲空间指针|
+|tuple_count| 4 bytes| tuple 数量|
+|tuple_length |4 bytes| tuple 长度|
 | bitmap | 不定 |位图，表示槽位是否已经分配|
 |free space|不定|自由空间|
 
-这个⻚只支持固定⻓度的 tuple，所以我们在⻚的 header 放置了 tuple_length 字段，用于表示 tuple 的⻓度。在头后面是一个动态增⻓位图数据结构，用来表示在这一⻚中，哪些空位(slot)被占用，哪些空位因为数据删除而空闲。  
+这个页只支持固定长度的 tuple，所以我们在页的 header 放置了 tuple_length 字段，用于表示 tuple 的长度。在头后面是一个动态增长位图数据结构，用来表示在这一页中，哪些空位(slot)被占用，哪些空位因为数据删除而空闲。  
 
-因为这一位图从低地址向高地址增⻓，所以新的 tuple 需要从高地址向低地址增⻓，以避免碰撞。当位图和 tuple 重叠的时候，这一⻚就满了。
+因为这一位图从低地址向高地址增长，所以新的 tuple 需要从高地址向低地址增长，以避免碰撞。当位图和 tuple 重叠的时候，这一页就满了。
 
 除了 `TablePageSlot` ，我们还提供了另外一种页面的实现，`TablePageVar`。这个页面可以存放可变长度的记录。不过这个页面目前只用于存储元数据，还没有向用户开放。它的结构与 `TablePageSlot` 相仿。但是，因为元组的大小可变，我们必须增加一些元数据，表达元组的位置和大小，因为它们无法直接计算出来。
 
 |字段|大小|描述|
 |---|---|---|
-|prev_page_id |4 bytes |上一⻚号|  
-|next_page_id| 4 bytes| 下一⻚号|  
-|free_space_pointer |4 bytes |空闲空间指针|  
-|slot_count| 4 bytes| 槽位数量|  
+|prev_page_id |4 bytes |上一页号|
+|next_page_id| 4 bytes| 下一页号|
+|free_space_pointer |4 bytes |空闲空间指针|
+|slot_count| 4 bytes| 槽位数量|
 |tuple_count |4 bytes| tuple 数量|
 | (槽位开始位置，槽位大小，槽位状态集合) | 12 bytes |和槽位相关的元数据|
 |free space|不定|自由空间|
@@ -238,7 +239,7 @@ B+ 树索引页共享的元数据如下:
 
 最后，逗号和分号在 SQL 中都是保留字，所以我们不用担心列名和类型中出现逗号和分号的情况。
 
-### 表信息 `TableInfo`
+### 表信息 TableInfo
 
 `TableInfo` 用于存储数据表的一切元数据。它包含以下字段：
 
@@ -262,9 +263,9 @@ Catalog 用于管理数据库中所有的表的信息，也就是所有的 `Tabl
 - 创建表
 - 删除表
 
-它管理一个特殊的表，它的表名是 `__HYPERNEPTUNE__SAINTDENIS__SCHEMA__` ，Schema 中只有一个很⻓的 `VARCHAR` ，用来存储表的 `TableInfo`。因为这个字符串是变长的，所以只能使用变长表和变长的页面。
+它管理一个特殊的表，它的表名是 `__HYPERNEPTUNE__SAINTDENIS__SCHEMA__` ，Schema 中只有一个很长的 `VARCHAR` ，用来存储表的 `TableInfo`。因为这个字符串是变长的，所以只能使用变长表和变长的页面。
 
-### 无辜者公墓 `CimetiereDesInnocents`
+### 无辜者公墓 CimetiereDesInnocents
 
 无辜者公墓，`CimetiereDesInnocents`，是我们数据库系统中用于管理所有 `Catalog` 的类。也是数据库在 `Bootstrap(自举)` 阶段的关键。
 
@@ -300,7 +301,126 @@ Catalog 用于管理数据库中所有的表的信息，也就是所有的 `Tabl
 - SELECT
 	- 查询语句。包含信息：表的组合 `TableBinder`，是否去重，投影列表，过滤器的谓词。
 
-
 ## 事务系统（并发控制模块）
 
-## 恢复系统（WAL模块）
+### 锁管理器 LockManager
+
+当数据库中出现若干个事务并行执行时，为了保持隔离性，我们使用了基于锁的协议对并发进行控制。我们使用了两阶段封锁协议（two-phase locking protocol）以保证事务的可串行化。我们实现了 4 种事务的隔离级别：串行、可重复读、读提交、读未提交。除此之外，为了提高事务的并发性，我们引入了意向锁（intention lock）以细化锁的粒度。
+
+首先介绍我们使用的锁的种类及相容性矩阵
+
+|         | **IS** | **IX** | **S** | **SIX** | **X** |
+| ------- | ------ | ------ | ----- | ------- | ----- |
+| **IS**  | T      | T      | T     | T       |       |
+| **IX**  | T      | T      |       |         |       |
+| **S**   | T      |        | T     |         |       |
+| **SIX** | T      |        |       |         |       |
+| **X**   |        |        |       |         |       |
+
+我们的锁操作分为两个粒度：表锁和行锁。行锁是较细粒度的的锁，位于锁树的子节点，对行进行封锁需要先对表进行意向封锁。
+
+具体的实现较为繁琐，这里只以获取表锁的操作举例简要介绍其实现原理，我们区分事务锁（lock）和线程锁（latch），前者由 LockManager 管理，后者由 jvm 与操作系统管理。LockManager 维护一个从数据库表到锁请求队列的 HashMap 映射，接受到一个事务的上锁请求后，首先根据事务的阶段进行逻辑检查，接着查询 HashMap 以区分该请求是否属于锁升级，最后将请求正式加入队列并等待授予锁。线程安全性主要通过 java 中的可重入锁（ReentrantLock）和相应的条件变量语义实现。
+
+以下是我们对不同隔离级别的事务的锁的校验原则，由于串行只需要单个锁即可实现，故不在此考虑范围中
+
+| 获取锁                  | 可重复读 REPEATABLE_READ | 读提交 READ_COMMITTED | 读未提交 READ_UNCOMMITTED |
+| ----------------------- | ------------------------ | --------------------- | ------------------------- |
+| 需求                    | All                      | All                   | Only IX, X                |
+| 允许（Growing Stage）   | All                      | All                   | Only IX, X                |
+| 允许（Shrinking Stage） | None                     | Only IS, S            | Only IX, X                |
+
+可以看出，只有可重复读在获取锁的时候需要严格遵守 2PL 协议。
+
+| 释放锁 | 可重复读 REPEATABLE_READ | 读提交 READ_COMMITTED | 读未提交 READ_UNCOMMITTED |
+| ------ | ------------------------ | --------------------- | ------------------------- |
+| 释放X  | to Shrinking             | to Shrinking          | to Shrinking              |
+| 释放S  | to Shrinking             | -                     | UB                        |
+
+对于读未提交的事务，释放S锁是未定义行为，我们将直接中止该事务。
+
+### 事务管理器 TransactionManager
+
+事务管理器管理一切事务，见证着、掌控着所有事务的诞生和凋亡。
+
+单个事务内部主要维护以下数据
+
+| 字段    | 类型              | 描述                                           |
+| ------- | ----------------- | ---------------------------------------------- |
+| id      | int               | 事务序列号，由事务管理器统一分配               |
+| t id    | long              | 事务所在的线程序号                             |
+| p lsn   | int               | 事务最后一次被日志记录的日志序列号             |
+| state   | TransactionState  | 事务的阶段（Growing、Shrinking、Committed等）  |
+| i level | IsolationLevel    | 事务的隔离级别                                 |
+| ... set | HashMap / HashSet | 四个集合，分别记录事务S和X的表锁和行锁获取情况 |
+| w set   | ArrayList         | 事务的所有写操作                               |
+
+事务管理器对事务的管理主要包含以下五种方法
+
++ Begin：
+  + 开始一个事务，同时开始记录下日志和事务的所有写操作
++ Abort：
+  + 中止一个事务，释放事务获取的所有的锁，并回滚事务的所有写操作
++ Commit：
+  + 提交一个事务，释放事务获取的所有的锁
++ BlockAll：
+  + 暂停所有事务，以创建存档点
++ ResumeAll：
+  + 恢复所有的事务
+
+## **恢复系统（WAL模块）**
+
+### 日志管理器 LogManager
+
+日志管理器负责生成日志，并将日志持久化存储，使用了 DiskManager 作为文件读写的接口。
+
+我们将日志记录划分为五种：事务日志、插入日志、删除日志、更新日志、页日志。以下分别是这五种日志的记录结构。
+
+#### 事务日志
+
+事务日志使用的字段最少，且其他 4 种日志均有着和事务日志相同的头部结构。故可将事务日志作为统一的日志头（Header）
+
+| 字段     | 大小    | 描述                           |
+| -------- | ------- | ------------------------------ |
+| size     | 4 bytes | 日志段大小，用于反序列化时使用 |
+| LSN      | 4 bytes | 日志序列号                     |
+| txn ID   | 4 bytes | 事务号                         |
+| prev LSN | 4 bytes | 事务的 p lsn（见事务字段）     |
+| type     | 4 bytes | 日志类别（例如这里是事务日志） |
+
+#### 插入/删除日志
+
+元组的插入和删除操作会产生这种日志。这两种日志虽然类别不同，但结构相似。其中 Header 包含 5 个字段，和事务日志中的 5 个字段一致。
+
+| 字段       | 大小     | 描述                      |
+| ---------- | -------- | ------------------------- |
+| Header     | 20 bytes | 见事务日志                |
+| tuple RID  | 8 bytes  | 插入/删除的元组的 RID     |
+| tuple size | 4 bytes  | 插入/删除的元组的大小     |
+| tuple data | 变长     | 插入/删除的元组的具体数据 |
+
+#### 更新日志
+
+元组的更新会产生这种日志。
+
+| 字段           | 大小     | 描述             |
+| -------------- | -------- | ---------------- |
+| Header         | 20 bytes | 见事务日志       |
+| tuple RID      | 8 bytes  | 更新的元组的 RID |
+| old tuple size | 4 bytes  | 旧元组的大小     |
+| old tuple data | 变长     | 旧元组的具体数据 |
+| new tuple size | 4 bytes  | 新元组的大小     |
+| new tuple data | 变长     | 新元组的具体数据 |
+
+#### 页日志
+
+新建页会产生这种日志。
+
+| 字段         | 大小     | 描述           |
+| ------------ | -------- | -------------- |
+| Header       | 20 bytes | 见事务日志     |
+| prev page id | 4 bytes  | 前一页的页序号 |
+| page id      | 4 bytes  | 新建的页序号   |
+
+### 日志恢复器 LogRecovery
+
+怎么办呢
