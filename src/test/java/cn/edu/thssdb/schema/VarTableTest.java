@@ -39,11 +39,11 @@ public class VarTableTest {
     // a string array
     String[] s = new String[5];
     // use the title of famous books for it's string
-    s[0] = "The Lord of the Rings tower of twins";
-    s[1] = "The Little Prince is a french famous";
+    s[0] = "The Lord of the Rings tower of twins....";
+    s[1] = "The Little Prince is a french famous....";
     s[2] = "Harry Potter and the Philosopher's Stone";
-    s[3] = "And Then There Were None .............";
-    s[4] = "Dream of the Red Chamber in china book";
+    s[3] = "And Then There Were None ...............";
+    s[4] = "Dream of the Red Chamber in china book..";
 
     // create byte buffers
     ByteBuffer[] byteBuffers = new ByteBuffer[5];

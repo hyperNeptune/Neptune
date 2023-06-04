@@ -1,5 +1,7 @@
 package cn.edu.thssdb.index;
 
+import cn.edu.thssdb.storage.index.BPlusTree;
+import cn.edu.thssdb.storage.index.BPlusTreeIterator;
 import org.junit.Before;
 import org.junit.Test;
 
