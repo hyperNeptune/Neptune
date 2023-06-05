@@ -415,8 +415,8 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
     // cross product
     TableBinder left = visitTableQ(ctx.get(0));
     TableBinder right = visitTableQLS(ctx.subList(1, ctx.size()));
-    Expression on = visitBinaryExpr(ctx.get(0).expression());
-    return new JoinTableBinder(left, right, on);
+    // cartesian product, the condition is always true
+    return new JoinTableBinder(left, right, ConstantExpression.ALWAYS_TRUE_EXPRESSION);
   }
 
   private TableBinder visitTableQ(SQLParser.TableQueryContext ctx) {

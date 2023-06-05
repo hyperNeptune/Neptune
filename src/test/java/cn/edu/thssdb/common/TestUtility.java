@@ -21,6 +21,7 @@ public class TestUtility {
   public Catalog curDB;
   public TableInfo mockTable;
   public TableInfo mockTable2;
+  public TableInfo mockTable3;
   public Schema sh;
   public ExecutionEngine executionEngine;
   public TransactionManager transactionManager;
@@ -89,6 +90,33 @@ public class TestUtility {
       values[4] = new LongValue(i);
       Tuple t = new Tuple(values, shh);
       mockTable2.getTable().insert(t, null);
+    }
+  }
+
+  public void generateMockTable3() throws Exception {
+    Column[] s = new Column[5];
+    s[0] = new Column("col12", IntType.INSTANCE, (byte) 0, (byte) 0, Global.INT_SIZE, 0);
+    // a double
+    s[1] = new Column("col22", DoubleType.INSTANCE, (byte) 0, (byte) 0, Global.DOUBLE_SIZE, 4);
+    // a string
+    s[2] = new Column("col32", StringType.getVarCharType(10), (byte) 0, (byte) 0, 10, 12);
+    // a float
+    s[3] = new Column("col42", FloatType.INSTANCE, (byte) 0, (byte) 0, Global.FLOAT_SIZE, 22);
+    // a long
+    s[4] = new Column("col52", LongType.INSTANCE, (byte) 0, (byte) 0, Global.LONG_SIZE, 26);
+
+    Schema shh = new Schema(s);
+    curDB.createTable("test3", shh);
+    mockTable3 = curDB.getTableInfo("test3");
+    for (int i = 0; i < 1000; i++) {
+      Value[] values = new Value[5];
+      values[0] = new IntValue(i);
+      values[1] = new DoubleValue(i);
+      values[2] = new StringValue("testthis...", 10);
+      values[3] = new FloatValue(i);
+      values[4] = new LongValue(i);
+      Tuple t = new Tuple(values, shh);
+      mockTable3.getTable().insert(t, null);
     }
   }
 

@@ -23,7 +23,7 @@
 - 恢复系统 `cn.edu.thssdb.recovery`
 
 图示如下：
-![[Pasted image 20230603210308.png]]
+![Structure of the Database illustrated](Pasted%20image%2020230603210308.png)
 ## 一条 SQL 语句在 Neptune 中的生和死
 
 让我们从最经典的一条 SQL 语句开始：
@@ -116,10 +116,10 @@ DELETE
 
 所有页面共享的头数据如下所示：
 
-|字段|大小|描述|
-|---|---|---|
-|page_id | 4 bytes| 页号|
-| LSN | 4 bytes | Log Sequence Number|
+| 字段      | 大小      | 描述                  |
+|---------|---------|---------------------|
+| page_id | 4 bytes | 页号                  |
+| LSN     | 4 bytes | Log Sequence Number |
 
 `TablePage` 用于表示数据表页。为了分离策略和机制，它是一个接口。`TablePage` 只需要支持如下功能：
 - 获得这张表下一页和前一页的 ID
@@ -130,31 +130,31 @@ DELETE
 
 默认提供一个最简单的 `TablePage` 实现，称作 `TablePageSlot`，这个页的结构如下：
 
-|字段|大小|描述|
-|---|---|---|
-|prev_page_id |4 bytes |上一页号|
-|next_page_id| 4 bytes| 下一页号|
-|free_space_pointer |4 bytes |空闲空间指针|
-|tuple_count| 4 bytes| tuple 数量|
-|tuple_length |4 bytes| tuple 长度|
-| bitmap | 不定 |位图，表示槽位是否已经分配|
-|free space|不定|自由空间|
+| 字段                 | 大小      | 描述            |
+|--------------------|---------|---------------|
+| prev_page_id       | 4 bytes | 上一页号          |
+| next_page_id       | 4 bytes | 下一页号          |
+| free_space_pointer | 4 bytes | 空闲空间指针        |
+| tuple_count        | 4 bytes | tuple 数量      |
+| tuple_length       | 4 bytes | tuple 长度      |
+| bitmap             | 不定      | 位图，表示槽位是否已经分配 |
+| free space         | 不定      | 自由空间          |
 
-这个页只支持固定长度的 tuple，所以我们在页的 header 放置了 tuple_length 字段，用于表示 tuple 的长度。在头后面是一个动态增长位图数据结构，用来表示在这一页中，哪些空位(slot)被占用，哪些空位因为数据删除而空闲。  
+这个页只支持固定长度的 tuple，所以我们在页的 header 放置了 tuple_length 字段，用于表示 tuple 的长度。在头后面是一个动态增长位图数据结构，用来表示在这一页中，哪些空位(slot)被占用，哪些空位因为数据删除而空闲。
 
 因为这一位图从低地址向高地址增长，所以新的 tuple 需要从高地址向低地址增长，以避免碰撞。当位图和 tuple 重叠的时候，这一页就满了。
 
 除了 `TablePageSlot` ，我们还提供了另外一种页面的实现，`TablePageVar`。这个页面可以存放可变长度的记录。不过这个页面目前只用于存储元数据，还没有向用户开放。它的结构与 `TablePageSlot` 相仿。但是，因为元组的大小可变，我们必须增加一些元数据，表达元组的位置和大小，因为它们无法直接计算出来。
 
-|字段|大小|描述|
-|---|---|---|
-|prev_page_id |4 bytes |上一页号|
-|next_page_id| 4 bytes| 下一页号|
-|free_space_pointer |4 bytes |空闲空间指针|
-|slot_count| 4 bytes| 槽位数量|
-|tuple_count |4 bytes| tuple 数量|
-| (槽位开始位置，槽位大小，槽位状态集合) | 12 bytes |和槽位相关的元数据|
-|free space|不定|自由空间|
+| 字段                   | 大小       | 描述        |
+|----------------------|----------|-----------|
+| prev_page_id         | 4 bytes  | 上一页号      |
+| next_page_id         | 4 bytes  | 下一页号      |
+| free_space_pointer   | 4 bytes  | 空闲空间指针    |
+| slot_count           | 4 bytes  | 槽位数量      |
+| tuple_count          | 4 bytes  | tuple 数量  |
+| (槽位开始位置，槽位大小，槽位状态集合) | 12 bytes | 和槽位相关的元数据 |
+| free space           | 不定       | 自由空间      |
 
 这个页面在插入数据的时候动态分配槽位。删除槽位的元组以后，槽位为空。空槽位可以复用来存储小于等于它的数据。一经复用，槽位的大小会缩小到元组的大小。于是，外部碎片产生。许多数据库系统使用 `VACUMM` 机制解决这个问题，但它非常复杂，我们不打算实现它。
 
@@ -164,18 +164,18 @@ DELETE
 
 B+ 树索引页共享的元数据如下:
 
-|字段|大小|描述|
-|----|----|----|
-| pageType|4 bytes|内部节点页还是叶子节点页？|
-|size|4 bytes| 页面中键值对的数量 |
-| maxSize | 4 bytes | 页面中键值对的最大数量 |
-| parentId| 4 bytes | 父页的 ID |
+| 字段       | 大小      | 描述            |
+|----------|---------|---------------|
+| pageType | 4 bytes | 内部节点页还是叶子节点页？ |
+| size     | 4 bytes | 页面中键值对的数量     |
+| maxSize  | 4 bytes | 页面中键值对的最大数量   |
+| parentId | 4 bytes | 父页的 ID        |
 
 内部页存储有序的 m 个 key 和 m + 1 个指针。指针其实就是子页的 `PageID`，在查找的时候，通过这个 ID 找到子页。
 
 叶子页存储有序的 m 个 key 和 m 个 `Value`，由于我们采用晚物化模型，叶子页的 `Value` 实际上是 `PageID + SlotID`。
 
-这篇文档中不再赘述 `B+ Tree` 的相关算法。 
+这篇文档中不再赘述 `B+ Tree` 的相关算法。
 
 我们会为每一个表以主键建立索引，并且用索引来维护 `Primary Key` 的性质。
 
@@ -215,14 +215,14 @@ B+ 树索引页共享的元数据如下:
 
 我们的列由以下几个字段组成，变长字段之间用逗号隔开，非变长字段排列在一起：
 
-|字段|大小|
-|----|----|
-| 列名|变长|
-|列类型|4 bytes|
-| 是否为主键 | 4 bytes |
-| 是否可空| 4 bytes | 
-| 最大长度| 4 bytes | 
-| 在 Tuple 中的偏移量| 4 bytes |
+| 字段            | 大小      |
+|---------------|---------|
+| 列名            | 变长      |
+| 列类型           | 变长      |
+| 是否为主键         | 1 bytes |
+| 是否可空          | 1 bytes |
+| 最大长度          | 4 bytes |
+| 在 Tuple 中的偏移量 | 4 bytes |
 
 列还有一个运行时的属性，称为全名 `fullname`，它是这个列带上表名，或者被更名之后的名称。
 
@@ -230,10 +230,10 @@ B+ 树索引页共享的元数据如下:
 
 将所有的列拼接在一起，成为数据表的 Schema。Schema 用于描述数据表的整体结构，开头为一个 `colsNum`，表示这个 Schema 由几列组成。然后是一系列的列信息，他们中间用分号隔开。
 
-|字段|大小|
-|----|----|
-| 列数|4 bytes|
-|每一个列|变长，用分号隔开|
+| 字段   | 大小       |
+|------|----------|
+| 列数   | 4 bytes  |
+| 每一个列 | 变长，用分号隔开 |
 
 当我们解读数据库行信息的时候，我们利用 Schema 来获得每个字段的类型，从而获得每个字段的值。具体说，Schema 会用列的名字在自己持有的所有列中比对，找到正确的列，然后 `Tuple` 类会使用这个列的信息来取出一个值。另外，在全名可用的情况下，Schema 会优先按照全名匹配，在不可用的时候再使用默认的列名。
 
@@ -243,13 +243,13 @@ B+ 树索引页共享的元数据如下:
 
 `TableInfo` 用于存储数据表的一切元数据。它包含以下字段：
 
-|字段|大小|
-|----|----|
-| 表名长度|4 bytes|
-| 表名|变长|
-|表的 Schema|变长|
-| 表第一页页号 | 4 bytes |
-| 索引第一页页号 | 4 bytes |
+| 字段        | 大小      |
+|-----------|---------|
+| 表名长度      | 4 bytes |
+| 表名        | 变长      |
+| 表的 Schema | 变长      |
+| 表第一页页号    | 4 bytes |
+| 索引第一页页号   | 4 bytes |
 
 在运行的时候，数据库会用表第一页的页号构造出 `Table` ，用索引的第一页页号构造出`Index`，供执行器使用。
 
@@ -286,20 +286,75 @@ Catalog 用于管理数据库中所有的表的信息，也就是所有的 `Tabl
 ### 语法解析
 
 通过 `ANTLR4` 的语法分析树，一条 `SQL` 语句被解析为一个 Statement，并且绑定了数据库对象。下面列举 Statement 的种类，并说明它们的作用。
-- CREATE_TABLE, 
+
+- CREATE_TABLE,
 	- 创建表语句。包含信息：所有的列信息、表的名称。
-- DROP_TABLE,  
+- DROP_TABLE,
 	- 删除表语句。包含信息：表的名称。
-- SHOW_TABLE,  
+- SHOW_TABLE,
 	- 展示表语句。包含信息：表的 `TableInfo`。
-- INSERT,  
+- INSERT,
 	- 插入语句。包含信息：表的 `TableInfo`，要插入的所有 `Tuple` 的数组。
-- DELETE,  
+- DELETE,
 	- 删除语句。包含信息：表的 `TableInfo`，删除所需满足的条件 `Expression`
-- UPDATE,  
+- UPDATE,
 	- 更新语句。包含信息：表的 `TableInfo`，更新的值，更新需要满足的条件
 - SELECT
 	- 查询语句。包含信息：表的组合 `TableBinder`，是否去重，投影列表，过滤器的谓词。
+
+当我们处理 `ON`,  `WHERE`, `SELECT` 的时候，需要构建一棵表达式树。我们一共有四种表达式：
+
+- BINARY
+	- 二元表达式，支持各种各样的二元运算符。
+- CONSTANT
+	- 常量表达式，放置解析出来的数值，字符串等常量。
+- UNARY
+	- 一元表达式，目前还没有用。
+- COLUMN_REF
+	- 列引用表达式，代表引用数据库中，一个列的值。
+
+因为表可以 `JOIN` ，因此表也需要被表示为一棵树。我们的 `TableBinder` 一共有这几种：
+
+- JOIN
+	- 连接绑定。成员：左 `TableBinder`，右 `TableBinder`，Join 条件
+- REGULAR
+	- 普通表。一般是叶子节点。成员：一个 `TableInfo`
+- CROSS
+	- 笛卡尔积。成员：左 `TableBinder`，右 `TableBinder`
+- EMPTY
+	- 空。在没有表的情况下，`SELECT` 只可以用来做计算器。
+
+总之，语法分析模块会返回一颗以 `Statement` 为根，其中混杂 `Expression` 和 `TableBinder` 的树。
+
+### 查询系统
+
+查询处理模块仅仅处理四种复杂的 SQL 语句。因为其他的 SQL 语句不需要处理就可以直接执行。这四种语句分别为：
+
+```SQL
+SELECT
+UPDATE
+INSERT
+DELETE
+```
+
+查询处理模块采用火山模型 (`volcano model`)，也就是迭代器模型。根部的执行器调用子执行器的 `next()` 函数，然后子执行器再调用自己的子执行器的 `next()`，以此类推，最后再把结果一层层向上返回，最后交给用户。我们会用 `Planner` 遍历一次从语法分析中获得的 `Statement`，然后组装出一个 `Executor` 组成的树，返回它根部的 `Executor` 给用户。
+
+我们一共有以下几种 `Executor`:
+
+- `deleteExecutor`，用来删除一条记录。
+- `filterExecutor`，不断从下层抽取记录，直到满足条件，或者 `EOF`。
+- `indexScanExecutor`，扫描数据库索引，按照向上层提供记录。
+- `insertExecutor`，用来插入一条记录。
+- `nestedLoopJoinExecutor`，用来连接两张表。
+- `projectionExecutor`，用来投影，去除查询中不需要的属性。
+- `seqScanExecutor`，顺序扫描一张表，向上层提供记录。
+- `updateExecutor`，用来更新一条记录。
+
+每个 `Executor` 中都包含一个 `ExecContext`，其中包含本次查询相关的上下文信息，例如这次查询归属的事务，缓存池管理器以及总目录等等。
+
+最后，`Executor` 交由 `ExecutionEngine`，它会不断调用根执行器的 `next()` 方法，把结果保存到一个数组里，直到根执行器枯竭。
+
+当结果完整、正确地送到用户手中的时候，这条 SQL 语句就终结了自己的历史使命。其中包含着各种各样精巧的设计：并发控制、查询优化、数据组织…… 为了构建可扩展、可维护和可靠的软件系统，数据库系统设计者孜孜不倦，绞尽脑汁。正所谓：“桃李春风一杯酒，江湖夜雨十年灯”。
 
 ## 事务系统（并发控制模块）
 
@@ -310,7 +365,7 @@ Catalog 用于管理数据库中所有的表的信息，也就是所有的 `Tabl
 首先介绍我们使用的锁的种类及相容性矩阵
 
 |         | **IS** | **IX** | **S** | **SIX** | **X** |
-| ------- | ------ | ------ | ----- | ------- | ----- |
+|---------|--------|--------|-------|---------|-------|
 | **IS**  | T      | T      | T     | T       |       |
 | **IX**  | T      | T      |       |         |       |
 | **S**   | T      |        | T     |         |       |
@@ -323,18 +378,18 @@ Catalog 用于管理数据库中所有的表的信息，也就是所有的 `Tabl
 
 以下是我们对不同隔离级别的事务的锁的校验原则，由于串行只需要单个锁即可实现，故不在此考虑范围中
 
-| 获取锁                  | 可重复读 REPEATABLE_READ | 读提交 READ_COMMITTED | 读未提交 READ_UNCOMMITTED |
-| ----------------------- | ------------------------ | --------------------- | ------------------------- |
-| 需求                    | All                      | All                   | Only IX, X                |
-| 允许（Growing Stage）   | All                      | All                   | Only IX, X                |
-| 允许（Shrinking Stage） | None                     | Only IS, S            | Only IX, X                |
+| 获取锁                 | 可重复读 REPEATABLE_READ | 读提交 READ_COMMITTED | 读未提交 READ_UNCOMMITTED |
+|---------------------|----------------------|--------------------|-----------------------|
+| 需求                  | All                  | All                | Only IX, X            |
+| 允许（Growing Stage）   | All                  | All                | Only IX, X            |
+| 允许（Shrinking Stage） | None                 | Only IS, S         | Only IX, X            |
 
 可以看出，只有可重复读在获取锁的时候需要严格遵守 2PL 协议。
 
 | 释放锁 | 可重复读 REPEATABLE_READ | 读提交 READ_COMMITTED | 读未提交 READ_UNCOMMITTED |
-| ------ | ------------------------ | --------------------- | ------------------------- |
-| 释放X  | to Shrinking             | to Shrinking          | to Shrinking              |
-| 释放S  | to Shrinking             | -                     | UB                        |
+|-----|----------------------|--------------------|-----------------------|
+| 释放X | to Shrinking         | to Shrinking       | to Shrinking          |
+| 释放S | to Shrinking         | -                  | UB                    |
 
 对于读未提交的事务，释放S锁是未定义行为，我们将直接中止该事务。
 
@@ -344,15 +399,15 @@ Catalog 用于管理数据库中所有的表的信息，也就是所有的 `Tabl
 
 单个事务内部主要维护以下数据
 
-| 字段    | 类型              | 描述                                           |
-| ------- | ----------------- | ---------------------------------------------- |
-| id      | int               | 事务序列号，由事务管理器统一分配               |
-| t id    | long              | 事务所在的线程序号                             |
-| p lsn   | int               | 事务最后一次被日志记录的日志序列号             |
-| state   | TransactionState  | 事务的阶段（Growing、Shrinking、Committed等）  |
-| i level | IsolationLevel    | 事务的隔离级别                                 |
-| ... set | HashMap / HashSet | 四个集合，分别记录事务S和X的表锁和行锁获取情况 |
-| w set   | ArrayList         | 事务的所有写操作                               |
+| 字段      | 类型                | 描述                                  |
+|---------|-------------------|-------------------------------------|
+| id      | int               | 事务序列号，由事务管理器统一分配                    |
+| t id    | long              | 事务所在的线程序号                           |
+| p lsn   | int               | 事务最后一次被日志记录的日志序列号                   |
+| state   | TransactionState  | 事务的阶段（Growing、Shrinking、Committed等） |
+| i level | IsolationLevel    | 事务的隔离级别                             |
+| ... set | HashMap / HashSet | 四个集合，分别记录事务S和X的表锁和行锁获取情况            |
+| w set   | ArrayList         | 事务的所有写操作                            |
 
 事务管理器对事务的管理主要包含以下五种方法
 
@@ -379,47 +434,47 @@ Catalog 用于管理数据库中所有的表的信息，也就是所有的 `Tabl
 
 事务日志使用的字段最少，且其他 4 种日志均有着和事务日志相同的头部结构。故可将事务日志作为统一的日志头（Header）
 
-| 字段     | 大小    | 描述                           |
-| -------- | ------- | ------------------------------ |
-| size     | 4 bytes | 日志段大小，用于反序列化时使用 |
-| LSN      | 4 bytes | 日志序列号                     |
-| txn ID   | 4 bytes | 事务号                         |
-| prev LSN | 4 bytes | 事务的 p lsn（见事务字段）     |
-| type     | 4 bytes | 日志类别（例如这里是事务日志） |
+| 字段       | 大小      | 描述               |
+|----------|---------|------------------|
+| size     | 4 bytes | 日志段大小，用于反序列化时使用  |
+| LSN      | 4 bytes | 日志序列号            |
+| txn ID   | 4 bytes | 事务号              |
+| prev LSN | 4 bytes | 事务的 p lsn（见事务字段） |
+| type     | 4 bytes | 日志类别（例如这里是事务日志）  |
 
 #### 插入/删除日志
 
 元组的插入和删除操作会产生这种日志。这两种日志虽然类别不同，但结构相似。其中 Header 包含 5 个字段，和事务日志中的 5 个字段一致。
 
-| 字段       | 大小     | 描述                      |
-| ---------- | -------- | ------------------------- |
-| Header     | 20 bytes | 见事务日志                |
-| tuple RID  | 8 bytes  | 插入/删除的元组的 RID     |
-| tuple size | 4 bytes  | 插入/删除的元组的大小     |
-| tuple data | 变长     | 插入/删除的元组的具体数据 |
+| 字段         | 大小       | 描述            |
+|------------|----------|---------------|
+| Header     | 20 bytes | 见事务日志         |
+| tuple RID  | 8 bytes  | 插入/删除的元组的 RID |
+| tuple size | 4 bytes  | 插入/删除的元组的大小   |
+| tuple data | 变长       | 插入/删除的元组的具体数据 |
 
 #### 更新日志
 
 元组的更新会产生这种日志。
 
-| 字段           | 大小     | 描述             |
-| -------------- | -------- | ---------------- |
-| Header         | 20 bytes | 见事务日志       |
+| 字段             | 大小       | 描述         |
+|----------------|----------|------------|
+| Header         | 20 bytes | 见事务日志      |
 | tuple RID      | 8 bytes  | 更新的元组的 RID |
 | old tuple size | 4 bytes  | 旧元组的大小     |
-| old tuple data | 变长     | 旧元组的具体数据 |
+| old tuple data | 变长       | 旧元组的具体数据   |
 | new tuple size | 4 bytes  | 新元组的大小     |
-| new tuple data | 变长     | 新元组的具体数据 |
+| new tuple data | 变长       | 新元组的具体数据   |
 
 #### 页日志
 
 新建页会产生这种日志。
 
-| 字段         | 大小     | 描述           |
-| ------------ | -------- | -------------- |
-| Header       | 20 bytes | 见事务日志     |
+| 字段           | 大小       | 描述      |
+|--------------|----------|---------|
+| Header       | 20 bytes | 见事务日志   |
 | prev page id | 4 bytes  | 前一页的页序号 |
-| page id      | 4 bytes  | 新建的页序号   |
+| page id      | 4 bytes  | 新建的页序号  |
 
 ### 检查点管理器 CheckPointManager
 

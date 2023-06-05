@@ -5,4 +5,10 @@ connect 1 1
 create table test (col1 int primary key, col2 double, col3 string(10), col4 float, col5 long);
 insert into test(col1, col2, col3, col4, col5) values(1, 1.1, 'test', 1.1, 1);
 insert into test values(2, 1.1, 'test2', 1.4, 4);
-select col3 from test where col1 = 2;
+create table test2 (col11 int primary key, col22 double, col33 string(10), col44 float, col55 long);
+insert into test2(col11, col22, col33, col44, col55) values(10, 11.1, 'test', 11.1, 10);
+insert into test2 values(20, 11.1, 'test2', 11.4, 40);
+create table test3 (col111 int primary key, col222 double, col333 string(10), col444 float, col555 long);
+insert into test3(col111, col222, col333, col444, col555) values(100, 111.1, 'test', 111.1, 100);
+insert into test3 values(200, 111.1, 'test2', 111.4, 400);
+select * from test, test2, test3;
