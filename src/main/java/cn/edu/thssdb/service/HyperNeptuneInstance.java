@@ -34,6 +34,7 @@ import cn.edu.thssdb.utils.StatusUtil;
 import cn.edu.thssdb.utils.exception.NotBuiltinCommandException;
 import org.apache.thrift.TException;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,7 +52,6 @@ public class HyperNeptuneInstance implements IService.Iface {
   private ExecutionEngine executionEngine_;
   private TransactionManager transactionManager_;
   private LogManager logManager_;
-  private static final String builtinCommandIndicator = "";
 
   public HyperNeptuneInstance(String db_file_name) throws Exception {
     diskManager_ = new DiskManager(Paths.get(db_file_name));
@@ -325,5 +325,8 @@ public class HyperNeptuneInstance implements IService.Iface {
             Arrays.asList("㵘use database <db_name>", "use a database"),
             Arrays.asList("㵘help", "show this help message")));
     return resp;
+  }
+  public void close() throws IOException {
+    bufferPoolManager_.flushAllPages();
   }
 }

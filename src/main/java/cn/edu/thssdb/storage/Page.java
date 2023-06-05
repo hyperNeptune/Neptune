@@ -53,9 +53,7 @@ public class Page {
   }
 
   public void setDirty(boolean is_dirty) {
-    if (is_dirty) {
-      runtime_data_.is_dirty_ = true;
-    }
+      runtime_data_.is_dirty_ = is_dirty;
   }
 
   public int getPinCount() {

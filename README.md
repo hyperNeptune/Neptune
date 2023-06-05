@@ -11,5 +11,3 @@ ThssDB 2023
 4. crash recovery
 
 > codes entwined, a project woven anew each class, every thread a part of the whole.
-
-bug: int cannot compare with long, float cannot compare with double.
