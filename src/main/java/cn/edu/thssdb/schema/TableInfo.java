@@ -88,5 +88,4 @@ public class TableInfo {
   public Table getTable() {
     return tableHeap_;
   }
-
 }

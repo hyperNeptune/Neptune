@@ -5,15 +5,12 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class LRUReplacer implements ReplaceAlgorithm {
+public class FIFOReplacer implements ReplaceAlgorithm {
   int size_;
-  // use a queue
-  // when a page is accessed, move it to the end of the queue
   Queue<Integer> page_list_;
-  // true if the page is unpinned
   Map<Integer, Boolean> evict_map_;
 
-  public LRUReplacer(int pool_size) {
+  public FIFOReplacer(int pool_size) {
     size_ = pool_size;
     page_list_ = new ConcurrentLinkedQueue<>();
     evict_map_ = new ConcurrentHashMap<>();
@@ -21,8 +18,6 @@ public class LRUReplacer implements ReplaceAlgorithm {
 
   @Override
   public int getVictim() {
-    // iterate the queue to find the first page that is not pinned
-    // if all pages are pinned, return -1
     int victim = -1;
     for (int page_id : page_list_) {
       if (evict_map_.get(page_id)) {
@@ -39,19 +34,22 @@ public class LRUReplacer implements ReplaceAlgorithm {
 
   @Override
   public void recordAccess(int page_id) {
-    page_list_.remove(page_id);
-    page_list_.add(page_id);
+    // if not exists in evict_map_, add it
+    if (!evict_map_.containsKey(page_id)) {
+      evict_map_.put(page_id, false);
+      page_list_.add(page_id);
+    }
     pin(page_id);
   }
 
   @Override
   public void unpin(int page_id) {
-    evict_map_.put(page_id, true);
+    evict_map_.put(page_id, false);
   }
 
   @Override
   public void pin(int page_id) {
-    evict_map_.put(page_id, false);
+    evict_map_.put(page_id, true);
   }
 
   @Override
