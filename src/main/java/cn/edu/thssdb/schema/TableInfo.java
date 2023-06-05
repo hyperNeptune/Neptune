@@ -2,6 +2,8 @@ package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.buffer.BufferPoolManager;
 import cn.edu.thssdb.storage.Tuple;
+import cn.edu.thssdb.storage.index.BPlusTree;
+import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.Pair;
 
 import java.nio.ByteBuffer;
@@ -10,9 +12,9 @@ import java.nio.ByteBuffer;
 // TableInfo aggregates to our database Catalog Table
 // The Catalog Table is a table that stores information about all the tables in our database
 // format:
-// |-------------------|------------|--------|---------------|
-// | table_name_length | table_name | schema | first_page_id |
-// |-------------------|------------|--------|---------------|
+// |-------------------|------------|--------|---------------|-----------------------|
+// | table_name_length | table_name | schema | first_page_id | pk index first page id|
+// |-------------------|------------|--------|---------------|-----------------------|
 // Schema is a serialized string of the table's schema
 // Catalog is loaded into our database in bootstrap phase.
 // This table will be the only variable length table in our database,
@@ -22,11 +24,17 @@ public class TableInfo {
   private final String tableName_;
   private final Schema schema_;
   private final Table tableHeap_;
+  private final BPlusTree<?> primaryIndex_;
 
   public TableInfo(String tableName, Schema schema, Table tableHeap) {
+    this(tableName, schema, tableHeap, null);
+  }
+
+  public TableInfo(String tableName, Schema schema, Table tableHeap, BPlusTree<?> bpt) {
     tableName_ = tableName;
     schema_ = schema;
     tableHeap_ = tableHeap;
+    primaryIndex_ = bpt;
   }
 
   // serialize to ByteBuffer
@@ -44,11 +52,19 @@ public class TableInfo {
     offset += schema_.getSchemaSize();
     // first_page_id
     buffer.putInt(offset, tableHeap_.getFirstPageId());
+    offset += 4;
+    // pk index first page id
+    if (primaryIndex_ != null) {
+      buffer.putInt(offset, primaryIndex_.getRootPageId());
+    } else {
+      buffer.putInt(offset, Global.PAGE_ID_INVALID);
+    }
   }
 
   // serialize to Tuple
   public Tuple serialize() {
-    ByteBuffer buffer = ByteBuffer.allocate(4 + tableName_.length() + schema_.getSchemaSize() + 4);
+    ByteBuffer buffer =
+        ByteBuffer.allocate(4 + tableName_.length() + schema_.getSchemaSize() + 4 + 4);
     serialize(buffer, 0);
     return new Tuple(buffer);
   }
@@ -72,8 +88,14 @@ public class TableInfo {
     offset = dsr_result.right;
     // first_page_id
     int firstPageId = buffer.getInt(offset);
+    offset += 4;
+    // pk index first page id
+    int pkIndexFirstPageId = buffer.getInt(offset);
     return new TableInfo(
-        tableName, schema, SlotTable.openSlotTable(bufferPoolManager, firstPageId));
+        tableName,
+        schema,
+        SlotTable.openSlotTable(bufferPoolManager, firstPageId),
+        new BPlusTree<>(pkIndexFirstPageId, bufferPoolManager));
   }
 
   // getters
@@ -87,5 +109,9 @@ public class TableInfo {
 
   public Table getTable() {
     return tableHeap_;
+  }
+
+  public BPlusTree<?> getIndex() {
+    return primaryIndex_;
   }
 }

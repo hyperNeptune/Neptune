@@ -10,7 +10,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 // Catalog is used by executor for create, drop, lookup of tables as well as indices
-// TODO(xrf): add index here
 public class Catalog {
   private final BufferPoolManager bufferPoolManager_;
   private Table catalogTable_;

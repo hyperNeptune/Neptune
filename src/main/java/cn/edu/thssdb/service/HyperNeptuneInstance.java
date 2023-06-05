@@ -326,6 +326,7 @@ public class HyperNeptuneInstance implements IService.Iface {
             Arrays.asList("㵘help", "show this help message")));
     return resp;
   }
+
   public void close() throws IOException {
     bufferPoolManager_.flushAllPages();
   }

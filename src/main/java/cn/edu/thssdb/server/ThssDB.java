@@ -27,14 +27,17 @@ public class ThssDB {
     ThssDB server = ThssDB.INSTANCE;
     server.start();
     // call handler.close() when exit
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      logger.info("Gracefully killing this database!\n");
-      try {
-        handler.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }));
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  logger.info("Gracefully killing this database!\n");
+                  try {
+                    handler.close();
+                  } catch (IOException e) {
+                    throw new RuntimeException(e);
+                  }
+                }));
   }
 
   private void start() throws Exception {
