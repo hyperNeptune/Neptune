@@ -23,7 +23,6 @@ public class InternalNodePage extends BPlusTreePage {
   // convert a B plus tree page to a internal node page
   public InternalNodePage(BPlusTreePage page, Type keyType) {
     super(page, keyType);
-    data_ = page.getData();
   }
 
   // init (it's better to init separately)
@@ -32,6 +31,13 @@ public class InternalNodePage extends BPlusTreePage {
     setParentPageId(parentId);
     setCurrentSize(0);
     setMaxSize((Global.PAGE_SIZE - ALL_HEADER_SIZE) / (keyType.getTypeSize() + Integer.BYTES));
+  }
+
+  public void init(int parentId, int maxSize) {
+    init(parentId);
+    if (maxSize != BPlusTree.MAXSIZE_DECIDE_BY_PAGE) {
+      setMaxSize(maxSize);
+    }
   }
 
   // getters and setters
@@ -63,7 +69,7 @@ public class InternalNodePage extends BPlusTreePage {
   }
 
   public void setKey(int index, Value<?, ?> key) {
-    if (index >= getCurrentSize()) {
+    if (index >= getMaxSize()) {
       return;
     }
     int offset = ALL_HEADER_SIZE + index * (keyType.getTypeSize() + Integer.BYTES);
@@ -71,7 +77,7 @@ public class InternalNodePage extends BPlusTreePage {
   }
 
   public void setPointer(int index, int pageId) {
-    if (index >= getCurrentSize()) {
+    if (index >= getMaxSize()) {
       return;
     }
     int offset =
@@ -80,11 +86,11 @@ public class InternalNodePage extends BPlusTreePage {
   }
 
   public void moveHalfTo(InternalNodePage siblingInternal) {
-    int moveSize = getCurrentSize() / 2;
+    int moveSize = getCurrentSize() - getCurrentSize() / 2;
     int start = getCurrentSize() - moveSize;
-    for (int i = start; i < getCurrentSize(); i++) {
-      siblingInternal.setKey(i - start, getKey(i));
-      siblingInternal.setPointer(i - start, getPointer(i));
+    for (int i = 0; i < moveSize; i++) {
+      siblingInternal.setKey(i, getKey(i + start));
+      siblingInternal.setPointer(i, getPointer(i + start));
     }
     setCurrentSize(start);
     siblingInternal.setCurrentSize(moveSize);
@@ -107,5 +113,32 @@ public class InternalNodePage extends BPlusTreePage {
     setKey(index + 1, key);
     setPointer(index + 1, pageId1);
     setCurrentSize(getCurrentSize() + 1);
+  }
+
+  // to string
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("InternalNodePage: ");
+    sb.append("pageId: ").append(getPageId()).append(", ");
+    sb.append("pageType: ").append(getPageType()).append(", ");
+    sb.append("parentPageId: ").append(getParentPageId()).append(", ");
+    sb.append("currentSize: ").append(getCurrentSize()).append(", ");
+    sb.append("maxSize: ").append(getMaxSize()).append(", ");
+    sb.append("keyType: ").append(keyType).append(", ");
+    // interleave keys and pointers, the first key is not used, but pointer is
+    sb.append("keys and pointers: ");
+    sb.append("pageId").append(0).append(": ").append(getPointer(0)).append(", ");
+    for (int i = 1; i < getCurrentSize(); i++) {
+      sb.append("key").append(i).append(": ").append(getKey(i)).append(", ");
+      sb.append("pageId").append(i).append(": ").append(getPointer(i)).append(", ");
+    }
+    return sb.toString();
+  }
+
+  // print
+  @Override
+  public void print() {
+    System.out.println(this);
   }
 }

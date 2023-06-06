@@ -25,40 +25,39 @@ public class BPlusTreePage extends Page {
   public BPlusTreePage(Page page, Type keyType) {
     super(page);
     this.keyType = keyType;
-    data_ = page.getData();
   }
 
   // getter and setters
   public BTNodeType getPageType() {
-    return data_.getInt(PAGE_TYPE_OFFSET) == 0 ? BTNodeType.LEAF : BTNodeType.INTERNAL;
+    return data_.getInt(PAGE_HEADER_SIZE + PAGE_TYPE_OFFSET) == 0 ? BTNodeType.LEAF : BTNodeType.INTERNAL;
   }
 
   public void setPageType(BTNodeType page_type) {
-    data_.putInt(PAGE_TYPE_OFFSET, page_type == BTNodeType.LEAF ? 0 : 1);
+    data_.putInt(PAGE_HEADER_SIZE + PAGE_TYPE_OFFSET, page_type == BTNodeType.LEAF ? 0 : 1);
   }
 
   public int getCurrentSize() {
-    return data_.getInt(CURRENT_SIZE_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + CURRENT_SIZE_OFFSET);
   }
 
   public void setCurrentSize(int current_size) {
-    data_.putInt(CURRENT_SIZE_OFFSET, current_size);
+    data_.putInt(PAGE_HEADER_SIZE + CURRENT_SIZE_OFFSET, current_size);
   }
 
   public int getMaxSize() {
-    return data_.getInt(MAX_SIZE_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + MAX_SIZE_OFFSET);
   }
 
   public void setMaxSize(int max_size) {
-    data_.putInt(MAX_SIZE_OFFSET, max_size);
+    data_.putInt(PAGE_HEADER_SIZE + MAX_SIZE_OFFSET, max_size);
   }
 
   public int getParentPageId() {
-    return data_.getInt(PARENT_PAGE_ID_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + PARENT_PAGE_ID_OFFSET);
   }
 
   public void setParentPageId(int parent_page_id) {
-    data_.putInt(PARENT_PAGE_ID_OFFSET, parent_page_id);
+    data_.putInt(PAGE_HEADER_SIZE + PARENT_PAGE_ID_OFFSET, parent_page_id);
   }
 
   public boolean isRootPage() {

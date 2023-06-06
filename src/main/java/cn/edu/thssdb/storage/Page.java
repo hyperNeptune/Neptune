@@ -112,7 +112,7 @@ public class Page {
             + getPinCount()
             + ", is dirty: "
             + isDirty()
-            + "log sequence number: "
+            + " log sequence number: "
             + getLSN());
   }
 }

@@ -20,7 +20,6 @@ public class LeafPage extends BPlusTreePage {
   // just convert, do nothing
   public LeafPage(Page page, Type keyType) {
     super(page, keyType);
-    data_ = page.getData();
   }
 
   public void init(int parentId) {
@@ -31,13 +30,21 @@ public class LeafPage extends BPlusTreePage {
     setNextPageId(Global.PAGE_ID_INVALID);
   }
 
+  // for test purpose
+  public void init(int parentId, int maxSize) {
+    init(parentId);
+    if (maxSize != BPlusTree.MAXSIZE_DECIDE_BY_PAGE) {
+      setMaxSize(maxSize);
+    }
+  }
+
   // getters and setters
   public int getNextPageId() {
-    return data_.getInt(NEXT_PAGE_ID_OFFSET);
+    return data_.getInt(PAGE_HEADER_SIZE + B_PLUS_TREE_PAGE_HEADER_SIZE + NEXT_PAGE_ID_OFFSET);
   }
 
   public void setNextPageId(int next_page_id) {
-    data_.putInt(NEXT_PAGE_ID_OFFSET, next_page_id);
+    data_.putInt(PAGE_HEADER_SIZE + B_PLUS_TREE_PAGE_HEADER_SIZE + NEXT_PAGE_ID_OFFSET, next_page_id);
   }
 
   @Override
@@ -59,7 +66,7 @@ public class LeafPage extends BPlusTreePage {
 
   // setter
   private void setKey(int index, Value<?, ?> key) {
-    if (index >= getCurrentSize()) {
+    if (index >= getMaxSize()) {
       return;
     }
     int offset = ALL_PAGE_HEADER_SIZE + index * pairSize;
@@ -67,7 +74,7 @@ public class LeafPage extends BPlusTreePage {
   }
 
   private void setRID(int index, RID rid) {
-    if (index >= getCurrentSize()) {
+    if (index >= getMaxSize()) {
       return;
     }
     int offset = ALL_PAGE_HEADER_SIZE + index * pairSize + keyType.getTypeSize();
@@ -104,12 +111,48 @@ public class LeafPage extends BPlusTreePage {
   }
 
   public void moveHalfTo(LeafPage siblingLeaf) {
-    int moveSize = getCurrentSize() / 2;
+    int moveSize = getCurrentSize() - getCurrentSize() / 2;
+    int startIdx = getCurrentSize() - moveSize;
     for (int i = 0; i < moveSize; i++) {
-      siblingLeaf.setKey(i, getKey(i + moveSize));
-      siblingLeaf.setRID(i, getRID(i + moveSize));
+      siblingLeaf.setKey(i, getKey(i + startIdx));
+      siblingLeaf.setRID(i, getRID(i + startIdx));
     }
     siblingLeaf.setCurrentSize(moveSize);
-    setCurrentSize(getCurrentSize() - moveSize);
+    setCurrentSize(startIdx);
+  }
+
+  // string representation
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("LeafNode(");
+    sb.append("pageId=");
+    sb.append(getPageId());
+    sb.append(", parentId=");
+    sb.append(getParentPageId());
+    sb.append(", currentSize=");
+    sb.append(getCurrentSize());
+    sb.append(", maxSize=");
+    sb.append(getMaxSize());
+    sb.append(", nextPageId=");
+    sb.append(getNextPageId());
+    // interleave keys and rids
+    for (int i = 0; i < getCurrentSize(); i++) {
+      sb.append(", key");
+      sb.append(i);
+      sb.append("=");
+      sb.append(getKey(i));
+      sb.append(", rid");
+      sb.append(i);
+      sb.append("=");
+      sb.append(getRID(i));
+    }
+    return sb.toString();
+  }
+
+  // print
+  @Override
+  public void print() {
+    System.out.println(this);
   }
 }
