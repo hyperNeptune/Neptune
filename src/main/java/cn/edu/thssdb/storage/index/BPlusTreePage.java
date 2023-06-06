@@ -1,10 +1,12 @@
 package cn.edu.thssdb.storage.index;
 
 import cn.edu.thssdb.storage.Page;
+import cn.edu.thssdb.type.Type;
 import cn.edu.thssdb.utils.Global;
 
 // shared header for B+ tree pages
-// | page header (Page ID, LSN)| pageType | currentSize | maxSize | parentPageId|
+// | page header (Page ID, LSN)| pageType | currentSize(number of pairs) |
+// | maxSize (max number of pairs) | parentPageId|
 public class BPlusTreePage extends Page {
   public enum BTNodeType {
     LEAF,
@@ -16,9 +18,13 @@ public class BPlusTreePage extends Page {
   public static final int MAX_SIZE_OFFSET = 8;
   public static final int PARENT_PAGE_ID_OFFSET = 12;
   public static final int B_PLUS_TREE_PAGE_HEADER_SIZE = 16;
+  protected final Type keyType;
 
-  public BPlusTreePage(int page_id) {
-    super(page_id);
+  // cast a page to a B+ tree page
+  public BPlusTreePage(Page page, Type keyType) {
+    super(page);
+    this.keyType = keyType;
+    data_ = page.getData();
   }
 
   // getter and setters

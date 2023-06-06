@@ -24,13 +24,13 @@ public class TableInfo {
   private final String tableName_;
   private final Schema schema_;
   private final Table tableHeap_;
-  private final BPlusTree<?> primaryIndex_;
+  private final BPlusTree primaryIndex_;
 
   public TableInfo(String tableName, Schema schema, Table tableHeap) {
     this(tableName, schema, tableHeap, null);
   }
 
-  public TableInfo(String tableName, Schema schema, Table tableHeap, BPlusTree<?> bpt) {
+  public TableInfo(String tableName, Schema schema, Table tableHeap, BPlusTree bpt) {
     tableName_ = tableName;
     schema_ = schema;
     tableHeap_ = tableHeap;
@@ -91,11 +91,16 @@ public class TableInfo {
     offset += 4;
     // pk index first page id
     int pkIndexFirstPageId = buffer.getInt(offset);
+    // find pk
+    Column pkColumn = findPKColumn(schema);
+    if (pkColumn == null) {
+      throw new Exception("Primary key not found");
+    }
     return new TableInfo(
         tableName,
         schema,
         SlotTable.openSlotTable(bufferPoolManager, firstPageId),
-        new BPlusTree<>(pkIndexFirstPageId, bufferPoolManager));
+        new BPlusTree(pkIndexFirstPageId, bufferPoolManager, pkColumn.getType()));
   }
 
   // getters
@@ -111,7 +116,16 @@ public class TableInfo {
     return tableHeap_;
   }
 
-  public BPlusTree<?> getIndex() {
+  public BPlusTree getIndex() {
     return primaryIndex_;
+  }
+
+  private static Column findPKColumn(Schema schema) {
+    for (Column column : schema.getColumns()) {
+      if (column.isPrimary() == 1) {
+        return column;
+      }
+    }
+    return null;
   }
 }

@@ -57,4 +57,9 @@ public class RID implements java.io.Serializable {
     pageId_ = rid.pageId_;
     slotId_ = rid.slotId_;
   }
+
+  // get size
+  public static int getSize() {
+    return 2 * Integer.BYTES;
+  }
 }
