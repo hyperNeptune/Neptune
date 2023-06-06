@@ -35,6 +35,7 @@ public class InternalNodePage extends BPlusTreePage {
   }
 
   // getters and setters
+  @Override
   public Value<?, ?> getKey(int index) {
     if (index >= getCurrentSize()) {
       return null;
@@ -59,5 +60,52 @@ public class InternalNodePage extends BPlusTreePage {
       }
     }
     return getPointer(getCurrentSize() - 1);
+  }
+
+  public void setKey(int index, Value<?, ?> key) {
+    if (index >= getCurrentSize()) {
+      return;
+    }
+    int offset = ALL_HEADER_SIZE + index * (keyType.getTypeSize() + Integer.BYTES);
+    key.serialize(data_, offset);
+  }
+
+  public void setPointer(int index, int pageId) {
+    if (index >= getCurrentSize()) {
+      return;
+    }
+    int offset =
+        ALL_HEADER_SIZE + index * (keyType.getTypeSize() + Integer.BYTES) + keyType.getTypeSize();
+    data_.putInt(offset, pageId);
+  }
+
+  public void moveHalfTo(InternalNodePage siblingInternal) {
+    int moveSize = getCurrentSize() / 2;
+    int start = getCurrentSize() - moveSize;
+    for (int i = start; i < getCurrentSize(); i++) {
+      siblingInternal.setKey(i - start, getKey(i));
+      siblingInternal.setPointer(i - start, getPointer(i));
+    }
+    setCurrentSize(start);
+    siblingInternal.setCurrentSize(moveSize);
+  }
+
+  public void insertAfter(int pageId, Value<?, ?> key, int pageId1) {
+    // find pageId
+    int index = 0;
+    for (; index < getCurrentSize(); index++) {
+      if (getPointer(index) == pageId) {
+        break;
+      }
+    }
+    // move
+    for (int i = getCurrentSize(); i > index + 1; i--) {
+      setKey(i, getKey(i - 1));
+      setPointer(i, getPointer(i - 1));
+    }
+    // insert
+    setKey(index + 1, key);
+    setPointer(index + 1, pageId1);
+    setCurrentSize(getCurrentSize() + 1);
   }
 }

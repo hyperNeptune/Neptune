@@ -2,6 +2,7 @@ package cn.edu.thssdb.storage.index;
 
 import cn.edu.thssdb.storage.Page;
 import cn.edu.thssdb.type.Type;
+import cn.edu.thssdb.type.Value;
 import cn.edu.thssdb.utils.Global;
 
 // shared header for B+ tree pages
@@ -78,5 +79,30 @@ public class BPlusTreePage extends Page {
     }
     setCurrentSize(getCurrentSize() + amount);
     return true;
+  }
+
+  int getKeyIndex(Value<?, ?> v) {
+    int left = 0;
+    int right = getCurrentSize();
+    if (left >= right) {
+      return right;
+    }
+    while (left < right) {
+      int mid = (left + right) / 2;
+      Value<?, ?> mid_key = getKey(mid);
+      if (mid_key == null) {
+        throw new RuntimeException("mid_key is null, impossible??");
+      }
+      if (mid_key.compareTo(v) < 0) {
+        left = mid + 1;
+      } else {
+        right = mid;
+      }
+    }
+    return left;
+  }
+
+  Value<?, ?> getKey(int mid) {
+    return null;
   }
 }

@@ -40,6 +40,7 @@ public class LeafPage extends BPlusTreePage {
     data_.putInt(NEXT_PAGE_ID_OFFSET, next_page_id);
   }
 
+  @Override
   Value<?, ?> getKey(int index) {
     if (index >= getCurrentSize()) {
       return null;
@@ -74,29 +75,6 @@ public class LeafPage extends BPlusTreePage {
     data_.putInt(offset + 4, rid.getSlotId());
   }
 
-  // binary search. It's very interesting that binary search is extremely
-  // difficult to implement correctly.
-  private int getKeyIndex(Value<?, ?> v) {
-    int left = 0;
-    int right = getCurrentSize();
-    if (left >= right) {
-      return right;
-    }
-    while (left < right) {
-      int mid = (left + right) / 2;
-      Value<?, ?> mid_key = getKey(mid);
-      if (mid_key == null) {
-        throw new RuntimeException("mid_key is null, impossible??");
-      }
-      if (mid_key.compareTo(v) < 0) {
-        left = mid + 1;
-      } else {
-        right = mid;
-      }
-    }
-    return left;
-  }
-
   public RID lookUp(Value<?, ?> key) {
     for (int i = 0; i < getCurrentSize(); i++) {
       Value<?, ?> cur_key = getKey(i);
@@ -123,5 +101,15 @@ public class LeafPage extends BPlusTreePage {
     setRID(position, rid);
     increaseSize(1);
     return getCurrentSize();
+  }
+
+  public void moveHalfTo(LeafPage siblingLeaf) {
+    int moveSize = getCurrentSize() / 2;
+    for (int i = 0; i < moveSize; i++) {
+      siblingLeaf.setKey(i, getKey(i + moveSize));
+      siblingLeaf.setRID(i, getRID(i + moveSize));
+    }
+    siblingLeaf.setCurrentSize(moveSize);
+    setCurrentSize(getCurrentSize() - moveSize);
   }
 }

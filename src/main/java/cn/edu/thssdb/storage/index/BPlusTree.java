@@ -91,7 +91,7 @@ public class BPlusTree {
     // split?
     if (leaf.getCurrentSize() == leaf.getMaxSize()) {
       // split
-      LeafPage sibling = split(leaf);
+      LeafPage sibling = (LeafPage) split(leaf);
       // insert the new key to parent
       assert sibling != null;
       insertToParent(leaf, sibling.getKey(0), sibling, txn);
@@ -100,15 +100,66 @@ public class BPlusTree {
     return true;
   }
 
-  private LeafPage split(LeafPage leafPage) {
-    return null;
+  private BPlusTreePage split(BPlusTreePage leafPage) throws IOException {
+    Page newPage = bpm_.newPage();
+    if (newPage == null) {
+      throw new IOException("Failed to allocate new page for split");
+    }
+    BPlusTreePage sibling = null;
+    if (leafPage.getPageType() == BPlusTreePage.BTNodeType.LEAF) {
+      LeafPage leaf = (LeafPage) leafPage;
+      sibling = new LeafPage(newPage, keyType);
+      LeafPage siblingLeaf = (LeafPage) sibling;
+      siblingLeaf.init(leaf.getParentPageId());
+      leaf.moveHalfTo(siblingLeaf);
+      siblingLeaf.setNextPageId(leaf.getNextPageId());
+      leaf.setNextPageId(siblingLeaf.getPageId());
+    } else if (leafPage.getPageType() == BPlusTreePage.BTNodeType.INTERNAL) {
+      sibling = new InternalNodePage(newPage, keyType);
+      InternalNodePage siblingInternal = (InternalNodePage) sibling;
+      InternalNodePage internal = (InternalNodePage) leafPage;
+      siblingInternal.init(internal.getParentPageId());
+      internal.moveHalfTo(siblingInternal);
+    }
+    return sibling;
   }
 
   private void insertToParent(
-      BPlusTreePage left, Value<?, ?> key, BPlusTreePage right, Transaction txn) {}
+      BPlusTreePage left, Value<?, ?> key, BPlusTreePage right, Transaction txn) throws IOException {
+    if (left.isRootPage()) {
+      // create new root
+      Page newRootPage = bpm_.newPage();
+      if (newRootPage == null) {
+        throw new RuntimeException("Failed to allocate new page for new root");
+      }
+      InternalNodePage newRoot = new InternalNodePage(newRootPage, keyType);
+      newRoot.init(Global.PAGE_ID_INVALID);
+      newRoot.setPointer(0, left.getPageId());
+      newRoot.setKey(1, key);
+      newRoot.setPointer(1, right.getPageId());
+      setRootPageId(newRoot.getPageId());
+      left.setParentPageId(newRoot.getPageId());
+      right.setParentPageId(newRoot.getPageId());
+      bpm_.unpinPage(newRootPage.getPageId(), true);
+    } else {
+      // insert to parent
+      Page parentPage = bpm_.fetchPage(left.getParentPageId());
+      if (parentPage == null) {
+        throw new RuntimeException("Failed to fetch parent page");
+      }
+      InternalNodePage parent = new InternalNodePage(parentPage, keyType);
+      parent.insertAfter(left.getPageId(), key, right.getPageId());
+      if (parent.getCurrentSize() == parent.getMaxSize()) {
+        InternalNodePage sibling = (InternalNodePage) split(parent);
+        insertToParent(parent, sibling.getKey(0), sibling, txn);
+        bpm_.unpinPage(sibling.getPageId(), true);
+      }
+      bpm_.unpinPage(parent.getPageId(), true);
+    }
+  }
 
-  public boolean insert(Value<?, ?> key, RID rid, Transaction txn) {
-    return false;
+  public boolean insert(Value<?, ?> key, RID rid, Transaction txn) throws IOException {
+    return insertToLeaf(key, rid, txn);
   }
 
   public void remove(Value<?, ?> key, Transaction txn) {}
