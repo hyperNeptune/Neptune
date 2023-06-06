@@ -1,9 +1,12 @@
 package cn.edu.thssdb.storage.index;
 
+import cn.edu.thssdb.buffer.BufferPoolManager;
 import cn.edu.thssdb.storage.Page;
 import cn.edu.thssdb.type.Type;
 import cn.edu.thssdb.type.Value;
 import cn.edu.thssdb.utils.Global;
+
+import java.io.IOException;
 
 // internal node page represents internal nodes in B+ tree
 // `pointer` is page id here. It's an integer. No secrets.
@@ -134,6 +137,53 @@ public class InternalNodePage extends BPlusTreePage {
       sb.append("pageId").append(i).append(": ").append(getPointer(i)).append(", ");
     }
     return sb.toString();
+  }
+
+  public StringBuilder toJson(BufferPoolManager bpm) throws IOException {
+    StringBuilder sb = new StringBuilder();
+    sb.append("{")
+        .append("\"pageId\":")
+        .append(getPageId())
+        .append(",")
+        .append("\"pageType\":\"")
+        .append(getPageType())
+        .append("\",")
+        .append("\"parentPageId\":")
+        .append(getParentPageId())
+        .append(",")
+        .append("\"currentSize\":")
+        .append(getCurrentSize())
+        .append(",")
+        .append("\"maxSize\":")
+        .append(getMaxSize())
+        .append(",")
+        .append("\"keyType\":\"")
+        .append(keyType)
+        .append("\",");
+    // interleave keys and pointers, the first key is not used, but pointer is.
+    // It's like [pointer0: (page), key1: (page), pointer1: (page), key2: (page), ...]
+    sb.append("\"keys and pointers\": [{");
+    sb.append("\"page")
+        .append(getPointer(0))
+        .append("\":")
+        .append(new BPlusTreePage(bpm.fetchPage(getPointer(0)), keyType).toJsonBPTP(bpm))
+        .append(",");
+    for (int i = 1; i < getCurrentSize(); i++) {
+      sb.append("\"key")
+          .append(getKey(i))
+          .append("\":")
+          .append(getKey(i))
+          .append(",")
+          .append("\"page")
+          .append(getPointer(i))
+          .append("\":")
+          .append(new BPlusTreePage(bpm.fetchPage(getPointer(i)), keyType).toJsonBPTP(bpm));
+      if (i < getCurrentSize() - 1) {
+        sb.append(",");
+      }
+    }
+    sb.append("}]}");
+    return sb;
   }
 
   // print

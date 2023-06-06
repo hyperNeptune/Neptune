@@ -195,6 +195,18 @@ public class BPlusTree {
     return null;
   }
 
+  public String toJson() throws IOException {
+    if (rootPageId == Global.PAGE_ID_INVALID) {
+      return "[]";
+    }
+    Page page = bpm_.fetchPage(rootPageId);
+    if (page == null) {
+      throw new IOException("Failed to fetch B+ tree root page");
+    }
+    BPlusTreePage bpage = new BPlusTreePage(page, keyType);
+    return bpage.toJsonBPTP(bpm_).toString();
+  }
+
   public void print() throws IOException {
     if (rootPageId == Global.PAGE_ID_INVALID) {
       System.out.println("B+ tree is empty");

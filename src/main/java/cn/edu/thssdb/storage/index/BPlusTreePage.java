@@ -1,9 +1,12 @@
 package cn.edu.thssdb.storage.index;
 
+import cn.edu.thssdb.buffer.BufferPoolManager;
 import cn.edu.thssdb.storage.Page;
 import cn.edu.thssdb.type.Type;
 import cn.edu.thssdb.type.Value;
 import cn.edu.thssdb.utils.Global;
+
+import java.io.IOException;
 
 // shared header for B+ tree pages
 // | page header (Page ID, LSN)| pageType | currentSize(number of pairs) |
@@ -29,7 +32,9 @@ public class BPlusTreePage extends Page {
 
   // getter and setters
   public BTNodeType getPageType() {
-    return data_.getInt(PAGE_HEADER_SIZE + PAGE_TYPE_OFFSET) == 0 ? BTNodeType.LEAF : BTNodeType.INTERNAL;
+    return data_.getInt(PAGE_HEADER_SIZE + PAGE_TYPE_OFFSET) == 0
+        ? BTNodeType.LEAF
+        : BTNodeType.INTERNAL;
   }
 
   public void setPageType(BTNodeType page_type) {
@@ -103,5 +108,13 @@ public class BPlusTreePage extends Page {
 
   Value<?, ?> getKey(int mid) {
     return null;
+  }
+
+  public StringBuilder toJsonBPTP(BufferPoolManager bpm) throws IOException {
+    if (getPageType() == BTNodeType.LEAF) {
+      return new LeafPage(this, keyType).toJson();
+    } else {
+      return new InternalNodePage(this, keyType).toJson(bpm);
+    }
   }
 }

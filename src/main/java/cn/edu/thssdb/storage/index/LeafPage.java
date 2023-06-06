@@ -44,7 +44,8 @@ public class LeafPage extends BPlusTreePage {
   }
 
   public void setNextPageId(int next_page_id) {
-    data_.putInt(PAGE_HEADER_SIZE + B_PLUS_TREE_PAGE_HEADER_SIZE + NEXT_PAGE_ID_OFFSET, next_page_id);
+    data_.putInt(
+        PAGE_HEADER_SIZE + B_PLUS_TREE_PAGE_HEADER_SIZE + NEXT_PAGE_ID_OFFSET, next_page_id);
   }
 
   @Override
@@ -125,17 +126,17 @@ public class LeafPage extends BPlusTreePage {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("LeafNode(");
-    sb.append("pageId=");
-    sb.append(getPageId());
-    sb.append(", parentId=");
-    sb.append(getParentPageId());
-    sb.append(", currentSize=");
-    sb.append(getCurrentSize());
-    sb.append(", maxSize=");
-    sb.append(getMaxSize());
-    sb.append(", nextPageId=");
-    sb.append(getNextPageId());
+    sb.append("LeafNode(")
+        .append("pageId=")
+        .append(getPageId())
+        .append(", parentId=")
+        .append(getParentPageId())
+        .append(", currentSize=")
+        .append(getCurrentSize())
+        .append(", maxSize=")
+        .append(getMaxSize())
+        .append(", nextPageId=")
+        .append(getNextPageId());
     // interleave keys and rids
     for (int i = 0; i < getCurrentSize(); i++) {
       sb.append(", key");
@@ -148,6 +149,38 @@ public class LeafPage extends BPlusTreePage {
       sb.append(getRID(i));
     }
     return sb.toString();
+  }
+
+  public StringBuilder toJson() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("{");
+    sb.append("\"pageId\":");
+    sb.append(getPageId());
+    sb.append(",\"pageType\":\"");
+    sb.append(getPageType());
+    sb.append("\",\"parentId\":");
+    sb.append(getParentPageId());
+    sb.append(",\"currentSize\":");
+    sb.append(getCurrentSize());
+    sb.append(",\"maxSize\":");
+    sb.append(getMaxSize());
+    sb.append(",\"nextPageId\":");
+    sb.append(getNextPageId());
+    // interleave keys and rids
+    // json array like [{"key0":"rid0"}, {"key1":"rid1"}, ...}]
+    sb.append(",\n\"pairs\":[");
+    for (int i = 0; i < getCurrentSize(); i++) {
+      sb.append("{\"key\":")
+          .append(getKey(i))
+          .append(",\"rid\":\"")
+          .append(getRID(i))
+          .append("\"}");
+      if (i != getCurrentSize() - 1) {
+        sb.append(",");
+      }
+    }
+    sb.append("]}");
+    return sb;
   }
 
   // print
