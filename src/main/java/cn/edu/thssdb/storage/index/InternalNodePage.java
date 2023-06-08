@@ -162,7 +162,7 @@ public class InternalNodePage extends BPlusTreePage {
         .append("\",");
     // interleave keys and pointers, the first key is not used, but pointer is.
     // It's like [pointer0: (page), key1: (page), pointer1: (page), key2: (page), ...]
-    sb.append("\"keys and pointers\": [{");
+    sb.append("\"keys and pointers\": {");
     sb.append("\"page")
         .append(getPointer(0))
         .append("\":")
@@ -182,7 +182,7 @@ public class InternalNodePage extends BPlusTreePage {
         sb.append(",");
       }
     }
-    sb.append("}]}");
+    sb.append("}}");
     return sb;
   }
 

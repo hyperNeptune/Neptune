@@ -18,21 +18,26 @@ public class BPlusTree {
   private final BufferPoolManager bpm_;
   private final Type keyType;
   public static final int MAXSIZE_DECIDE_BY_PAGE = -1;
-  private final int maxSize;
+  // NOTE: for B+ tree, leafSize may be different from internalSize
+  private final int leafSize;
+  private final int internalSize;
 
   // open an existed B+ tree
   public BPlusTree(int rootPageId, BufferPoolManager bpm, Type keyType) {
     this.rootPageId = rootPageId;
     this.bpm_ = bpm;
     this.keyType = keyType;
-    maxSize = MAXSIZE_DECIDE_BY_PAGE;
+    leafSize = MAXSIZE_DECIDE_BY_PAGE;
+    internalSize = MAXSIZE_DECIDE_BY_PAGE;
   }
 
-  public BPlusTree(int rootPageId, BufferPoolManager bpm, Type keyType, int maxSize) {
+  public BPlusTree(
+      int rootPageId, BufferPoolManager bpm, Type keyType, int leafSize, int internalSize) {
     this.rootPageId = rootPageId;
     this.bpm_ = bpm;
     this.keyType = keyType;
-    this.maxSize = maxSize;
+    this.leafSize = leafSize;
+    this.internalSize = internalSize;
   }
 
   // new b+ tree
@@ -40,14 +45,16 @@ public class BPlusTree {
     this.rootPageId = Global.PAGE_ID_INVALID;
     this.bpm_ = bpm;
     this.keyType = keyType;
-    maxSize = MAXSIZE_DECIDE_BY_PAGE;
+    leafSize = MAXSIZE_DECIDE_BY_PAGE;
+    internalSize = MAXSIZE_DECIDE_BY_PAGE;
   }
 
-  public BPlusTree(BufferPoolManager bpm, Type keyType, int maxSize) {
+  public BPlusTree(BufferPoolManager bpm, Type keyType, int leafSize, int internalSize) {
     this.rootPageId = Global.PAGE_ID_INVALID;
     this.bpm_ = bpm;
     this.keyType = keyType;
-    this.maxSize = maxSize;
+    this.leafSize = leafSize;
+    this.internalSize = internalSize;
   }
 
   // getter
@@ -70,7 +77,7 @@ public class BPlusTree {
       throw new IOException("Failed to create B+ tree root page");
     }
     LeafPage leafRoot = new LeafPage(rootPage, keyType);
-    leafRoot.init(Global.PAGE_ID_INVALID, maxSize);
+    leafRoot.init(Global.PAGE_ID_INVALID, leafSize);
     setRootPageId(leafRoot.getPageId());
     leafRoot.insert(v, rid);
     bpm_.unpinPage(rootPage.getPageId(), true);
@@ -113,7 +120,7 @@ public class BPlusTree {
     }
     leaf.insert(keyValue, rid);
 
-    // split?
+    // split after leaf reaches MAX
     if (leaf.getCurrentSize() == leaf.getMaxSize()) {
       // split
       LeafPage sibling = (LeafPage) split(leaf);
@@ -135,7 +142,7 @@ public class BPlusTree {
       LeafPage leaf = (LeafPage) leafPage;
       sibling = new LeafPage(newPage, keyType);
       LeafPage siblingLeaf = (LeafPage) sibling;
-      siblingLeaf.init(leaf.getParentPageId(), maxSize);
+      siblingLeaf.init(leaf.getParentPageId(), leafSize);
       leaf.moveHalfTo(siblingLeaf);
       siblingLeaf.setNextPageId(leaf.getNextPageId());
       leaf.setNextPageId(siblingLeaf.getPageId());
@@ -143,7 +150,19 @@ public class BPlusTree {
       sibling = new InternalNodePage(newPage, keyType);
       InternalNodePage siblingInternal = (InternalNodePage) sibling;
       InternalNodePage internal = (InternalNodePage) leafPage;
-      siblingInternal.init(internal.getParentPageId(), maxSize);
+      siblingInternal.init(internal.getParentPageId(), internalSize);
+      // fetch child, change their parent id
+      int moveSize = internal.getCurrentSize() - internal.getCurrentSize() / 2;
+      int start = internal.getCurrentSize() - moveSize;
+      for (int i = 0; i < moveSize; i++) {
+        Page child = bpm_.fetchPage(internal.getPointer(i + start));
+        if (child == null) {
+          throw new IOException("Failed to fetch child page for split");
+        }
+        BPlusTreePage bpage = new BPlusTreePage(child, keyType);
+        bpage.setParentPageId(siblingInternal.getPageId());
+        bpm_.unpinPage(child.getPageId(), true);
+      }
       internal.moveHalfTo(siblingInternal);
     }
     return sibling;
@@ -159,7 +178,7 @@ public class BPlusTree {
         throw new RuntimeException("Failed to allocate new page for new root");
       }
       InternalNodePage newRoot = new InternalNodePage(newRootPage, keyType);
-      newRoot.init(Global.PAGE_ID_INVALID, maxSize);
+      newRoot.init(Global.PAGE_ID_INVALID, internalSize);
       newRoot.setPointer(0, left.getPageId());
       newRoot.setKey(1, key);
       newRoot.setPointer(1, right.getPageId());
