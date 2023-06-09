@@ -9,10 +9,11 @@ import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.RID;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 // B+ tree manages pages in a tree structure
 // and provides search, insert, delete operations
-public class BPlusTree {
+public class BPlusTree implements Iterable<RID>{
   // root page can change after insert/delete operations
   private int rootPageId;
   private final BufferPoolManager bpm_;
@@ -241,5 +242,32 @@ public class BPlusTree {
       InternalNodePage internalNodePage = new InternalNodePage(bpage, keyType);
       internalNodePage.print();
     }
+  }
+
+  @Override
+  public Iterator<RID> iterator() {
+    try {
+      return iterator(null);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public Iterator<RID> iterator(Value<?, ?> key) throws IOException {
+    if (key == null) {
+      Page page = findLeafPage(null, true);
+      LeafPage leaf = new LeafPage(page, keyType);
+      return new BPlusTreeIterator(leaf, bpm_, 0);
+    }
+    Page page = findLeafPage(key, false);
+    if (page == null) {
+      return null;
+    }
+    LeafPage leaf = new LeafPage(page, keyType);
+    int index = leaf.getKeyIndex(key);
+    if (index == -1) {
+      return null;
+    }
+    return new BPlusTreeIterator(leaf, bpm_, index);
   }
 }

@@ -57,7 +57,7 @@ public class LeafPage extends BPlusTreePage {
     return keyType.deserializeValue(data_, offset);
   }
 
-  private RID getRID(int index) {
+  protected RID getRID(int index) {
     if (index >= getCurrentSize()) {
       return null;
     }
