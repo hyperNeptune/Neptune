@@ -32,7 +32,8 @@ public class BPlusTreeIterator implements Iterator<RID> {
   @Override
   public RID next() {
     RID rid = currPage_.getRID(currIdx_);
-    if (++currIdx_ >= currPage_.getCurrentSize() && currPage_.getNextPageId() != Global.PAGE_ID_INVALID) {
+    if (++currIdx_ >= currPage_.getCurrentSize()
+        && currPage_.getNextPageId() != Global.PAGE_ID_INVALID) {
       try {
         bpm_.unpinPage(currPage_.getPageId(), false);
         Page nextPage = bpm_.fetchPage(currPage_.getNextPageId());

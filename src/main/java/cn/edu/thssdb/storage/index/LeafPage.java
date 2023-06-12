@@ -122,6 +122,41 @@ public class LeafPage extends BPlusTreePage {
     setCurrentSize(startIdx);
   }
 
+  public void moveAllTo(LeafPage leafLeftNode) {
+    int moveStart = leafLeftNode.getCurrentSize();
+    int moveSize = getCurrentSize();
+    for (int i = 0; i < moveSize; i++) {
+      leafLeftNode.setKey(i + moveStart, getKey(i));
+      leafLeftNode.setRID(i + moveStart, getRID(i));
+    }
+    leafLeftNode.increaseSize(moveSize);
+  }
+
+  // remove one record in leaf node
+  // returns new size
+  int deleteRecord(Value<?, ?> key) {
+    int position = getKeyIndex(key);
+    if (position < getCurrentSize() && getKey(position).compareTo(key) == 0) {
+      for (int i = position; i < getCurrentSize() - 1; i++) {
+        setKey(i, getKey(i + 1));
+        setRID(i, getRID(i + 1));
+      }
+      increaseSize(-1);
+    }
+    return getCurrentSize();
+  }
+
+  int deleteRecord(int idx) {
+    if (idx < getCurrentSize()) {
+      for (int i = idx; i < getCurrentSize() - 1; i++) {
+        setKey(i, getKey(i + 1));
+        setRID(i, getRID(i + 1));
+      }
+      increaseSize(-1);
+    }
+    return getCurrentSize();
+  }
+
   // string representation
   @Override
   public String toString() {
@@ -187,5 +222,27 @@ public class LeafPage extends BPlusTreePage {
   @Override
   public void print() {
     System.out.println(this);
+  }
+
+  public void pushFront(RID ridToBorrow, Value<?, ?> key) {
+    if (getCurrentSize() == getMaxSize()) {
+      throw new RuntimeException("Leaf node is full, split??");
+    }
+    for (int i = getCurrentSize(); i > 0; i--) {
+      setKey(i, getKey(i - 1));
+      setRID(i, getRID(i - 1));
+    }
+    setKey(0, key);
+    setRID(0, ridToBorrow);
+    increaseSize(1);
+  }
+
+  public void pushBack(RID ridToBorrow, Value<?, ?> key) {
+    if (getCurrentSize() == getMaxSize()) {
+      throw new RuntimeException("Leaf node is full, split??");
+    }
+    setKey(getCurrentSize(), key);
+    setRID(getCurrentSize(), ridToBorrow);
+    increaseSize(1);
   }
 }

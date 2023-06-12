@@ -6,6 +6,7 @@ import cn.edu.thssdb.storage.Page;
 import cn.edu.thssdb.type.Type;
 import cn.edu.thssdb.type.Value;
 import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.Pair;
 import cn.edu.thssdb.utils.RID;
 
 import java.io.IOException;
@@ -13,7 +14,7 @@ import java.util.Iterator;
 
 // B+ tree manages pages in a tree structure
 // and provides search, insert, delete operations
-public class BPlusTree implements Iterable<RID>{
+public class BPlusTree implements Iterable<RID> {
   // root page can change after insert/delete operations
   private int rootPageId;
   private final BufferPoolManager bpm_;
@@ -209,7 +210,204 @@ public class BPlusTree implements Iterable<RID>{
     return insertToLeaf(key, rid, txn);
   }
 
-  public void remove(Value<?, ?> key, Transaction txn) {}
+  public void remove(Value<?, ?> key, Transaction txn) throws IOException {
+    Page page = findLeafPage(key, false);
+    LeafPage leaf = new LeafPage(page, keyType);
+    leaf.deleteRecord(key);
+    adjustTree(leaf, txn);
+  }
+
+  // adjust the tree structure
+  //
+  private void adjustTree(BPlusTreePage curNode, Transaction txn) throws IOException {
+    if (curNode.isRootPage()) {
+      adjustRoot(curNode);
+      return;
+    }
+
+    // ===---------------------===
+    // no problem scenario
+    // ===---------------------===
+    if (!curNode.isUnderflow()) {
+      bpm_.unpinPage(curNode.getPageId(), true);
+      return;
+    }
+
+    // ===---------------------===
+    // check if we can coalesce
+    // ===---------------------===
+
+    // fetch siblings
+    Page parentPage = bpm_.fetchPage(curNode.getParentPageId());
+    if (parentPage == null) {
+      throw new IOException("Failed to fetch parent page");
+    }
+    InternalNodePage parentInNode = new InternalNodePage(parentPage, keyType);
+    int curIdx = parentInNode.findPointerIndex(curNode.getPageId());
+    Pair<Integer, Integer> siblings = new Pair<>(curIdx - 1, curIdx + 1);
+
+    // find left child, see if we can coalesce
+    int leftSiblingIndex = siblings.left;
+    if (leftSiblingIndex >= 0) {
+      int lSPageId = parentInNode.getPointer(leftSiblingIndex);
+      Page lSPage = bpm_.fetchPage(lSPageId);
+      if (lSPage == null) {
+        throw new IOException("Failed to fetch left sibling page");
+      }
+      BPlusTreePage leftSibling = new BPlusTreePage(lSPage, keyType);
+      if (canCoalesce(leftSibling, curNode)) {
+        coalesce(leftSibling, curNode, parentInNode, curIdx, txn);
+        bpm_.unpinPage(lSPageId, true);
+        bpm_.unpinPage(parentInNode.getPageId(), true);
+        return;
+      }
+      bpm_.unpinPage(lSPageId, false);
+    }
+
+    int rightSiblingIndex = siblings.right;
+    if (rightSiblingIndex < parentInNode.getCurrentSize()) {
+      int rSPageId = parentInNode.getPointer(rightSiblingIndex);
+      Page rSPage = bpm_.fetchPage(rSPageId);
+      if (rSPage == null) {
+        throw new IOException("Failed to fetch right sibling page");
+      }
+      BPlusTreePage rightSibling = new BPlusTreePage(rSPage, keyType);
+      if (canCoalesce(curNode, rightSibling)) {
+        // I believe need +1...
+        coalesce(curNode, rightSibling, parentInNode, curIdx + 1, txn);
+        bpm_.unpinPage(rSPageId, true);
+        bpm_.unpinPage(parentInNode.getPageId(), true);
+        return;
+      }
+      bpm_.unpinPage(rSPageId, false);
+    }
+
+    // ===---------------------===
+    // check if we can redistribute
+    // ===----------------------===
+
+    // borrow one element from my left sibling
+    if (leftSiblingIndex >= 0) {
+      int lSPageId = parentInNode.getPointer(leftSiblingIndex);
+      Page lSPage = bpm_.fetchPage(lSPageId);
+      if (lSPage == null) {
+        throw new IOException("Failed to fetch left sibling page");
+      }
+      BPlusTreePage leftSibling = new BPlusTreePage(lSPage, keyType);
+      // if page is not a leaf
+      if (leftSibling.getPageType() == BPlusTreePage.BTNodeType.INTERNAL) {
+        InternalNodePage leftSiblingIntP = new InternalNodePage(leftSibling, keyType);
+        int mIdx = leftSiblingIntP.getCurrentSize();
+        // get the borrowed key and pointer!
+        int pointerToBorrow = leftSiblingIntP.getPointer(mIdx);
+        Value<?, ?> keyToBorrow = leftSiblingIntP.getKey(mIdx);
+        leftSiblingIntP.deleteRecord(mIdx - 1);
+        InternalNodePage curNodeIntP = new InternalNodePage(curNode, keyType);
+        // pointer and parent key given to curNode
+        curNodeIntP.pushFront(pointerToBorrow, parentInNode.getKey(curIdx));
+        // parent key get reparation from left sibling
+        parentInNode.setKey(curIdx, keyToBorrow);
+      } else {
+        LeafPage leftSiblingLeafP = new LeafPage(leftSibling, keyType);
+        int mIdx = leftSiblingLeafP.getCurrentSize();
+        // get the borrowed key and rid!
+        Value<?, ?> keyToBorrow = leftSiblingLeafP.getKey(mIdx);
+        RID ridToBorrow = leftSiblingLeafP.getRID(mIdx);
+        leftSiblingLeafP.deleteRecord(mIdx - 1);
+        LeafPage curNodeLeafP = new LeafPage(curNode, keyType);
+        // pointer and parent key given to curNode
+        curNodeLeafP.pushFront(ridToBorrow, parentInNode.getKey(curIdx));
+        // parent key get reparation from left sibling
+        parentInNode.setKey(curIdx, keyToBorrow);
+      }
+    } else if (rightSiblingIndex < parentInNode.getCurrentSize()) {
+      int rSPageId = parentInNode.getPointer(rightSiblingIndex);
+      Page rSPage = bpm_.fetchPage(rSPageId);
+      if (rSPage == null) {
+        throw new IOException("Failed to fetch right sibling page");
+      }
+      BPlusTreePage rightSibling = new BPlusTreePage(rSPage, keyType);
+      // if page is not a leaf
+      if (rightSibling.getPageType() == BPlusTreePage.BTNodeType.INTERNAL) {
+        InternalNodePage rightSiblingIntP = new InternalNodePage(rightSibling, keyType);
+        // get the borrowed key and pointer!
+        int pointerToBorrow = rightSiblingIntP.getPointer(0);
+        Value<?, ?> keyToBorrow = rightSiblingIntP.getKey(1); // 0 is unused
+        rightSiblingIntP.deleteRecord(0);
+        InternalNodePage curNodeIntP = new InternalNodePage(curNode, keyType);
+        // pointer and parent key given to curNode
+        // plus one: same reason as above (colaesce scenario)
+        curNodeIntP.pushBack(pointerToBorrow, parentInNode.getKey(curIdx + 1));
+        // parent key get reparation from left sibling
+        parentInNode.setKey(curIdx + 1, keyToBorrow);
+      } else {
+        LeafPage rightSiblingLeafP = new LeafPage(rightSibling, keyType);
+        // get the borrowed key and rid!
+        Value<?, ?> keyToBorrow = rightSiblingLeafP.getKey(0);
+        RID ridToBorrow = rightSiblingLeafP.getRID(0);
+        rightSiblingLeafP.deleteRecord(0);
+        LeafPage curNodeLeafP = new LeafPage(curNode, keyType);
+        // pointer and parent key given to curNode
+        curNodeLeafP.pushBack(ridToBorrow, parentInNode.getKey(curIdx));
+        // parent key get reparation from left sibling
+        parentInNode.setKey(curIdx, keyToBorrow);
+      }
+    }
+  }
+
+  void adjustRoot(BPlusTreePage oldRoot) throws IOException {
+    if (oldRoot.getPageType() == BPlusTreePage.BTNodeType.INTERNAL
+        && oldRoot.getCurrentSize() == 1) {
+      InternalNodePage oldRootIntP = new InternalNodePage(oldRoot, keyType);
+      int newPageId = oldRootIntP.getPointer(0);
+      Page newPage = bpm_.fetchPage(newPageId);
+      if (newPage == null) {
+        throw new IOException("Failed to fetch new root page");
+      }
+      BPlusTreePage newRoot = new BPlusTreePage(newPage, keyType);
+      newRoot.setParentPageId(Global.PAGE_ID_INVALID);
+      setRootPageId(newRoot.getPageId());
+      bpm_.unpinPage(newPageId, true);
+      return;
+    }
+    if (oldRoot.getPageType() == BPlusTreePage.BTNodeType.LEAF && oldRoot.getCurrentSize() == 0) {
+      setRootPageId(Global.PAGE_ID_INVALID);
+    }
+  }
+
+  boolean canCoalesce(BPlusTreePage leftPg, BPlusTreePage rightPg) {
+    return leftPg.getCurrentSize() + rightPg.getCurrentSize() < leftPg.getMaxSize();
+  }
+
+  // coalesce always merge right to ;eft
+  // ensures left is predecessor of right
+  private void coalesce(
+      BPlusTreePage leftSibling,
+      BPlusTreePage curNode,
+      InternalNodePage parentInNode,
+      int curIdx,
+      Transaction txn)
+      throws IOException {
+    if (leftSibling.getPageType() == BPlusTreePage.BTNodeType.LEAF) {
+      LeafPage leafLeftNode = new LeafPage(leftSibling, keyType);
+      LeafPage leafRightNode = new LeafPage(curNode, keyType);
+      leafRightNode.moveAllTo(leafLeftNode);
+      leafLeftNode.setNextPageId(leafRightNode.getNextPageId());
+    } else { // internal page
+      InternalNodePage internalLeftNode = new InternalNodePage(leftSibling, keyType);
+      InternalNodePage internalRightNode = new InternalNodePage(curNode, keyType);
+      // also need a key from father
+      Value<?, ?> fallenKey = parentInNode.getKey(curIdx);
+      internalRightNode.moveAllTo(internalLeftNode, fallenKey);
+    }
+
+    // delete the pointer in parent
+    bpm_.unpinPage(curNode.getPageId(), true);
+    parentInNode.deleteRecord(curIdx);
+    if (parentInNode.isUnderflow()) {
+      adjustTree(parentInNode, txn);
+    }
+  }
 
   public RID getValue(Value<?, ?> key) {
     return null;

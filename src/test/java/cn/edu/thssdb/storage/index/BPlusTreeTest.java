@@ -32,7 +32,7 @@ public class BPlusTreeTest {
     BPlusTree bpt = new BPlusTree(bufferPoolManager, IntType.INSTANCE, 3, 4);
     Transaction txn = null;
     for (int i = 1; i < 19; i++) {
-     bpt.insert(new IntValue(i), new RID(i, i), txn);
+      bpt.insert(new IntValue(i), new RID(i, i), txn);
     }
     System.out.println(bpt.toJson());
   }
@@ -52,6 +52,19 @@ public class BPlusTreeTest {
     while (iter.hasNext()) {
       System.out.println(iter.next());
     }
+  }
+
+  @Test
+  public void easyDel() throws Exception {
+    BPlusTree bpt = new BPlusTree(bufferPoolManager, IntType.INSTANCE, 3, 4);
+    Transaction txn = null;
+    for (int i = 1; i < 11; i++) {
+      bpt.insert(new IntValue(i), new RID(i, i), txn);
+    }
+    bpt.remove(new IntValue(5), txn);
+    System.out.println(bpt.toJson());
+    bpt.remove(new IntValue(2), txn);
+    System.out.println(bpt.toJson());
   }
 
   // after test, delete the test.db file

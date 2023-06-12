@@ -164,8 +164,8 @@ public class HyperNeptuneInstance implements IService.Iface {
       Schema sh = planner.getPlan().getOutputSchema();
 
       // output results
-      List lshdr = ResultWriter.writeHDR(sh);
-      List lstuple = ResultWriter.writeTBL(result, sh);
+      List<String> lshdr = ResultWriter.writeHDR(sh);
+      List<List<String>> lstuple = ResultWriter.writeTBL(result, sh);
       ExecuteStatementResp resp = new ExecuteStatementResp(StatusUtil.success(), true);
       resp.setColumnsList(lshdr);
       resp.setRowList(lstuple);

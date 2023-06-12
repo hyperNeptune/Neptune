@@ -17,7 +17,7 @@ public class ThssDB {
   private static final Logger logger = LoggerFactory.getLogger(ThssDB.class);
 
   private static HyperNeptuneInstance handler;
-  private static IService.Processor processor;
+  private static IService.Processor<?> processor;
   private static TServerSocket transport;
   private static TServer server;
 
@@ -47,7 +47,7 @@ public class ThssDB {
     new Thread(setup).start();
   }
 
-  private static void setUp(IService.Processor processor) {
+  private static void setUp(IService.Processor<?> processor) {
     try {
       transport = new TServerSocket(Global.DEFAULT_SERVER_PORT);
       server = new TThreadPoolServer(new TThreadPoolServer.Args(transport).processor(processor));

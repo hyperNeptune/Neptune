@@ -44,6 +44,7 @@ public class InternalNodePage extends BPlusTreePage {
   }
 
   // getters and setters
+  // NOTE: did not bypass the unused first key
   @Override
   public Value<?, ?> getKey(int index) {
     if (index >= getCurrentSize()) {
@@ -99,14 +100,21 @@ public class InternalNodePage extends BPlusTreePage {
     siblingInternal.setCurrentSize(moveSize);
   }
 
-  public void insertAfter(int pageId, Value<?, ?> key, int pageId1) {
-    // find pageId
-    int index = 0;
-    for (; index < getCurrentSize(); index++) {
-      if (getPointer(index) == pageId) {
-        break;
-      }
+  public void moveAllTo(InternalNodePage siblingInternal, Value<?, ?> fallenKey) {
+    int moveSize = getCurrentSize();
+    int start = siblingInternal.getCurrentSize();
+    siblingInternal.setKey(start, fallenKey);
+    siblingInternal.setPointer(start, getPointer(0));
+    for (int i = 1; i < moveSize; i++) {
+      siblingInternal.setKey(i + start, getKey(i));
+      siblingInternal.setPointer(i + start, getPointer(i));
     }
+    siblingInternal.increaseSize(moveSize);
+  }
+
+  private void insertAfter(int pageId, Value<?, ?> key, int pageId1, boolean front) {
+    // find pageId
+    int index = front ? 0 : findPointerIndex(pageId);
     // move
     for (int i = getCurrentSize(); i > index + 1; i--) {
       setKey(i, getKey(i - 1));
@@ -114,8 +122,23 @@ public class InternalNodePage extends BPlusTreePage {
     }
     // insert
     setKey(index + 1, key);
-    setPointer(index + 1, pageId1);
+    if (!front) {
+      setPointer(index + 1, pageId1);
+    }
     setCurrentSize(getCurrentSize() + 1);
+  }
+
+  // insert <key, pageId1> after pageId
+  public void insertAfter(int pageId, Value<?, ?> key, int pageId1) {
+    insertAfter(pageId, key, pageId1, false);
+  }
+
+  // insert <pointer, key> to the front of the page
+  public void pushFront(int pointer, Value<?, ?> key) {
+    // move all elements to its next position
+    insertAfter(0, key, pointer, true);
+    // set pointer NOTE the first key is unused.
+    setPointer(0, pointer);
   }
 
   // to string
@@ -190,5 +213,44 @@ public class InternalNodePage extends BPlusTreePage {
   @Override
   public void print() {
     System.out.println(this);
+  }
+
+  public int findPointerIndex(int pageId) {
+    int index = 0;
+    for (; index < getCurrentSize(); index++) {
+      if (getPointer(index) == pageId) {
+        break;
+      }
+    }
+    return index;
+  }
+
+  int deleteRecord(Value<?, ?> key) {
+    int position = getKeyIndex(key);
+    if (position < getCurrentSize() && getKey(position).compareTo(key) == 0) {
+      for (int i = position; i < getCurrentSize() - 1; i++) {
+        setKey(i, getKey(i + 1));
+        setPointer(i, getPointer(i + 1));
+      }
+      increaseSize(-1);
+    }
+    return getCurrentSize();
+  }
+
+  int deleteRecord(int index) {
+    if (index < getCurrentSize()) {
+      for (int i = index; i < getCurrentSize() - 1; i++) {
+        setKey(i, getKey(i + 1));
+        setPointer(i, getPointer(i + 1));
+      }
+      increaseSize(-1);
+    }
+    return getCurrentSize();
+  }
+
+  public void pushBack(int pointerToBorrow, Value<?, ?> key) {
+    setKey(getCurrentSize(), key);
+    setPointer(getCurrentSize(), pointerToBorrow);
+    increaseSize(1);
   }
 }
