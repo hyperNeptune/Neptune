@@ -17,6 +17,7 @@ public class Schema implements Serializable {
   private final int colNum;
   private final int dataSize_;
   private int schemaSize_ = 4;
+  private Column pkColumn_ = null;
 
   public Schema(Column[] columns) {
     columns_ = columns;
@@ -26,6 +27,9 @@ public class Schema implements Serializable {
       column.offset_ = offset;
       offset += column.getMaxLength();
       schemaSize_ += column.getColMetaSize();
+      if (column.isPrimary() == 1) {
+        pkColumn_ = column;
+      }
     }
     dataSize_ = offset;
   }
@@ -137,5 +141,9 @@ public class Schema implements Serializable {
   // for compatibility with old apis
   public static Pair<Schema, Integer> deserialize(ByteBuffer buffer, Integer offset) {
     return deserialize(buffer, offset, null);
+  }
+
+  public Column getPkColumn() {
+    return pkColumn_;
   }
 }

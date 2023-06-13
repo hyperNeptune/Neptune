@@ -11,7 +11,7 @@ import cn.edu.thssdb.type.BoolValue;
 public class Planner {
   private final Catalog catalog_;
   private Executor plan_;
-  private ExecContext ctx_;
+  private final ExecContext ctx_;
 
   public Planner(Catalog catalog, ExecContext execContext) {
     catalog_ = catalog;
@@ -74,6 +74,21 @@ public class Planner {
 
   private Executor planSelect(SelectStatement stmt) {
     Executor plan = null;
+
+    // plan index scan if where contains only pk.
+    if (stmt.useIndex()) {
+      plan = new indexScanExecutor(ctx_, stmt.getFrom(), stmt.getWhere());
+      if (stmt.getSelectList() == null) {
+        throw new RuntimeException("unreachable. select list should not be null");
+      }
+      plan = new projectionExecutor(ctx_, plan, stmt.getSelectList());
+      return plan_ = plan;
+    }
+
+    // ===----------------===
+    //  for regular seq scan
+    // ===----------------===
+
     // plan FROM
     TableBinder tab = stmt.getFrom();
     if (tab != null && tab.getType() != TableBinderType.EMPTY) {

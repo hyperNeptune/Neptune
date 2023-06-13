@@ -38,7 +38,7 @@ public class BPlusTreeTest {
   }
 
   @Test
-  public void testBPTIter() throws Exception {
+  public void testBPTIterator() throws Exception {
     BPlusTree bpt = new BPlusTree(bufferPoolManager, IntType.INSTANCE, 3, 4);
     Transaction txn = null;
     for (int i = 1; i < 100; i++) {

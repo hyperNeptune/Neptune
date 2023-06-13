@@ -92,7 +92,7 @@ public class TableInfo {
     // pk index first page id
     int pkIndexFirstPageId = buffer.getInt(offset);
     // find pk
-    Column pkColumn = findPKColumn(schema);
+    Column pkColumn = schema.getPkColumn();
     if (pkColumn == null) {
       throw new Exception("Primary key not found");
     }
@@ -120,12 +120,8 @@ public class TableInfo {
     return primaryIndex_;
   }
 
-  private static Column findPKColumn(Schema schema) {
-    for (Column column : schema.getColumns()) {
-      if (column.isPrimary() == 1) {
-        return column;
-      }
-    }
-    return null;
+  public Column getPKColumn() {
+    return schema_.getPkColumn();
   }
+
 }
