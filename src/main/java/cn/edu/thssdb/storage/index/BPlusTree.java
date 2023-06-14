@@ -11,6 +11,7 @@ import cn.edu.thssdb.utils.RID;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.concurrent.locks.ReentrantLock;
 
 // B+ tree manages pages in a tree structure
 // and provides search, insert, delete operations
@@ -23,6 +24,7 @@ public class BPlusTree implements Iterable<RID> {
   // NOTE: for B+ tree, leafSize may be different from internalSize
   private final int leafSize;
   private final int internalSize;
+  private final ReentrantLock oneGiantEvilLock = new ReentrantLock(); // for test purpose only
 
   // open an existed B+ tree
   public BPlusTree(int rootPageId, BufferPoolManager bpm, Type keyType) {
@@ -85,7 +87,7 @@ public class BPlusTree implements Iterable<RID> {
     bpm_.unpinPage(rootPage.getPageId(), true);
   }
 
-  public Page findLeafPage(Value<?, ?> keyValue, boolean leftMost) throws IOException {
+  private Page findLeafPage(Value<?, ?> keyValue, boolean leftMost) throws IOException {
     if (rootPageId == Global.PAGE_ID_INVALID) {
       throw new RuntimeException("B+ tree is empty");
     }
@@ -108,7 +110,7 @@ public class BPlusTree implements Iterable<RID> {
     return page;
   }
 
-  public boolean insertToLeaf(Value<?, ?> keyValue, RID rid, Transaction txn) throws IOException {
+  private boolean insertToLeaf(Value<?, ?> keyValue, RID rid, Transaction txn) throws IOException {
     if (isEmpty()) {
       createTree(keyValue, rid);
       return true;
@@ -207,6 +209,7 @@ public class BPlusTree implements Iterable<RID> {
   }
 
   public boolean insert(Value<?, ?> key, RID rid, Transaction txn) throws IOException {
+
     return insertToLeaf(key, rid, txn);
   }
 
@@ -305,6 +308,10 @@ public class BPlusTree implements Iterable<RID> {
         InternalNodePage curNodeIntP = new InternalNodePage(curNode, keyType);
         // pointer and parent key given to curNode
         curNodeIntP.pushFront(pointerToBorrow, parentInNode.getKey(curIdx));
+        // and its parent is changed
+        BPlusTreePage pChangeParent = new BPlusTreePage(bpm_.fetchPage(pointerToBorrow), keyType);
+        pChangeParent.setParentPageId(curNodeIntP.getPageId());
+        bpm_.unpinPage(pointerToBorrow, true);
         // parent key get reparation from left sibling
         parentInNode.setKey(curIdx, keyToBorrow);
       } else {
@@ -336,8 +343,11 @@ public class BPlusTree implements Iterable<RID> {
         rightSiblingIntP.deleteRecord(0);
         InternalNodePage curNodeIntP = new InternalNodePage(curNode, keyType);
         // pointer and parent key given to curNode
-        // plus one: same reason as above (colaesce scenario)
+        // plus one: same reason as above (coalesce scenario)
         curNodeIntP.pushBack(pointerToBorrow, parentInNode.getKey(curIdx + 1));
+        BPlusTreePage pChangedParent = new BPlusTreePage(bpm_.fetchPage(pointerToBorrow), keyType);
+        pChangedParent.setParentPageId(curNodeIntP.getPageId());
+        bpm_.unpinPage(pointerToBorrow, true);
         // parent key get reparation from left sibling
         parentInNode.setKey(curIdx + 1, keyToBorrow);
       } else {
@@ -355,7 +365,7 @@ public class BPlusTree implements Iterable<RID> {
     }
   }
 
-  void adjustRoot(BPlusTreePage oldRoot) throws IOException {
+  private void adjustRoot(BPlusTreePage oldRoot) throws IOException {
     if (oldRoot.getPageType() == BPlusTreePage.BTNodeType.INTERNAL
         && oldRoot.getCurrentSize() == 1) {
       InternalNodePage oldRootIntP = new InternalNodePage(oldRoot, keyType);
@@ -375,7 +385,7 @@ public class BPlusTree implements Iterable<RID> {
     }
   }
 
-  boolean canCoalesce(BPlusTreePage leftPg, BPlusTreePage rightPg) {
+  private boolean canCoalesce(BPlusTreePage leftPg, BPlusTreePage rightPg) {
     return leftPg.getCurrentSize() + rightPg.getCurrentSize() < leftPg.getMaxSize();
   }
 
@@ -398,6 +408,17 @@ public class BPlusTree implements Iterable<RID> {
       InternalNodePage internalRightNode = new InternalNodePage(curNode, keyType);
       // also need a key from father
       Value<?, ?> fallenKey = parentInNode.getKey(curIdx);
+      // change the parent pointer of all children of right node
+      for (int i = 0; i < internalRightNode.getCurrentSize(); i++) {
+        int childPageId = internalRightNode.getPointer(i);
+        Page childPage = bpm_.fetchPage(childPageId);
+        if (childPage == null) {
+          throw new IOException("Failed to fetch child page");
+        }
+        BPlusTreePage childNode = new BPlusTreePage(childPage, keyType);
+        childNode.setParentPageId(internalLeftNode.getPageId());
+        bpm_.unpinPage(childPageId, true);
+      }
       internalRightNode.moveAllTo(internalLeftNode, fallenKey);
     }
 
@@ -409,8 +430,13 @@ public class BPlusTree implements Iterable<RID> {
     }
   }
 
+  // for test purpose only
+  RID getValue(Value<?, ?> key) throws IOException {
+    return getValue(key, null);
+  }
+
   // point search
-  public RID getValue(Value<?, ?> key) throws IOException {
+  public RID getValue(Value<?, ?> key, Transaction txn) throws IOException {
     if (rootPageId == Global.PAGE_ID_INVALID) {
       return null;
     }
