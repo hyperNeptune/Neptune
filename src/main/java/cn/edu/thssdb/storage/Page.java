@@ -98,6 +98,22 @@ public class Page {
     data_.putInt(LSN_OFFSET, lsn);
   }
 
+  public void WLock() {
+    runtime_data_.RWLatch_.writeLock().lock();
+  }
+
+  public void WUnlock() {
+    runtime_data_.RWLatch_.writeLock().unlock();
+  }
+
+  public void RLock() {
+    runtime_data_.RWLatch_.readLock().lock();
+  }
+
+  public void RUnlock() {
+    runtime_data_.RWLatch_.readLock().unlock();
+  }
+
   // print
   public void print() {
     // invalid page id say invalid

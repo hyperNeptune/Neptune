@@ -409,8 +409,19 @@ public class BPlusTree implements Iterable<RID> {
     }
   }
 
-  public RID getValue(Value<?, ?> key) {
-    return null;
+  // point search
+  public RID getValue(Value<?, ?> key) throws IOException {
+    if (rootPageId == Global.PAGE_ID_INVALID) {
+      return null;
+    }
+
+    // find leaf page
+    Page page = findLeafPage(key, false);
+    if (page == null) {
+      throw new IOException("Failed to fetch leaf page");
+    }
+    LeafPage leafPage = new LeafPage(page, keyType);
+    return leafPage.lookUp(key);
   }
 
   public String toJson() throws IOException {

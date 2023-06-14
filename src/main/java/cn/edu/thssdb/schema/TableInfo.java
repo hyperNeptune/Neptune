@@ -123,5 +123,4 @@ public class TableInfo {
   public Column getPKColumn() {
     return schema_.getPkColumn();
   }
-
 }

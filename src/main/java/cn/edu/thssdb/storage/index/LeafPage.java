@@ -84,14 +84,9 @@ public class LeafPage extends BPlusTreePage {
   }
 
   public RID lookUp(Value<?, ?> key) {
-    for (int i = 0; i < getCurrentSize(); i++) {
-      Value<?, ?> cur_key = getKey(i);
-      if (cur_key == null) {
-        throw new RuntimeException("cur_key is null, impossible??");
-      }
-      if (cur_key.compareTo(key) == 0) {
-        return getRID(i);
-      }
+    int idx = getKeyIndex(key);
+    if (idx < getCurrentSize() && getKey(idx).compareTo(key) == 0) {
+      return getRID(idx);
     }
     return null;
   }

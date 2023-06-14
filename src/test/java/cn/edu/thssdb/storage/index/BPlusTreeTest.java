@@ -3,6 +3,7 @@ package cn.edu.thssdb.storage.index;
 import cn.edu.thssdb.buffer.BufferPoolManager;
 import cn.edu.thssdb.buffer.LRUReplacer;
 import cn.edu.thssdb.buffer.ReplaceAlgorithm;
+import cn.edu.thssdb.concurrency.IsolationLevel;
 import cn.edu.thssdb.concurrency.Transaction;
 import cn.edu.thssdb.storage.DiskManager;
 import cn.edu.thssdb.type.*;
@@ -30,7 +31,7 @@ public class BPlusTreeTest {
   public void testBPTreeIns() throws Exception {
     // split at maxSize
     BPlusTree bpt = new BPlusTree(bufferPoolManager, IntType.INSTANCE, 3, 4);
-    Transaction txn = null;
+    Transaction txn = new Transaction(111, IsolationLevel.READ_COMMITTED);
     for (int i = 1; i < 19; i++) {
       bpt.insert(new IntValue(i), new RID(i, i), txn);
     }
@@ -40,7 +41,7 @@ public class BPlusTreeTest {
   @Test
   public void testBPTIterator() throws Exception {
     BPlusTree bpt = new BPlusTree(bufferPoolManager, IntType.INSTANCE, 3, 4);
-    Transaction txn = null;
+    Transaction txn = new Transaction(111, IsolationLevel.READ_COMMITTED);
     for (int i = 1; i < 100; i++) {
       bpt.insert(new IntValue(i), new RID(i, i), txn);
     }
@@ -57,12 +58,11 @@ public class BPlusTreeTest {
   @Test
   public void easyDel() throws Exception {
     BPlusTree bpt = new BPlusTree(bufferPoolManager, IntType.INSTANCE, 3, 4);
-    Transaction txn = null;
+    Transaction txn = new Transaction(111, IsolationLevel.READ_COMMITTED);
     for (int i = 1; i < 11; i++) {
       bpt.insert(new IntValue(i), new RID(i, i), txn);
     }
     bpt.remove(new IntValue(5), txn);
-    System.out.println(bpt.toJson());
     bpt.remove(new IntValue(2), txn);
     System.out.println(bpt.toJson());
   }

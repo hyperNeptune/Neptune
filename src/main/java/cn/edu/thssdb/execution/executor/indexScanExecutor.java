@@ -19,9 +19,7 @@ public class indexScanExecutor extends Executor {
   }
 
   @Override
-  public void init() throws Exception {
-
-  }
+  public void init() throws Exception {}
 
   @Override
   public boolean next(Tuple tuple, RID rid) throws Exception {
