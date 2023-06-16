@@ -17,15 +17,21 @@ public class Schema implements Serializable {
   private final int colNum;
   private final int dataSize_;
   private int schemaSize_ = 4;
+  private Column pkColumn_ = null;
+  private int pkIndex_ = -1;
 
   public Schema(Column[] columns) {
     columns_ = columns;
     colNum = columns_.length;
     int offset = 0;
-    for (Column column : columns) {
-      column.offset_ = offset;
-      offset += column.getMaxLength();
-      schemaSize_ += column.getColMetaSize();
+    for (int i = 0; i < columns_.length; i++) {
+      columns_[i].offset_ = offset;
+      offset += columns_[i].getMaxLength();
+      schemaSize_ += columns_[i].getColMetaSize();
+      if (columns_[i].isPrimary() == 1) {
+        pkColumn_ = columns_[i];
+        pkIndex_ = i;
+      }
     }
     dataSize_ = offset;
   }
@@ -137,5 +143,13 @@ public class Schema implements Serializable {
   // for compatibility with old apis
   public static Pair<Schema, Integer> deserialize(ByteBuffer buffer, Integer offset) {
     return deserialize(buffer, offset, null);
+  }
+
+  public Column getPkColumn() {
+    return pkColumn_;
+  }
+
+  public int getPkIndex() {
+    return pkIndex_;
   }
 }
