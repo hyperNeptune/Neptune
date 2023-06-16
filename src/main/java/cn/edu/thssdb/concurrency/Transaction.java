@@ -1,9 +1,12 @@
 package cn.edu.thssdb.concurrency;
 
+import cn.edu.thssdb.storage.Page;
 import cn.edu.thssdb.utils.RID;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 enum WType {
@@ -23,6 +26,7 @@ public class Transaction {
   private final HashMap<String, HashSet<RID>> s_row_lock_set;
   private final HashMap<String, HashSet<RID>> x_row_lock_set;
   private final ReentrantLock latch = new ReentrantLock();
+  private final List<Page> pageSet = new ArrayList<>();
 
   public Transaction(int txn_id, IsolationLevel iso_lvl) {
     this.txn_id = txn_id;
@@ -111,6 +115,10 @@ public class Transaction {
 
   public HashMap<String, HashSet<RID>> getExclusiveRowLockSet() {
     return x_row_lock_set;
+  }
+
+  public List<Page> getPageSet() {
+    return pageSet;
   }
 
   public static int INVALID_TXN_ID = -1;

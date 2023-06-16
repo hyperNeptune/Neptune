@@ -40,7 +40,7 @@ public class Column implements Comparable<Column> {
     this.nullable_ = c.nullable_;
     this.maxLength_ = c.maxLength_;
     this.offset_ = c.offset_;
-    if (fullName_ != null) {
+    if (c.fullName_ != null) {
       this.fullName_ = c.fullName_;
     }
   }
