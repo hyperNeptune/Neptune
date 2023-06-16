@@ -2,13 +2,15 @@ package cn.edu.thssdb.storage.index;
 
 import cn.edu.thssdb.buffer.BufferPoolManager;
 import cn.edu.thssdb.storage.Page;
+import cn.edu.thssdb.type.Value;
 import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.Pair;
 import cn.edu.thssdb.utils.RID;
 
 import java.io.IOException;
 import java.util.Iterator;
 
-public class BPlusTreeIterator implements Iterator<RID> {
+public class BPlusTreeIterator implements Iterator<Pair<Value<?, ?>, RID>> {
   private LeafPage currPage_;
   private final BufferPoolManager bpm_;
   private int currIdx_;
@@ -30,8 +32,9 @@ public class BPlusTreeIterator implements Iterator<RID> {
   }
 
   @Override
-  public RID next() {
+  public Pair<Value<?, ?>, RID> next() {
     RID rid = currPage_.getRID(currIdx_);
+    Value<?, ?> key = currPage_.getKey(currIdx_);
     if (++currIdx_ >= currPage_.getCurrentSize()
         && currPage_.getNextPageId() != Global.PAGE_ID_INVALID) {
       try {
@@ -43,6 +46,6 @@ public class BPlusTreeIterator implements Iterator<RID> {
         throw new RuntimeException(e);
       }
     }
-    return rid;
+    return new Pair<>(key, rid);
   }
 }

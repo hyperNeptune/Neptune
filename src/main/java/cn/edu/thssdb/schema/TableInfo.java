@@ -26,10 +26,6 @@ public class TableInfo {
   private final Table tableHeap_;
   private final BPlusTree primaryIndex_;
 
-  public TableInfo(String tableName, Schema schema, Table tableHeap) {
-    this(tableName, schema, tableHeap, null);
-  }
-
   public TableInfo(String tableName, Schema schema, Table tableHeap, BPlusTree bpt) {
     tableName_ = tableName;
     schema_ = schema;

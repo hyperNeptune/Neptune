@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 // B+ tree manages pages in a tree structure
 // and provides search, insert, delete operations
-public class BPlusTree implements Iterable<RID> {
+public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
   // root page can change after insert/delete operations
   private int rootPageId;
   private final BufferPoolManager bpm_;
@@ -213,23 +213,25 @@ public class BPlusTree implements Iterable<RID> {
     // System.out.println("inserting " + key);
     boolean ret = insertToLeaf(key, rid, txn);
     oneGiantEvilLock.unlock();
-//    System.out.println("inserted " + key);
+    //    System.out.println("inserted " + key);
     return ret;
   }
 
   public void remove(Value<?, ?> key, Transaction txn) throws IOException {
     oneGiantEvilLock.lock();
-//    System.out.println("removing " + key);
+    //    System.out.println("removing " + key);
     Page page = findLeafPage(key, false);
     LeafPage leaf = new LeafPage(page, keyType);
     leaf.deleteRecord(key);
     adjustTree(leaf, txn);
     oneGiantEvilLock.unlock();
-//    System.out.println("removed " + key);
+    //    System.out.println("removed " + key);
   }
 
+  // ====----------------------===
   // adjust the tree structure
-  //
+  // ====----------------------===
+
   private void adjustTree(BPlusTreePage curNode, Transaction txn) throws IOException {
     if (curNode.isRootPage()) {
       adjustRoot(curNode);
@@ -500,7 +502,7 @@ public class BPlusTree implements Iterable<RID> {
   }
 
   @Override
-  public Iterator<RID> iterator() {
+  public Iterator<Pair<Value<?, ?>, RID>> iterator() {
     try {
       return iterator(null);
     } catch (IOException e) {
@@ -508,7 +510,7 @@ public class BPlusTree implements Iterable<RID> {
     }
   }
 
-  public Iterator<RID> iterator(Value<?, ?> key) throws IOException {
+  public Iterator<Pair<Value<?, ?>, RID>> iterator(Value<?, ?> key) throws IOException {
     if (key == null) {
       Page page = findLeafPage(null, true);
       LeafPage leaf = new LeafPage(page, keyType);
@@ -524,5 +526,22 @@ public class BPlusTree implements Iterable<RID> {
       return null;
     }
     return new BPlusTreeIterator(leaf, bpm_, index);
+  }
+
+  public void remove(RID rid, Transaction txn) {
+    // stupid method. iterate and find key, then call remove
+    Value<?, ?> key = null;
+    try {
+      for (Pair<Value<?, ?>, RID> pcurRid : this) {
+        RID curRid = pcurRid.right;
+        key = pcurRid.left;
+        if (curRid.equals(rid)) {
+          remove(key, txn);
+          return;
+        }
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

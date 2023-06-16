@@ -8,6 +8,7 @@ import cn.edu.thssdb.concurrency.Transaction;
 import cn.edu.thssdb.storage.DiskManager;
 import cn.edu.thssdb.type.*;
 import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.Pair;
 import cn.edu.thssdb.utils.RID;
 import org.junit.After;
 import org.junit.Before;
@@ -22,8 +23,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static org.junit.Assert.assertEquals;
 
 public class BPlusTreeTest {
   private BufferPoolManager bufferPoolManager;
@@ -54,14 +53,14 @@ public class BPlusTreeTest {
     for (int i = 1; i < 100; i++) {
       bpt.insert(new IntValue(i), new RID(i, i), txn);
     }
-//    for (RID rid : bpt) {
-//      System.out.println(rid);
-//    }
+    //    for (RID rid : bpt) {
+    //      System.out.println(rid);
+    //    }
     System.out.println("another test");
-    Iterator<RID> iter = bpt.iterator(new IntValue(51));
-//    while (iter.hasNext()) {
-//      System.out.println(iter.next());
-//    }
+    Iterator<Pair<Value<?, ?>, RID>> iter = bpt.iterator(new IntValue(51));
+    //    while (iter.hasNext()) {
+    //      System.out.println(iter.next());
+    //    }
   }
 
   @Test
@@ -83,7 +82,8 @@ public class BPlusTreeTest {
     BPlusTree bpt = new BPlusTree(bufferPoolManager, IntType.INSTANCE, 3, 4);
     Transaction txn = new Transaction(111, IsolationLevel.READ_COMMITTED);
     bpt.insert(key, rid, txn);
-    BPlusTreePage bptp = new BPlusTreePage(bufferPoolManager.fetchPage(bpt.getRootPageId()), IntType.INSTANCE);
+    BPlusTreePage bptp =
+        new BPlusTreePage(bufferPoolManager.fetchPage(bpt.getRootPageId()), IntType.INSTANCE);
     assert bptp.getPageType() == BPlusTreePage.BTNodeType.LEAF;
     LeafPage lp = new LeafPage(bptp, IntType.INSTANCE);
     assert lp.getCurrentSize() == 1;
@@ -119,10 +119,10 @@ public class BPlusTreeTest {
     }
 
     // use range search method
-    Iterator<RID> iter = bpt.iterator(new IntValue(42));
+    Iterator<Pair<Value<?, ?>, RID>> iter = bpt.iterator(new IntValue(42));
     int i = 0;
     while (iter.hasNext()) {
-      assert iter.next().equals(rids.get(i));
+      assert iter.next().right.equals(rids.get(i));
       i++;
     }
 
@@ -130,7 +130,7 @@ public class BPlusTreeTest {
     iter = bpt.iterator(new IntValue(44));
     i = 2;
     while (iter.hasNext()) {
-      assert iter.next().equals(rids.get(i));
+      assert iter.next().right.equals(rids.get(i));
       i++;
     }
   }
@@ -207,7 +207,7 @@ public class BPlusTreeTest {
   @Test
   public void concurrencyTest() throws Exception {
     int numOfThreads = 1000;
-    ExecutorService conExec  = Executors.newFixedThreadPool(numOfThreads);
+    ExecutorService conExec = Executors.newFixedThreadPool(numOfThreads);
     // this is not the latch in DB world.
     CountDownLatch latch = new CountDownLatch(numOfThreads);
     BPlusTree bpt = new BPlusTree(bufferPoolManager, IntType.INSTANCE, 3, 4);
@@ -215,15 +215,14 @@ public class BPlusTreeTest {
       int finalI = i;
       Transaction txn = new Transaction(finalI, IsolationLevel.READ_COMMITTED);
       conExec.execute(
-        () -> {
-          try {
-            bpt.insert(new IntValue(finalI), new RID(finalI, finalI), txn);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-          latch.countDown();
-        }
-      );
+          () -> {
+            try {
+              bpt.insert(new IntValue(finalI), new RID(finalI, finalI), txn);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+            latch.countDown();
+          });
     }
     latch.await();
     for (int i = 0; i < numOfThreads; i++) {
@@ -236,15 +235,14 @@ public class BPlusTreeTest {
       int finalI = i;
       Transaction txn = new Transaction(finalI, IsolationLevel.READ_COMMITTED);
       conExec.execute(
-        () -> {
-          try {
-            bpt.remove(new IntValue(finalI), txn);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-          latch2.countDown();
-        }
-      );
+          () -> {
+            try {
+              bpt.remove(new IntValue(finalI), txn);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+            latch2.countDown();
+          });
     }
     latch2.await();
     System.out.println(bpt.toJson());
@@ -252,22 +250,20 @@ public class BPlusTreeTest {
       assert bpt.getValue(new IntValue(i)) == null;
     }
 
-
     // concurrent insert 0 ~ 100 again
     CountDownLatch latch3 = new CountDownLatch(numOfThreads);
     for (int i = 0; i < numOfThreads; i++) {
       int finalI = i;
       Transaction txn = new Transaction(finalI, IsolationLevel.READ_COMMITTED);
       conExec.execute(
-        () -> {
-          try {
-            bpt.insert(new IntValue(finalI), new RID(finalI, finalI), txn);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-          latch3.countDown();
-        }
-      );
+          () -> {
+            try {
+              bpt.insert(new IntValue(finalI), new RID(finalI, finalI), txn);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+            latch3.countDown();
+          });
     }
     latch3.await();
     for (int i = 0; i < numOfThreads; i++) {
@@ -280,21 +276,24 @@ public class BPlusTreeTest {
       int finalI = i;
       Transaction txn = new Transaction(finalI, IsolationLevel.READ_COMMITTED);
       conExec.execute(
-        () -> {
-          try {
-            bpt.insert(new IntValue(finalI + numOfThreads), new RID(finalI + numOfThreads, finalI + numOfThreads), txn);
-            bpt.remove(new IntValue(finalI), txn);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-          latch4.countDown();
-        }
-      );
+          () -> {
+            try {
+              bpt.insert(
+                  new IntValue(finalI + numOfThreads),
+                  new RID(finalI + numOfThreads, finalI + numOfThreads),
+                  txn);
+              bpt.remove(new IntValue(finalI), txn);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+            latch4.countDown();
+          });
     }
     latch4.await();
     for (int i = 0; i < numOfThreads; i++) {
       assert bpt.getValue(new IntValue(i)) == null;
-      assert bpt.getValue(new IntValue(i + numOfThreads)).equals(new RID(i + numOfThreads, i + numOfThreads));
+      assert bpt.getValue(new IntValue(i + numOfThreads))
+          .equals(new RID(i + numOfThreads, i + numOfThreads));
     }
   }
 
@@ -338,7 +337,8 @@ public class BPlusTreeTest {
     }
     for (int i = 0; i < numOfThreads; i++) {
       assert bpt.getValue(new IntValue(i)) == null;
-      assert bpt.getValue(new IntValue(i + numOfThreads)).equals(new RID(i + numOfThreads, i + numOfThreads));
+      assert bpt.getValue(new IntValue(i + numOfThreads))
+          .equals(new RID(i + numOfThreads, i + numOfThreads));
     }
   }
 
@@ -385,123 +385,123 @@ public class BPlusTreeTest {
       bpt.insert(new IntValue(i), new RID(i, i), txn);
     }
     // do the sequence below:
-//    inserting 100
-//    inserted 100
-//    inserting 104
-//    inserting 120
-//    inserted 104
-//    inserted 120
-//    inserting 131
-//    inserted 131
-//    inserting 101
-//    inserted 101
-//    removing 1
-//    removed 1
-//    inserting 143
-//    inserted 143
-//    inserting 102
-//    inserted 102
-//    removing 2
-//    removed 2
-//    inserting 154
-//    inserted 154
-//    inserting 169
-//    inserted 169
-//    inserting 178
-//    inserted 178
-//    inserting 182
-//    inserted 182
-//    inserting 188
-//    inserted 188
-//    inserting 103
-//    inserted 103
-//    removing 3
-//    removed 3
-//    removing 0
-//    removed 0
-//    inserting 105
-//    inserted 105
-//    removing 5
-//    removed 5
-//    inserting 106
-//    inserted 106
-//    removing 6
-//    removed 6
-//    inserting 107
-//    inserted 107
-//    removing 7
-//    removed 7
-//    inserting 108
-//    inserted 108
-//    removing 8
-//    removed 8
-//    inserting 109
-//    inserted 109
-//    removing 9
-//    removed 9
-//    inserting 110
-//    inserted 110
-//    removing 10
-//    removed 10
-//    inserting 111
-//    inserted 111
-//    removing 11
-//    removed 11
-//    inserting 112
-//    inserted 112
-//    inserting 113
-//    inserted 113
-//    removing 13
-//    removed 13
-//    inserting 114
-//    inserted 114
-//    removing 14
-//    removed 14
-//    inserting 115
-//    inserted 115
-//    removing 15
-//    removed 15
-//    inserting 116
-//    inserted 116
-//    inserting 117
-//    inserted 117
-//    removing 17
-//    removed 17
-//    inserting 118
-//    inserted 118
-//    removing 18
-//    removed 18
-//    inserting 119
-//    inserted 119
-//    inserting 121
-//    inserted 121
-//    inserting 122
-//    inserted 122
-//    removing 22
-//    removed 22
-//    removing 4
-//    removed 4
-//    inserting 123
-//    inserted 123
-//    inserting 124
-//    inserted 124
-//    removing 24
-//    removed 24
-//    inserting 125
-//    inserted 125
-//    removing 25
-//    removed 25
-//    inserting 126
-//    inserted 126
-//    removing 26
-//    removed 26
-//    inserting 127
-//    inserted 127
-//    removing 27
-//    removed 27
-//    inserting 128
-//    inserted 128
-//    removing 28
+    //    inserting 100
+    //    inserted 100
+    //    inserting 104
+    //    inserting 120
+    //    inserted 104
+    //    inserted 120
+    //    inserting 131
+    //    inserted 131
+    //    inserting 101
+    //    inserted 101
+    //    removing 1
+    //    removed 1
+    //    inserting 143
+    //    inserted 143
+    //    inserting 102
+    //    inserted 102
+    //    removing 2
+    //    removed 2
+    //    inserting 154
+    //    inserted 154
+    //    inserting 169
+    //    inserted 169
+    //    inserting 178
+    //    inserted 178
+    //    inserting 182
+    //    inserted 182
+    //    inserting 188
+    //    inserted 188
+    //    inserting 103
+    //    inserted 103
+    //    removing 3
+    //    removed 3
+    //    removing 0
+    //    removed 0
+    //    inserting 105
+    //    inserted 105
+    //    removing 5
+    //    removed 5
+    //    inserting 106
+    //    inserted 106
+    //    removing 6
+    //    removed 6
+    //    inserting 107
+    //    inserted 107
+    //    removing 7
+    //    removed 7
+    //    inserting 108
+    //    inserted 108
+    //    removing 8
+    //    removed 8
+    //    inserting 109
+    //    inserted 109
+    //    removing 9
+    //    removed 9
+    //    inserting 110
+    //    inserted 110
+    //    removing 10
+    //    removed 10
+    //    inserting 111
+    //    inserted 111
+    //    removing 11
+    //    removed 11
+    //    inserting 112
+    //    inserted 112
+    //    inserting 113
+    //    inserted 113
+    //    removing 13
+    //    removed 13
+    //    inserting 114
+    //    inserted 114
+    //    removing 14
+    //    removed 14
+    //    inserting 115
+    //    inserted 115
+    //    removing 15
+    //    removed 15
+    //    inserting 116
+    //    inserted 116
+    //    inserting 117
+    //    inserted 117
+    //    removing 17
+    //    removed 17
+    //    inserting 118
+    //    inserted 118
+    //    removing 18
+    //    removed 18
+    //    inserting 119
+    //    inserted 119
+    //    inserting 121
+    //    inserted 121
+    //    inserting 122
+    //    inserted 122
+    //    removing 22
+    //    removed 22
+    //    removing 4
+    //    removed 4
+    //    inserting 123
+    //    inserted 123
+    //    inserting 124
+    //    inserted 124
+    //    removing 24
+    //    removed 24
+    //    inserting 125
+    //    inserted 125
+    //    removing 25
+    //    removed 25
+    //    inserting 126
+    //    inserted 126
+    //    removing 26
+    //    removed 26
+    //    inserting 127
+    //    inserted 127
+    //    removing 27
+    //    removed 27
+    //    inserting 128
+    //    inserted 128
+    //    removing 28
     // start, no println
     Transaction txn = new Transaction(100, IsolationLevel.READ_COMMITTED);
     bpt.insert(new IntValue(100), new RID(100, 100), txn);

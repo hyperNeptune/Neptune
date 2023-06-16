@@ -42,6 +42,10 @@ public class SelectStatement extends Statement {
       return false;
     }
     // check where clause. we support binary expression, like PK op const
+    if (where_ == null) {
+      // use Index has no advantage
+      return false;
+    }
     if (where_.getType() != ExpressionType.BINARY) {
       return false;
     }

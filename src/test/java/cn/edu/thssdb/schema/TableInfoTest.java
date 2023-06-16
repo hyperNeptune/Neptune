@@ -58,7 +58,7 @@ public class TableInfoTest {
 
     Table tbs = SlotTable.newSlotTable(bufferPoolManager, sh.getTupleSize());
 
-    TableInfo tableInfo = new TableInfo("test", sh, tbs);
+    TableInfo tableInfo = new TableInfo("test", sh, tbs, null);
 
     Tuple t = tableInfo.serialize();
     Tuple tt = new Tuple(v, sh);

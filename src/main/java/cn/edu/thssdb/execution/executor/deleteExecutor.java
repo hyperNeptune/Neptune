@@ -27,6 +27,7 @@ public class deleteExecutor extends Executor {
       return false;
     }
     tableInfo_.getTable().delete(rid);
+    tableInfo_.getIndex().remove(rid, getCtx().getTransaction());
     return true;
   }
 

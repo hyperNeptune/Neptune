@@ -2,6 +2,7 @@ package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.buffer.BufferPoolManager;
 import cn.edu.thssdb.storage.Tuple;
+import cn.edu.thssdb.storage.index.BPlusTree;
 import cn.edu.thssdb.utils.Pair;
 import cn.edu.thssdb.utils.RID;
 
@@ -15,6 +16,7 @@ public class Catalog {
   private Table catalogTable_;
   private Map<String, Table> tables_;
   private Map<String, Schema> tableSchemas_;
+  private Map<String, BPlusTree> indices_;
   // use this strange name to avoid conflict with user's table name
   private static final String SCHEMA_TABLE_NAME = "__HYPERNEPTUNE__SAINTDENIS__SCHEMA__";
   private static final String SCHEMA_TABLE_SCHEMA =
@@ -37,8 +39,10 @@ public class Catalog {
     clg.catalogTable_ = t;
     clg.tables_ = new HashMap<>();
     clg.tableSchemas_ = new HashMap<>();
+    clg.indices_ = new HashMap<>();
     clg.tables_.put(SCHEMA_TABLE_NAME, t);
     clg.tableSchemas_.put(SCHEMA_TABLE_NAME, null);
+    clg.indices_.put(SCHEMA_TABLE_NAME, null);
     return clg;
   }
 
@@ -63,6 +67,7 @@ public class Catalog {
       TableInfo ti = TableInfo.deserialize(tuple.getValue(), 0, bufferPoolManager_);
       tables_.put(ti.getTableName(), ti.getTable());
       tableSchemas_.put(ti.getTableName(), ti.getSchema());
+      indices_.put(ti.getTableName(), ti.getIndex());
     }
   }
 
@@ -82,9 +87,15 @@ public class Catalog {
 
   public TableInfo createTable(String tableName, Schema schema) throws Exception {
     Table tableHeap = SlotTable.newSlotTable(bufferPoolManager_, schema.getTupleSize());
-    TableInfo ti = new TableInfo(tableName, schema, tableHeap);
+    TableInfo ti =
+        new TableInfo(
+            tableName,
+            schema,
+            tableHeap,
+            new BPlusTree(bufferPoolManager_, schema.getPkColumn().getType()));
     tables_.put(tableName, tableHeap);
     tableSchemas_.put(tableName, schema);
+    indices_.put(tableName, ti.getIndex());
     catalogTable_.insert(ti.serialize(), null);
     return ti;
   }
@@ -96,6 +107,7 @@ public class Catalog {
     }
     tables_.remove(tableName);
     tableSchemas_.remove(tableName);
+    indices_.remove(tableName);
     // iterate through table page and drop it
     Iterator<Pair<Tuple, RID>> iterator = catalogTable_.iterator();
     while (iterator.hasNext()) {
@@ -117,13 +129,18 @@ public class Catalog {
     return tableSchemas_.get(tableName);
   }
 
+  public BPlusTree getIndex(String tableName) {
+    return indices_.get(tableName);
+  }
+
   public TableInfo getTableInfo(String tableName) {
     Table table = getTable(tableName);
     Schema schema = getTableSchema(tableName);
+    BPlusTree index = getIndex(tableName);
     if (table == null || schema == null) {
       return null;
     }
-    return new TableInfo(tableName, schema, table);
+    return new TableInfo(tableName, schema, table, index);
   }
 
   public int getFirstPageId() {

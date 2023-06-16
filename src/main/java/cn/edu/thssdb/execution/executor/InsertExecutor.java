@@ -4,6 +4,7 @@ import cn.edu.thssdb.execution.ExecContext;
 import cn.edu.thssdb.schema.Schema;
 import cn.edu.thssdb.schema.TableInfo;
 import cn.edu.thssdb.storage.Tuple;
+import cn.edu.thssdb.type.Value;
 import cn.edu.thssdb.utils.RID;
 
 public class InsertExecutor extends Executor {
@@ -32,6 +33,11 @@ public class InsertExecutor extends Executor {
     }
     Tuple t = tuples_[insertIndex_];
     tableInfo_.getTable().insert(t, rid);
+    Value<?, ?> pkValue = t.getValue(tableInfo_.getSchema(), tableInfo_.getSchema().getPkIndex());
+    if (!tableInfo_.getIndex().insert(pkValue, rid, getCtx().getTransaction())) {
+      tableInfo_.getTable().delete(rid);
+      throw new Exception("insert failed, unique key constraint violated");
+    }
     insertIndex_++;
     tuple.copyAssign(t);
     return true;
