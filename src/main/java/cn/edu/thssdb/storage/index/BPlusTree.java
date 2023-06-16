@@ -24,7 +24,7 @@ public class BPlusTree implements Iterable<RID> {
   // NOTE: for B+ tree, leafSize may be different from internalSize
   private final int leafSize;
   private final int internalSize;
-  private final ReentrantLock oneGiantEvilLock = new ReentrantLock(); // for test purpose only
+  private final ReentrantLock oneGiantEvilLock = new ReentrantLock(true); // for test purpose only
 
   // open an existed B+ tree
   public BPlusTree(int rootPageId, BufferPoolManager bpm, Type keyType) {
@@ -209,15 +209,23 @@ public class BPlusTree implements Iterable<RID> {
   }
 
   public boolean insert(Value<?, ?> key, RID rid, Transaction txn) throws IOException {
-
-    return insertToLeaf(key, rid, txn);
+    oneGiantEvilLock.lock();
+    // System.out.println("inserting " + key);
+    boolean ret = insertToLeaf(key, rid, txn);
+    oneGiantEvilLock.unlock();
+//    System.out.println("inserted " + key);
+    return ret;
   }
 
   public void remove(Value<?, ?> key, Transaction txn) throws IOException {
+    oneGiantEvilLock.lock();
+//    System.out.println("removing " + key);
     Page page = findLeafPage(key, false);
     LeafPage leaf = new LeafPage(page, keyType);
     leaf.deleteRecord(key);
     adjustTree(leaf, txn);
+    oneGiantEvilLock.unlock();
+//    System.out.println("removed " + key);
   }
 
   // adjust the tree structure
@@ -247,6 +255,10 @@ public class BPlusTree implements Iterable<RID> {
     }
     InternalNodePage parentInNode = new InternalNodePage(parentPage, keyType);
     int curIdx = parentInNode.findPointerIndex(curNode.getPageId());
+    if (curIdx >= parentInNode.getCurrentSize()) {
+      throw new IOException("[CONCURRENCY PROBLEM] Failed to find current node in parent");
+    }
+
     Pair<Integer, Integer> siblings = new Pair<>(curIdx - 1, curIdx + 1);
 
     // find left child, see if we can coalesce
@@ -302,8 +314,8 @@ public class BPlusTree implements Iterable<RID> {
         InternalNodePage leftSiblingIntP = new InternalNodePage(leftSibling, keyType);
         int mIdx = leftSiblingIntP.getCurrentSize();
         // get the borrowed key and pointer!
-        int pointerToBorrow = leftSiblingIntP.getPointer(mIdx);
-        Value<?, ?> keyToBorrow = leftSiblingIntP.getKey(mIdx);
+        int pointerToBorrow = leftSiblingIntP.getPointer(mIdx - 1);
+        Value<?, ?> keyToBorrow = leftSiblingIntP.getKey(mIdx - 1);
         leftSiblingIntP.deleteRecord(mIdx - 1);
         InternalNodePage curNodeIntP = new InternalNodePage(curNode, keyType);
         // pointer and parent key given to curNode
@@ -314,16 +326,16 @@ public class BPlusTree implements Iterable<RID> {
         bpm_.unpinPage(pointerToBorrow, true);
         // parent key get reparation from left sibling
         parentInNode.setKey(curIdx, keyToBorrow);
-      } else {
+      } else { // is leaf
         LeafPage leftSiblingLeafP = new LeafPage(leftSibling, keyType);
         int mIdx = leftSiblingLeafP.getCurrentSize();
         // get the borrowed key and rid!
-        Value<?, ?> keyToBorrow = leftSiblingLeafP.getKey(mIdx);
-        RID ridToBorrow = leftSiblingLeafP.getRID(mIdx);
+        Value<?, ?> keyToBorrow = leftSiblingLeafP.getKey(mIdx - 1);
+        RID ridToBorrow = leftSiblingLeafP.getRID(mIdx - 1);
         leftSiblingLeafP.deleteRecord(mIdx - 1);
         LeafPage curNodeLeafP = new LeafPage(curNode, keyType);
         // pointer and parent key given to curNode
-        curNodeLeafP.pushFront(ridToBorrow, parentInNode.getKey(curIdx));
+        curNodeLeafP.pushFront(ridToBorrow, keyToBorrow);
         // parent key get reparation from left sibling
         parentInNode.setKey(curIdx, keyToBorrow);
       }
@@ -344,12 +356,12 @@ public class BPlusTree implements Iterable<RID> {
         InternalNodePage curNodeIntP = new InternalNodePage(curNode, keyType);
         // pointer and parent key given to curNode
         // plus one: same reason as above (coalesce scenario)
-        curNodeIntP.pushBack(pointerToBorrow, parentInNode.getKey(curIdx + 1));
+        curNodeIntP.pushBack(pointerToBorrow, parentInNode.getKey(rightSiblingIndex));
         BPlusTreePage pChangedParent = new BPlusTreePage(bpm_.fetchPage(pointerToBorrow), keyType);
         pChangedParent.setParentPageId(curNodeIntP.getPageId());
         bpm_.unpinPage(pointerToBorrow, true);
         // parent key get reparation from left sibling
-        parentInNode.setKey(curIdx + 1, keyToBorrow);
+        parentInNode.setKey(rightSiblingIndex, keyToBorrow);
       } else {
         LeafPage rightSiblingLeafP = new LeafPage(rightSibling, keyType);
         // get the borrowed key and rid!
@@ -358,9 +370,9 @@ public class BPlusTree implements Iterable<RID> {
         rightSiblingLeafP.deleteRecord(0);
         LeafPage curNodeLeafP = new LeafPage(curNode, keyType);
         // pointer and parent key given to curNode
-        curNodeLeafP.pushBack(ridToBorrow, parentInNode.getKey(curIdx));
+        curNodeLeafP.pushBack(ridToBorrow, keyToBorrow);
         // parent key get reparation from left sibling
-        parentInNode.setKey(curIdx, keyToBorrow);
+        parentInNode.setKey(rightSiblingIndex, keyToBorrow);
       }
     }
   }
@@ -408,6 +420,9 @@ public class BPlusTree implements Iterable<RID> {
       InternalNodePage internalRightNode = new InternalNodePage(curNode, keyType);
       // also need a key from father
       Value<?, ?> fallenKey = parentInNode.getKey(curIdx);
+      if (fallenKey == null) {
+        throw new IOException("Failed to get fallen key");
+      }
       // change the parent pointer of all children of right node
       for (int i = 0; i < internalRightNode.getCurrentSize(); i++) {
         int childPageId = internalRightNode.getPointer(i);
@@ -437,17 +452,22 @@ public class BPlusTree implements Iterable<RID> {
 
   // point search
   public RID getValue(Value<?, ?> key, Transaction txn) throws IOException {
+    oneGiantEvilLock.lock();
     if (rootPageId == Global.PAGE_ID_INVALID) {
+      oneGiantEvilLock.unlock();
       return null;
     }
 
     // find leaf page
     Page page = findLeafPage(key, false);
     if (page == null) {
+      oneGiantEvilLock.unlock();
       throw new IOException("Failed to fetch leaf page");
     }
     LeafPage leafPage = new LeafPage(page, keyType);
-    return leafPage.lookUp(key);
+    RID rid = leafPage.lookUp(key);
+    oneGiantEvilLock.unlock();
+    return rid;
   }
 
   public String toJson() throws IOException {

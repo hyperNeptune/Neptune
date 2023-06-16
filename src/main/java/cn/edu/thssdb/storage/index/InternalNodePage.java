@@ -114,13 +114,16 @@ public class InternalNodePage extends BPlusTreePage {
 
   private void insertAfter(int pageId, Value<?, ?> key, int pageId1, boolean front) {
     // find pageId
-    int index = front ? 0 : findPointerIndex(pageId);
+    int index = front ? -1 : findPointerIndex(pageId);
     // move
     for (int i = getCurrentSize(); i > index + 1; i--) {
       setKey(i, getKey(i - 1));
       setPointer(i, getPointer(i - 1));
     }
     // insert
+    if (front) {
+      index++;
+    }
     setKey(index + 1, key);
     if (!front) {
       setPointer(index + 1, pageId1);

@@ -76,6 +76,7 @@ public class Planner {
     Executor plan = null;
 
     // plan index scan if where contains only pk.
+    // this is a hack. I feel sorry for that, but I don't have much time to do it decently.
     if (stmt.useIndex()) {
       plan = new indexScanExecutor(ctx_, stmt.getFrom(), stmt.getWhere());
       if (stmt.getSelectList() == null) {
