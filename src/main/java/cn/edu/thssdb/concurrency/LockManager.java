@@ -2,9 +2,7 @@ package cn.edu.thssdb.concurrency;
 
 import cn.edu.thssdb.utils.RID;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -144,7 +142,6 @@ public class LockManager {
         unlockTable(txn, tableName); // TODO: 这里改过，可能爆炸
         queue.upgrading = txn.getTxn_id();
         queue.latch.unlock();
-        removeTxnTableLockSet(txn, tableName);
 
         // 等待直到新锁被授予。
         queue.latch.lock();
@@ -172,9 +169,10 @@ public class LockManager {
       }
     } finally {
       currentQueue.latch.unlock();
+      // txn book-keeping
+      addTxnTableLockSet(txn, lockMode, tableName);
     }
 
-    // TODO: txn book keeping
     return true;
   }
 
@@ -287,7 +285,8 @@ public class LockManager {
     lockRequestQueue.latchCondition.signalAll();
     lockRequestQueue.latch.unlock();
 
-    // TODO: txn book keeping
+    // txn book keeping
+    removeTxnTableLockSet(txn, tableName);
     return true;
   }
 
@@ -395,9 +394,8 @@ public class LockManager {
       }
     } finally {
       currentQueue.latch.unlock();
+      addTxnRowLockSet(txn, lock_mode, rid, table_name);
     }
-
-    // TODO: txn book keeping
     return true;
   }
 
@@ -405,12 +403,20 @@ public class LockManager {
     // 获取对应的 lock request queue
     rowLockMapLatch.lock();
     LockRequestQueue lockRequestQueue = rowLockMap.get(rid);
+    if (lockRequestQueue == null) {
+      for (Map.Entry<RID, LockRequestQueue> entry : rowLockMap.entrySet()) {
+        if (entry.getKey().equals(rid)) {
+          lockRequestQueue = entry.getValue();
+          break;
+        }
+      }
+    }
     rowLockMapLatch.unlock();
     lockRequestQueue.latch.lock();
     if (lockRequestQueue.requestQueue.stream()
         .noneMatch(lockRequest -> lockRequest.txn_id == txn.getTxn_id())) {
       lockRequestQueue.latch.unlock();
-      System.out.println(txn.getTxn_id() + "????????????");
+      System.out.println(txn.getTxn_id() + "????????????" + rid.toString());
       // ATTEMPTED_UNLOCK_BUT_NO_LOCK_HELD
       return false;
     }
@@ -455,7 +461,8 @@ public class LockManager {
     lockRequestQueue.latchCondition.signalAll();
     lockRequestQueue.latch.unlock();
 
-    // TODO: txn book keeping
+    // txn book keeping
+    removeTxnRowLockSet(txn, rid, table_name);
     return true;
   }
 
@@ -474,6 +481,40 @@ public class LockManager {
     txn.lockTxn();
     txn.getSharedTableLockSet().remove(tableName);
     txn.getExclusiveTableLockSet().remove(tableName);
+    txn.unlockTxn();
+  }
+
+  private void addTxnRowLockSet(Transaction txn, LockMode lockMode, RID rid, String tableName) {
+    txn.lockTxn();
+    if (lockMode == LockMode.SHARED) {
+      if (txn.getSharedRowLockSet().get(tableName) == null) {
+        HashSet<RID> set = new HashSet<>();
+        set.add(rid);
+        txn.getSharedRowLockSet().put(tableName, set);
+      } else {
+        HashSet<RID> set = txn.getSharedRowLockSet().get(tableName);
+        set.add(rid);
+      }
+    }
+    if (lockMode == LockMode.EXCLUSIVE) {
+      if (txn.getExclusiveRowLockSet().get(tableName) == null) {
+        HashSet<RID> set = new HashSet<>();
+        set.add(rid);
+        txn.getExclusiveRowLockSet().put(tableName, set);
+      } else {
+        HashSet<RID> set = txn.getExclusiveRowLockSet().get(tableName);
+        set.add(rid);
+      }
+    }
+    txn.unlockTxn();
+  }
+
+  private void removeTxnRowLockSet(Transaction txn, RID rid, String tableName) {
+    txn.lockTxn();
+    if (txn.getSharedRowLockSet().get(tableName) != null)
+      txn.getSharedRowLockSet().get(tableName).remove(rid);
+    if (txn.getExclusiveRowLockSet().get(tableName) != null)
+      txn.getExclusiveRowLockSet().get(tableName).remove(rid);
     txn.unlockTxn();
   }
 

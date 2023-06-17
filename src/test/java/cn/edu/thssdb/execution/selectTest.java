@@ -26,7 +26,7 @@ public class selectTest {
     binder.parseAndBind("select * from test where col5 > 100");
     for (Statement s : binder) {
       // WARN(jyx): you may need to add txn here
-      ExecContext ctx = new ExecContext(null, null, null);
+      ExecContext ctx = new ExecContext(null, null, null, null, null);
       Planner planner = new Planner(TestUtility.INSTANCE.curDB, ctx);
       planner.plan(s);
       Executor executor = planner.getPlan();

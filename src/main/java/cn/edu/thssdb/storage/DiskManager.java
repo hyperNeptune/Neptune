@@ -4,6 +4,7 @@ import cn.edu.thssdb.utils.Global;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 
@@ -11,6 +12,7 @@ import java.nio.file.*;
 public class DiskManager {
   Path path_;
   SeekableByteChannel file_;
+  FileChannel log_file_;
   private int numPages_;
 
   // constructor
@@ -22,6 +24,12 @@ public class DiskManager {
     file_ =
         Files.newByteChannel(
             path, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+    log_file_ =
+        FileChannel.open(
+            path.resolveSibling(path.getFileName() + ".log"),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.READ,
+            StandardOpenOption.WRITE);
     numPages_ = (int) (file_.size() / Global.PAGE_SIZE);
   }
 
@@ -58,6 +66,20 @@ public class DiskManager {
     buf.rewind();
     file_.write(buf);
     return p;
+  }
+
+  public int writeLog(ByteBuffer buffer) throws IOException {
+    buffer.flip();
+    int write = log_file_.write(buffer);
+    log_file_.force(true);
+    buffer.clear();
+    return write;
+  }
+
+  public int readLog(ByteBuffer buffer) throws IOException {
+    buffer.clear();
+    int read = log_file_.read(buffer);
+    return read;
   }
 
   // allocatePage

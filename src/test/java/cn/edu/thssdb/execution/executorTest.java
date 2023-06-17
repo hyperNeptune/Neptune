@@ -33,7 +33,7 @@ public class executorTest {
   @Test
   public void seqScan() {
     // WARN(jyx): you may have to change this (make a txn)
-    ExecContext execContext = new ExecContext(null, null, null);
+    ExecContext execContext = new ExecContext(null, null, null, null, null);
     Executor executor = new SeqScanExecutor(TestUtility.INSTANCE.mockTable, execContext);
     try {
       executor.init();
@@ -64,7 +64,7 @@ public class executorTest {
   @Test
   public void projection() {
     // WARN(jyx): you may have to change this (make a txn)
-    ExecContext execContext = new ExecContext(null, null, null);
+    ExecContext execContext = new ExecContext(null, null, null, null, null);
     Executor seqScanExecutor = new SeqScanExecutor(TestUtility.INSTANCE.mockTable, execContext);
     Expression[] expressions = new Expression[1];
     expressions[0] = new ColumnRefExpression("col1");
@@ -82,7 +82,7 @@ public class executorTest {
 
   @Test
   public void filter() {
-    ExecContext execContext = new ExecContext(null, null, null);
+    ExecContext execContext = new ExecContext(null, null, null, null, null);
     Executor seqScanExecutor = new SeqScanExecutor(TestUtility.INSTANCE.mockTable, execContext);
     Expression where =
         new BinaryExpression(
@@ -102,7 +102,7 @@ public class executorTest {
 
   @Test
   public void insert() {
-    ExecContext execContext = new ExecContext(null, null, null);
+    ExecContext execContext = new ExecContext(null, null, null, null, null);
     Value[] values = new Value[5];
     values[0] = new IntValue(1222);
     values[1] = new DoubleValue(1212);
@@ -121,7 +121,7 @@ public class executorTest {
 
   @Test
   public void update() {
-    ExecContext execContext = new ExecContext(null, null, null);
+    ExecContext execContext = new ExecContext(null, null, null, null, null);
     Expression where =
         new BinaryExpression(
             new ColumnRefExpression("col1"), new ConstantExpression(new IntValue(998)), "ge");
@@ -145,7 +145,7 @@ public class executorTest {
 
   @Test
   public void delete() {
-    ExecContext execContext = new ExecContext(null, null, null);
+    ExecContext execContext = new ExecContext(null, null, null, null, null);
     Expression where =
         new BinaryExpression(
             new ColumnRefExpression("col1"), new ConstantExpression(new IntValue(998)), "ge");
@@ -163,7 +163,7 @@ public class executorTest {
 
   @Test
   public void join() {
-    ExecContext execContext = new ExecContext(null, null, null);
+    ExecContext execContext = new ExecContext(null, null, null, null, null);
     Executor seqScanExecutor1 = new SeqScanExecutor(TestUtility.INSTANCE.mockTable, execContext);
     Executor seqScanExecutor2 = new SeqScanExecutor(TestUtility.INSTANCE.mockTable2, execContext);
     Expression where =
