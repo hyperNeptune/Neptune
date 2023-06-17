@@ -30,7 +30,7 @@ public class CDITest {
     bufferPoolManager =
         new BufferPoolManager(Global.DEFAULT_BUFFER_SIZE, diskManager, replaceAlgorithm);
     Column[] s = new Column[5];
-    s[0] = new Column("col1", IntType.INSTANCE, (byte) 0, (byte) 0, Global.INT_SIZE, 0);
+    s[0] = new Column("col1", IntType.INSTANCE, (byte) 1, (byte) 0, Global.INT_SIZE, 0);
     // a double
     s[1] = new Column("col2", DoubleType.INSTANCE, (byte) 0, (byte) 0, Global.DOUBLE_SIZE, 4);
     // a string
@@ -54,7 +54,7 @@ public class CDITest {
     // 4. get the table
     Table t = clg.getTable("test");
     // 5. prepare and insert a tuple to table
-    Value[] values = new Value[5];
+    Value<?, ?>[] values = new Value[5];
     values[0] = new IntValue(1);
     values[1] = new DoubleValue(2.0);
     values[2] = new StringValue("issssssssss", 11);

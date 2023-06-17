@@ -33,7 +33,7 @@ public class FloatValue extends Value<FloatType, Float> {
   @Override
   public String toString() {
     if (isNull_) {
-      return "null (float)";
+      return "null";
     }
     return Float.toString(value_);
   }

@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 public class BoolValue extends Value<BoolType, Boolean> {
   boolean value_;
-  public static final BoolValue NULL_VALUE = new BoolValue(true);
+  public static final BoolValue NULL_VALUE = new BoolValue();
   public static final BoolValue ALWAYS_TRUE = new BoolValue(true);
   public static final BoolValue ALWAYS_FALSE = new BoolValue(false);
   public static final BoolValue DEFAULT_VALUE = ALWAYS_FALSE;
@@ -16,6 +16,12 @@ public class BoolValue extends Value<BoolType, Boolean> {
 
   public BoolValue(Value<BoolType, Boolean> other) {
     super(other);
+  }
+
+  public BoolValue() {
+    super(BoolType.INSTANCE);
+    isNull_ = true;
+    value_ = false;
   }
 
   @Override
@@ -34,6 +40,9 @@ public class BoolValue extends Value<BoolType, Boolean> {
 
   @Override
   public String toString() {
+    if (isNull_) {
+      return "null";
+    }
     if (value_) {
       return "true";
     }

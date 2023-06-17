@@ -87,6 +87,7 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
     bpm_.unpinPage(rootPage.getPageId(), true);
   }
 
+  // page is pinned after this function
   private Page findLeafPage(Value<?, ?> keyValue, boolean leftMost) throws IOException {
     if (rootPageId == Global.PAGE_ID_INVALID) {
       throw new RuntimeException("B+ tree is empty");
@@ -127,21 +128,22 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
     // split after leaf reaches MAX
     if (leaf.getCurrentSize() == leaf.getMaxSize()) {
       // split
+      // sibling is pinned
       LeafPage sibling = (LeafPage) split(leaf);
       // insert the new key to parent
-      assert sibling != null;
       insertToParent(leaf, sibling.getKey(0), sibling, txn);
     }
     bpm_.unpinPage(leafPage.getPageId(), true);
     return true;
   }
 
+  // return page is pinned
   private BPlusTreePage split(BPlusTreePage leafPage) throws IOException {
     Page newPage = bpm_.newPage();
     if (newPage == null) {
       throw new IOException("Failed to allocate new page for split");
     }
-    BPlusTreePage sibling = null;
+    BPlusTreePage sibling;
     if (leafPage.getPageType() == BPlusTreePage.BTNodeType.LEAF) {
       LeafPage leaf = (LeafPage) leafPage;
       sibling = new LeafPage(newPage, keyType);
@@ -150,25 +152,26 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
       leaf.moveHalfTo(siblingLeaf);
       siblingLeaf.setNextPageId(leaf.getNextPageId());
       leaf.setNextPageId(siblingLeaf.getPageId());
-    } else if (leafPage.getPageType() == BPlusTreePage.BTNodeType.INTERNAL) {
-      sibling = new InternalNodePage(newPage, keyType);
-      InternalNodePage siblingInternal = (InternalNodePage) sibling;
-      InternalNodePage internal = (InternalNodePage) leafPage;
-      siblingInternal.init(internal.getParentPageId(), internalSize);
-      // fetch child, change their parent id
-      int moveSize = internal.getCurrentSize() - internal.getCurrentSize() / 2;
-      int start = internal.getCurrentSize() - moveSize;
-      for (int i = 0; i < moveSize; i++) {
-        Page child = bpm_.fetchPage(internal.getPointer(i + start));
-        if (child == null) {
-          throw new IOException("Failed to fetch child page for split");
-        }
-        BPlusTreePage bpage = new BPlusTreePage(child, keyType);
-        bpage.setParentPageId(siblingInternal.getPageId());
-        bpm_.unpinPage(child.getPageId(), true);
-      }
-      internal.moveHalfTo(siblingInternal);
+      return sibling;
     }
+    // internal node
+    sibling = new InternalNodePage(newPage, keyType);
+    InternalNodePage siblingInternal = (InternalNodePage) sibling;
+    InternalNodePage internal = (InternalNodePage) leafPage;
+    siblingInternal.init(internal.getParentPageId(), internalSize);
+    // fetch child, change their parent id
+    int moveSize = internal.getCurrentSize() - internal.getCurrentSize() / 2;
+    int start = internal.getCurrentSize() - moveSize;
+    for (int i = 0; i < moveSize; i++) {
+      Page child = bpm_.fetchPage(internal.getPointer(i + start));
+      if (child == null) {
+        throw new IOException("Failed to fetch child page for split");
+      }
+      BPlusTreePage bpage = new BPlusTreePage(child, keyType);
+      bpage.setParentPageId(siblingInternal.getPageId());
+      bpm_.unpinPage(child.getPageId(), true);
+    }
+    internal.moveHalfTo(siblingInternal);
     return sibling;
   }
 
@@ -191,6 +194,7 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
       left.setParentPageId(newRoot.getPageId());
       right.setParentPageId(newRoot.getPageId());
       bpm_.unpinPage(newRootPage.getPageId(), true);
+      bpm_.unpinPage(right.getPageId(), true);
     } else {
       // insert to parent
       Page parentPage = bpm_.fetchPage(left.getParentPageId());
@@ -222,8 +226,10 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
     //    System.out.println("removing " + key);
     Page page = findLeafPage(key, false);
     LeafPage leaf = new LeafPage(page, keyType);
+    // leaf is pinned
     leaf.deleteRecord(key);
     adjustTree(leaf, txn);
+    // should all unpinned
     oneGiantEvilLock.unlock();
     //    System.out.println("removed " + key);
   }
@@ -232,9 +238,11 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
   // adjust the tree structure
   // ====----------------------===
 
+  // this function unpin all
   private void adjustTree(BPlusTreePage curNode, Transaction txn) throws IOException {
     if (curNode.isRootPage()) {
       adjustRoot(curNode);
+      bpm_.unpinPage(curNode.getPageId(), true);
       return;
     }
 
@@ -292,7 +300,7 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
       if (canCoalesce(curNode, rightSibling)) {
         // I believe need +1...
         coalesce(curNode, rightSibling, parentInNode, curIdx + 1, txn);
-        bpm_.unpinPage(rSPageId, true);
+        bpm_.unpinPage(curNode.getPageId(), true);
         bpm_.unpinPage(parentInNode.getPageId(), true);
         return;
       }
@@ -303,6 +311,7 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
     // check if we can redistribute
     // ===----------------------===
 
+    // parent, curNode is pinned
     // borrow one element from my left sibling
     if (leftSiblingIndex >= 0) {
       int lSPageId = parentInNode.getPointer(leftSiblingIndex);
@@ -341,6 +350,7 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
         // parent key get reparation from left sibling
         parentInNode.setKey(curIdx, keyToBorrow);
       }
+      bpm_.unpinPage(lSPageId, true);
     } else if (rightSiblingIndex < parentInNode.getCurrentSize()) {
       int rSPageId = parentInNode.getPointer(rightSiblingIndex);
       Page rSPage = bpm_.fetchPage(rSPageId);
@@ -376,7 +386,10 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
         // parent key get reparation from left sibling
         parentInNode.setKey(rightSiblingIndex, keyToBorrow);
       }
+      bpm_.unpinPage(rSPageId, true);
     }
+    bpm_.unpinPage(parentPage.getPageId(), true);
+    bpm_.unpinPage(curNode.getPageId(), true);
   }
 
   private void adjustRoot(BPlusTreePage oldRoot) throws IOException {
@@ -468,6 +481,7 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
     }
     LeafPage leafPage = new LeafPage(page, keyType);
     RID rid = leafPage.lookUp(key);
+    bpm_.unpinPage(leafPage.getPageId(), false);
     oneGiantEvilLock.unlock();
     return rid;
   }
@@ -481,7 +495,9 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
       throw new IOException("Failed to fetch B+ tree root page");
     }
     BPlusTreePage bpage = new BPlusTreePage(page, keyType);
-    return bpage.toJsonBPTP(bpm_).toString();
+    String s = bpage.toJsonBPTP(bpm_).toString();
+    bpm_.unpinPage(rootPageId, false);
+    return s;
   }
 
   public void print() throws IOException {
@@ -499,6 +515,7 @@ public class BPlusTree implements Iterable<Pair<Value<?, ?>, RID>> {
       InternalNodePage internalNodePage = new InternalNodePage(bpage, keyType);
       internalNodePage.print();
     }
+    bpm_.unpinPage(rootPageId, false);
   }
 
   @Override

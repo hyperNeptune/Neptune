@@ -43,7 +43,7 @@ public class StringValue extends Value<StringType.VarCharType, String> {
   @Override
   public String toString() {
     if (isNull_) {
-      return "null (string)";
+      return "null";
     }
     return trimZeros(value_);
   }

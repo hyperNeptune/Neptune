@@ -29,4 +29,13 @@ public interface TablePage {
   public int getSlotSize();
 
   public Iterator<Pair<Tuple, Integer>> iterator();
+
+  // concurrency control stuff
+  public void RLock();
+
+  public void RUnlock();
+
+  public void WLock();
+
+  public void WUnlock();
 }

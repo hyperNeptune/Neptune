@@ -55,6 +55,7 @@ public class Catalog {
     clg.tableSchemas_ = new HashMap<>();
     clg.tables_.put(SCHEMA_TABLE_NAME, t);
     clg.tableSchemas_.put(SCHEMA_TABLE_NAME, null);
+    clg.indices_ = new HashMap<>();
     clg.reload();
     return clg;
   }

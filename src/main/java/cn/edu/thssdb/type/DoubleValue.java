@@ -33,7 +33,7 @@ public class DoubleValue extends Value<DoubleType, Double> {
   @Override
   public String toString() {
     if (isNull_) {
-      return "null (double)";
+      return "null";
     }
     return Double.toString(value_);
   }

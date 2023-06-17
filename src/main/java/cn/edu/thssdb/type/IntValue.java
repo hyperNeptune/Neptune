@@ -33,7 +33,7 @@ public class IntValue extends Value<IntType, Integer> {
   @Override
   public String toString() {
     if (isNull_) {
-      return "null (int)";
+      return "null";
     }
     return Integer.toString(value_);
   }
