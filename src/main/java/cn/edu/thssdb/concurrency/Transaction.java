@@ -17,7 +17,7 @@ enum WType {
 
 public class Transaction {
   private final int txn_id;
-  private long thread_id;
+  private final long thread_id;
   private int prev_lsn; // the LSN of the last record written by the transaction
   private TransactionState state = TransactionState.GROWING;
   private IsolationLevel isolationLevel;
@@ -27,6 +27,7 @@ public class Transaction {
   private final HashMap<String, HashSet<RID>> x_row_lock_set;
   private final ReentrantLock latch = new ReentrantLock();
   private final List<Page> pageSet = new ArrayList<>();
+  private final ArrayList<TableWriteRecord> table_write_set = new ArrayList<>();
 
   public Transaction(int txn_id, IsolationLevel iso_lvl) {
     this.txn_id = txn_id;
@@ -120,6 +121,12 @@ public class Transaction {
   public List<Page> getPageSet() {
     return pageSet;
   }
+
+  public ArrayList<TableWriteRecord> getTableWriteSet() {
+    return table_write_set;
+  }
+
+  public void addTableWriteRecord() {}
 
   public static int INVALID_TXN_ID = -1;
 }

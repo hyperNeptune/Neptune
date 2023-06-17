@@ -4,6 +4,7 @@ import cn.edu.thssdb.buffer.BufferPoolManager;
 import cn.edu.thssdb.buffer.LRUReplacer;
 import cn.edu.thssdb.buffer.ReplaceAlgorithm;
 import cn.edu.thssdb.concurrency.IsolationLevel;
+import cn.edu.thssdb.concurrency.LockManager;
 import cn.edu.thssdb.concurrency.Transaction;
 import cn.edu.thssdb.concurrency.TransactionManager;
 import cn.edu.thssdb.execution.ExecContext;
@@ -36,10 +37,7 @@ import org.apache.thrift.TException;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class HyperNeptuneInstance implements IService.Iface {
@@ -52,6 +50,9 @@ public class HyperNeptuneInstance implements IService.Iface {
   private ExecutionEngine executionEngine_;
   private TransactionManager transactionManager_;
   private LogManager logManager_;
+  private LockManager lockManager_;
+  private HashMap<Long, Transaction> transaction_session_;
+  private IsolationLevel isolationLevel_ = IsolationLevel.REPEATABLE_READ;
 
   public HyperNeptuneInstance(String db_file_name) throws Exception {
     diskManager_ = new DiskManager(Paths.get(db_file_name));
@@ -59,9 +60,12 @@ public class HyperNeptuneInstance implements IService.Iface {
     bufferPoolManager_ =
         new BufferPoolManager(Global.DEFAULT_BUFFER_SIZE, diskManager_, replaceAlgorithm);
     cdi_ = CimetiereDesInnocents.createCDI(bufferPoolManager_);
-    LogManager logManager_ = new LogManager(diskManager_);
-    transactionManager_ = new TransactionManager(logManager_);
+    lockManager_ = new LockManager();
+    logManager_ = new LogManager(diskManager_);
+    transactionManager_ = new TransactionManager(logManager_, lockManager_);
     executionEngine_ = new ExecutionEngine(curDB_, transactionManager_);
+    transaction_session_ = new HashMap<Long, Transaction>();
+
     // init type system
     StringType st = new StringType();
     IntType it = new IntType();
@@ -97,13 +101,32 @@ public class HyperNeptuneInstance implements IService.Iface {
           StatusUtil.fail("You are not connected. Please connect first."), false);
     }
     try {
-      Transaction txn = transactionManager_.create_and_begin(IsolationLevel.READ_COMMITTED);
-      ExecuteStatementResp resp = executeStatementTxn(req, txn);
-      transactionManager_.commit(txn);
-      return resp;
+      // TODO: 如果加了分号就爆炸了，很危险
+      if (req.statement.equals("begin transaction")) {
+        Transaction txn = transactionManager_.create_and_begin(isolationLevel_);
+        transaction_session_.put(req.getSessionId(), txn);
+        return new ExecuteStatementResp(StatusUtil.success(), false);
+      }
+      if (req.statement.equals("commit;")) {
+        Transaction txn = transaction_session_.get(req.getSessionId());
+        transactionManager_.commit(txn);
+        return new ExecuteStatementResp(StatusUtil.success(), false);
+      }
+
+      if (transaction_session_.get(req.getSessionId()) == null) {
+        Transaction txn = transactionManager_.create_and_begin(isolationLevel_);
+        ExecuteStatementResp resp = executeStatementTxn(req, txn);
+        transactionManager_.commit(txn);
+        return resp;
+      } else {
+        ExecuteStatementResp resp =
+            executeStatementTxn(req, transaction_session_.get(req.getSessionId()));
+        return resp;
+      }
+
     } catch (Exception e) {
       e.printStackTrace();
-      return new ExecuteStatementResp(StatusUtil.fail(e.getMessage()), false);
+      return new ExecuteStatementResp(StatusUtil.success(e.getMessage()), false);
     }
   }
 
@@ -175,7 +198,8 @@ public class HyperNeptuneInstance implements IService.Iface {
   }
 
   private ExecContext makeExecContext(Transaction txn) {
-    ExecContext execContext = new ExecContext(txn, curDB_, bufferPoolManager_);
+    ExecContext execContext =
+        new ExecContext(txn, curDB_, bufferPoolManager_, lockManager_, transactionManager_);
     return execContext;
   }
 
