@@ -21,20 +21,23 @@ public class LockManager {
     public int txn_id;
     public LockMode lockMode;
     public String tableName;
+    public long threadid;
     public Boolean granted = Boolean.FALSE;
     public RID rid = new RID();
 
-    public LockRequest(int txn_id, LockMode lockMode, String tableName) {
+    public LockRequest(int txn_id, LockMode lockMode, String tableName, long threadid) {
       this.txn_id = txn_id;
       this.lockMode = lockMode;
       this.tableName = tableName;
+      this.threadid = threadid;
     }
 
-    public LockRequest(int txn_id, LockMode lockMode, String tableName, RID rid) {
+    public LockRequest(int txn_id, LockMode lockMode, String tableName, RID rid, long threadid) {
       this.txn_id = txn_id;
       this.lockMode = lockMode;
       this.tableName = tableName;
       this.rid = rid;
+      this.threadid = threadid;
     }
   }
 
@@ -104,7 +107,7 @@ public class LockManager {
 
     // 检查对应的 tableLockMap 是否已经有其他的锁
     LockRequestQueue currentQueue;
-    LockRequest currentRequest = new LockRequest(txn.getTxn_id(), lockMode, tableName);
+    LockRequest currentRequest = new LockRequest(txn.getTxn_id(), lockMode, tableName, txn.getThread_id());
     tableLockMapLatch.lock();
     if (tableLockMap.get(tableName) == null) {
       // 没有，新建一个 RequestQueue
@@ -181,9 +184,26 @@ public class LockManager {
     // 判断兼容性。遍历请求队列，查看当前锁请求是否与所有的已经 granted 的请求兼容。
     for (LockRequest request : lockRequestQueue.requestQueue) {
       if (request != currentRequest && request.granted) {
-        if (!areLocksCompatible(request.lockMode, currentRequest.lockMode)) return false;
+        if (!areLocksCompatible(request.lockMode, currentRequest.lockMode) && request.txn_id != currentRequest.txn_id)
+          return false;
+        if (currentRequest.lockMode == LockMode.SHARED && request.lockMode == LockMode.EXCLUSIVE && request.txn_id == currentRequest.txn_id)
+          return false;
       }
     }
+    // 特殊处理一种常见情况
+    if (currentRequest.lockMode == LockMode.EXCLUSIVE) {
+      ArrayList<LockRequest> grantedList = new ArrayList<>();
+      for (LockRequest request : lockRequestQueue.requestQueue) {
+        if (request.granted)
+          grantedList.add(request);
+      }
+      if (grantedList.size() == 1 && grantedList.get(0).txn_id == currentRequest.txn_id && grantedList.get(0).lockMode == LockMode.SHARED) {
+        lockRequestQueue.requestQueue.remove(grantedList.get(0));
+        currentRequest.granted = true;
+        return true;
+      }
+    }
+
     // 判断优先级。锁请求会以严格的 FIFO 顺序依次满足。
     if (lockRequestQueue.upgrading != Transaction.INVALID_TXN_ID) {
       // 当前队列中存在锁升级请求，如果为自己，则优先级最高
@@ -328,7 +348,7 @@ public class LockManager {
     // 检查对应的 rowLockMap 是否已经有其他的锁
     LockRequestQueue currentQueue;
     LockRequest currentRequest =
-        new LockRequest(txn.getTxn_id(), lock_mode, table_name, justiceRid);
+        new LockRequest(txn.getTxn_id(), lock_mode, table_name, justiceRid, txn.getThread_id());
     rowLockMapLatch.lock();
     if (rowLockMap.get(justiceRid) == null) {
       // 没有，新建一个 RequestQueue
@@ -349,7 +369,7 @@ public class LockManager {
               .filter(
                   lockRequest ->
                       lockRequest.rid.equals(justiceRid)
-                          && lockRequest.tableName.equals(table_name)) // TODO: 要检查tablename吗
+                          && lockRequest.tableName.equals(table_name))
               .findFirst();
       queue.latch.unlock();
 
@@ -363,6 +383,8 @@ public class LockManager {
           // UPGRADE_CONFLICT
           return false;
         }
+        //System.out.println("[RowLock Upgrade] " + oLockRequest.get().rid + ", Thread:" + oLockRequest.get().threadid + ", Txn:" +oLockRequest.get().txn_id);
+
 
         // 释放当前已经持有的锁，并在 queue 中标记正在尝试升级。
         queue.latch.lock();
@@ -375,6 +397,10 @@ public class LockManager {
         queue.requestQueue.add(currentRequest);
         queue.upgrading = Transaction.INVALID_TXN_ID;
         queue.latch.unlock();
+
+//        // 我他妈直接更改锁的等级
+//        queue.latch.lock();
+//        queue.latch.unlock();
       } else {
         queue.latch.lock();
         queue.requestQueue.add(currentRequest);
@@ -388,6 +414,13 @@ public class LockManager {
     try {
       while (!grantLock(currentQueue, currentRequest)) {
         try {
+//          System.out.println("[RowLock Waiting]" + "Txn: " + txn.getTxn_id() + ", Thread:" + txn.getThread_id() +
+//                  ", waiting for " + currentQueue.requestQueue.get(0).rid);
+//          System.out.println("[RowLock Waiting Spec] Current Waiting Queue:");
+//          for (LockRequest lr : currentQueue.requestQueue)
+//          {
+//            System.out.println("\t" + lr.lockMode + ", Txn:" + lr.txn_id + ", Granted:" + lr.granted + ", Thread:" + lr.threadid);
+//          }
           currentQueue.latchCondition.await();
         } catch (Exception e) {
           e.printStackTrace();
@@ -413,6 +446,7 @@ public class LockManager {
         }
       }
     }
+    RID temp = lockRequestQueue.requestQueue.get(0).rid;
     rowLockMapLatch.unlock();
     lockRequestQueue.latch.lock();
     if (lockRequestQueue.requestQueue.stream()
@@ -460,11 +494,13 @@ public class LockManager {
       request.granted = false;
       lockRequestQueue.requestQueue.remove(request);
     }
+    //System.out.println("[RowLock Unlock]" + "Txn: " + txn.getTxn_id() + ", Thread:" + txn.getThread_id() + ", " + temp);
     lockRequestQueue.latchCondition.signalAll();
     lockRequestQueue.latch.unlock();
 
     // txn book keeping
     removeTxnRowLockSet(txn, justiceRid, table_name);
+
     return true;
   }
 

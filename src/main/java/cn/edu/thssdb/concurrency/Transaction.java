@@ -127,6 +127,7 @@ public class Transaction {
   }
 
   public void addTableWriteRecord() {}
+  public long getThread_id() {return thread_id;}
 
   public static int INVALID_TXN_ID = -1;
 }
