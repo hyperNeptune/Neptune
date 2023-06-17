@@ -64,7 +64,7 @@ public class HyperNeptuneInstance implements IService.Iface {
     logManager_ = new LogManager(diskManager_);
     transactionManager_ = new TransactionManager(logManager_, lockManager_);
     executionEngine_ = new ExecutionEngine(curDB_, transactionManager_);
-    transaction_session_ = new HashMap<Long, Transaction>();
+    transaction_session_ = new HashMap<>();
 
     // init type system
     StringType st = new StringType();

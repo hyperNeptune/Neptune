@@ -43,10 +43,10 @@ public class InsertExecutor extends Executor {
     TransactionManager txnmgr = getCtx().getTransactionManager();
     LockManager lockManager = getCtx().getLockManager();
     Transaction txn = getCtx().getTransaction();
-    txnmgr.makeInsertionLog(txn, rid, t);
 
-    lockManager.lockRow(txn, LockManager.LockMode.EXCLUSIVE, tableInfo_.getTableName(), rid);
     tableInfo_.getTable().insert(t, rid);
+    lockManager.lockRow(txn, LockManager.LockMode.EXCLUSIVE, tableInfo_.getTableName(), rid);
+    txnmgr.makeInsertionLog(txn, rid, t);
 
     Value<?, ?> pkValue = t.getValue(tableInfo_.getSchema(), tableInfo_.getSchema().getPkIndex());
     if (!tableInfo_.getIndex().insert(pkValue, rid, getCtx().getTransaction())) {

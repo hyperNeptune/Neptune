@@ -1,5 +1,7 @@
 package cn.edu.thssdb.execution.executor;
 
+import cn.edu.thssdb.concurrency.LockManager;
+import cn.edu.thssdb.concurrency.Transaction;
 import cn.edu.thssdb.execution.ExecContext;
 import cn.edu.thssdb.parser.expression.Expression;
 import cn.edu.thssdb.schema.Schema;
@@ -29,6 +31,9 @@ public class UpdateExecutor extends Executor {
   public void init() throws Exception {
     child_.init();
     updatedIdx_ = schema_.getColumnOrder(updateValue_.left);
+    Transaction txn = getCtx().getTransaction();
+    LockManager lockManager = getCtx().getLockManager();
+    lockManager.lockTable(txn, LockManager.LockMode.INTENTION_EXCLUSIVE, tableInfo_.getTableName());
   }
 
   @Override
@@ -41,6 +46,11 @@ public class UpdateExecutor extends Executor {
     for (int i = 0; i < schema_.getColumns().length; i++) {
       values[i] = tuple.getValue(schema_, i);
     }
+
+    Transaction txn = getCtx().getTransaction();
+    LockManager lockManager = getCtx().getLockManager();
+    lockManager.lockRow(txn, LockManager.LockMode.EXCLUSIVE, tableInfo_.getTableName(), rid);
+
     values[updatedIdx_] =
         schema_
             .getColumn(updatedIdx_)

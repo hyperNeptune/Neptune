@@ -291,7 +291,7 @@ public class LockManager {
   }
 
   public boolean lockRow(Transaction txn, LockMode lock_mode, String table_name, RID rid) {
-    // 暂时没有考虑 SERIALIZABLE
+    RID justiceRid = new RID(rid.getPageId(), rid.getSlotId());
 
     // 必须先持有 table lock 再持有 row lock
     // TODO: 先不检查了
@@ -322,24 +322,25 @@ public class LockManager {
     // 检查是否已经有同级或更高级锁
     // TODO
     if (lock_mode == LockMode.SHARED
-        && (txn.IsRowSharedLocked(table_name, rid) || txn.IsRowExclusiveLocked(table_name, rid)))
-      return true;
+        && (txn.IsRowSharedLocked(table_name, justiceRid)
+            || txn.IsRowExclusiveLocked(table_name, justiceRid))) return true;
 
     // 检查对应的 rowLockMap 是否已经有其他的锁
     LockRequestQueue currentQueue;
-    LockRequest currentRequest = new LockRequest(txn.getTxn_id(), lock_mode, table_name, rid);
+    LockRequest currentRequest =
+        new LockRequest(txn.getTxn_id(), lock_mode, table_name, justiceRid);
     rowLockMapLatch.lock();
-    if (rowLockMap.get(rid) == null) {
+    if (rowLockMap.get(justiceRid) == null) {
       // 没有，新建一个 RequestQueue
       LockRequestQueue newQueue = new LockRequestQueue();
       newQueue.latch.lock();
       newQueue.requestQueue.add(currentRequest);
       currentQueue = newQueue;
       newQueue.latch.unlock();
-      rowLockMap.put(rid, newQueue);
+      rowLockMap.put(justiceRid, newQueue);
     } else {
       // 有，在已有的 RequestQueue 上添加
-      LockRequestQueue queue = rowLockMap.get(rid);
+      LockRequestQueue queue = rowLockMap.get(justiceRid);
       currentQueue = queue;
 
       queue.latch.lock();
@@ -347,7 +348,7 @@ public class LockManager {
           queue.requestQueue.stream()
               .filter(
                   lockRequest ->
-                      lockRequest.rid.equals(rid)
+                      lockRequest.rid.equals(justiceRid)
                           && lockRequest.tableName.equals(table_name)) // TODO: 要检查tablename吗
               .findFirst();
       queue.latch.unlock();
@@ -365,7 +366,7 @@ public class LockManager {
 
         // 释放当前已经持有的锁，并在 queue 中标记正在尝试升级。
         queue.latch.lock();
-        unlockRow(txn, table_name, rid);
+        unlockRow(txn, table_name, justiceRid);
         queue.upgrading = txn.getTxn_id();
         queue.latch.unlock();
 
@@ -394,18 +395,19 @@ public class LockManager {
       }
     } finally {
       currentQueue.latch.unlock();
-      addTxnRowLockSet(txn, lock_mode, rid, table_name);
+      addTxnRowLockSet(txn, lock_mode, justiceRid, table_name);
     }
     return true;
   }
 
   public boolean unlockRow(Transaction txn, String table_name, RID rid) {
+    RID justiceRid = new RID(rid.getPageId(), rid.getSlotId());
     // 获取对应的 lock request queue
     rowLockMapLatch.lock();
-    LockRequestQueue lockRequestQueue = rowLockMap.get(rid);
+    LockRequestQueue lockRequestQueue = rowLockMap.get(justiceRid);
     if (lockRequestQueue == null) {
       for (Map.Entry<RID, LockRequestQueue> entry : rowLockMap.entrySet()) {
-        if (entry.getKey().equals(rid)) {
+        if (entry.getKey().equals(justiceRid)) {
           lockRequestQueue = entry.getValue();
           break;
         }
@@ -416,7 +418,7 @@ public class LockManager {
     if (lockRequestQueue.requestQueue.stream()
         .noneMatch(lockRequest -> lockRequest.txn_id == txn.getTxn_id())) {
       lockRequestQueue.latch.unlock();
-      System.out.println(txn.getTxn_id() + "????????????" + rid.toString());
+      System.out.println(txn.getTxn_id() + "????????????" + justiceRid.toString());
       // ATTEMPTED_UNLOCK_BUT_NO_LOCK_HELD
       return false;
     }
@@ -426,7 +428,7 @@ public class LockManager {
             .filter(
                 lockRequest ->
                     lockRequest.tableName.equals(table_name)
-                        && lockRequest.rid.equals(rid)
+                        && lockRequest.rid.equals(justiceRid)
                         && lockRequest.txn_id == txn.getTxn_id())
             .findFirst();
     if (oRequest.isPresent()) {
@@ -462,16 +464,16 @@ public class LockManager {
     lockRequestQueue.latch.unlock();
 
     // txn book keeping
-    removeTxnRowLockSet(txn, rid, table_name);
+    removeTxnRowLockSet(txn, justiceRid, table_name);
     return true;
   }
 
   private void addTxnTableLockSet(Transaction txn, LockMode lockMode, String tableName) {
     txn.lockTxn();
-    if (lockMode == LockMode.SHARED) {
+    if (lockMode == LockMode.SHARED || lockMode == LockMode.INTENTION_SHARED) {
       txn.getSharedTableLockSet().add(tableName);
     }
-    if (lockMode == LockMode.EXCLUSIVE) {
+    if (lockMode == LockMode.EXCLUSIVE || lockMode == LockMode.INTENTION_EXCLUSIVE) {
       txn.getExclusiveTableLockSet().add(tableName);
     }
     txn.unlockTxn();
@@ -486,7 +488,7 @@ public class LockManager {
 
   private void addTxnRowLockSet(Transaction txn, LockMode lockMode, RID rid, String tableName) {
     txn.lockTxn();
-    if (lockMode == LockMode.SHARED) {
+    if (lockMode == LockMode.SHARED || lockMode == LockMode.INTENTION_SHARED) {
       if (txn.getSharedRowLockSet().get(tableName) == null) {
         HashSet<RID> set = new HashSet<>();
         set.add(rid);
@@ -496,7 +498,7 @@ public class LockManager {
         set.add(rid);
       }
     }
-    if (lockMode == LockMode.EXCLUSIVE) {
+    if (lockMode == LockMode.EXCLUSIVE || lockMode == LockMode.INTENTION_EXCLUSIVE) {
       if (txn.getExclusiveRowLockSet().get(tableName) == null) {
         HashSet<RID> set = new HashSet<>();
         set.add(rid);

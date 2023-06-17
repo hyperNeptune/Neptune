@@ -1,5 +1,7 @@
 package cn.edu.thssdb.execution.executor;
 
+import cn.edu.thssdb.concurrency.LockManager;
+import cn.edu.thssdb.concurrency.Transaction;
 import cn.edu.thssdb.execution.ExecContext;
 import cn.edu.thssdb.parser.expression.BinaryExpression;
 import cn.edu.thssdb.parser.expression.ConstantExpression;
@@ -53,6 +55,11 @@ public class indexScanExecutor extends Executor {
     if (binaryExpression == null) {
       throw new Exception("where expression is not binary expression");
     }
+
+    Transaction txn = getCtx().getTransaction();
+    LockManager lockManager = getCtx().getLockManager();
+    lockManager.lockTable(txn, LockManager.LockMode.INTENTION_SHARED, tableInfo_.getTableName());
+
     constantExpression_ = (ConstantExpression) binaryExpression.getRight();
     switch (binaryExpression.getOp()) {
       case "eq":
@@ -96,6 +103,11 @@ public class indexScanExecutor extends Executor {
       if (targetRID_ == null) {
         return false;
       }
+
+      LockManager lockManager = getCtx().getLockManager();
+      Transaction txn = getCtx().getTransaction();
+      lockManager.lockRow(txn, LockManager.LockMode.SHARED, tableInfo_.getTableName(), targetRID_);
+
       rid.assign(targetRID_);
       tuple.copyAssign(tableInfo_.getTable().getTuple(rid));
       drain_ = true;
