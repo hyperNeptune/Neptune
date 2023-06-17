@@ -100,6 +100,11 @@ public class TransactionManager {
 
   public void commit(Transaction txn) {
     releaseAllLocks(txn);
+
+    LogRecord record = new LogRecord(txn.getTxn_id(), txn.getPrev_lsn(), LogRecordType.COMMIT);
+    int lsn = logManager.appendLogRecord(record);
+    txn.setPrev_lsn(lsn);
+
     logManager.forceFlushLogs();
     txn.setState(TransactionState.COMMITTED);
   }
@@ -107,6 +112,11 @@ public class TransactionManager {
   public void abort(Transaction txn) {
     // TODO: revert all changes
     releaseAllLocks(txn);
+
+    LogRecord record = new LogRecord(txn.getTxn_id(), txn.getPrev_lsn(), LogRecordType.ABORT);
+    int lsn = logManager.appendLogRecord(record);
+    txn.setPrev_lsn(lsn);
+
     txn.setState(TransactionState.ABORTED);
   }
 }

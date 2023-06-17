@@ -5,6 +5,7 @@ import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.utils.RID;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 /**
  * For every write operation on the table page, you should write ahead a corresponding log record.
@@ -38,7 +39,30 @@ public class LogRecovery {
     this.diskManager = diskManager;
   }
 
+  public void startRecovery() {
+    ByteBuffer buffer = ByteBuffer.allocate(40000);
+    try {
+      int t = diskManager.readLog(buffer);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    ArrayList<LogRecord> logRecordArrayList = new ArrayList<>();
+    buffer.flip();
+    while (true){
+      LogRecord logRecord = DeserializeLogRecord(buffer);
+      if (logRecord.getLogRecordType() != LogRecordType.INVALID) {
+        logRecordArrayList.add(logRecord);
+      }
+      else {
+        int t = 1+1;
+        break;
+      }
+    }
+  }
+
   public LogRecord DeserializeLogRecord(ByteBuffer buffer) {
+    if (buffer.remaining() <= 0)
+      return new LogRecord(-1, -1, LogRecordType.INVALID);
     int size = buffer.getInt();
     int lsn = buffer.getInt();
     int txn_id = buffer.getInt();

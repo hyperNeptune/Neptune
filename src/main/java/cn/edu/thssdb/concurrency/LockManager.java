@@ -436,18 +436,14 @@ public class LockManager {
   public boolean unlockRow(Transaction txn, String table_name, RID rid) {
     RID justiceRid = new RID(rid.getPageId(), rid.getSlotId());
     // 获取对应的 lock request queue
+    //System.out.println("[UnlockRow] Txn:" + txn.getTxn_id() + ", Thread:" + txn.getThread_id() + ", " + rid);
     rowLockMapLatch.lock();
     LockRequestQueue lockRequestQueue = rowLockMap.get(justiceRid);
-    if (lockRequestQueue == null) {
-      for (Map.Entry<RID, LockRequestQueue> entry : rowLockMap.entrySet()) {
-        if (entry.getKey().equals(justiceRid)) {
-          lockRequestQueue = entry.getValue();
-          break;
-        }
-      }
-    }
-    RID temp = lockRequestQueue.requestQueue.get(0).rid;
+    if (lockRequestQueue == null)
+      return false;
+    //RID temp = lockRequestQueue.requestQueue.get(0).rid;
     rowLockMapLatch.unlock();
+
     lockRequestQueue.latch.lock();
     if (lockRequestQueue.requestQueue.stream()
         .noneMatch(lockRequest -> lockRequest.txn_id == txn.getTxn_id())) {
@@ -493,6 +489,11 @@ public class LockManager {
       }
       request.granted = false;
       lockRequestQueue.requestQueue.remove(request);
+//      if (lockRequestQueue.requestQueue.isEmpty()) {
+//        rowLockMapLatch.lock();
+//        rowLockMap.remove(justiceRid);
+//        rowLockMapLatch.unlock();
+//      }
     }
     //System.out.println("[RowLock Unlock]" + "Txn: " + txn.getTxn_id() + ", Thread:" + txn.getThread_id() + ", " + temp);
     lockRequestQueue.latchCondition.signalAll();

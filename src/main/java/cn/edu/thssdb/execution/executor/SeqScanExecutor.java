@@ -10,6 +10,7 @@ import cn.edu.thssdb.storage.Tuple;
 import cn.edu.thssdb.utils.Pair;
 import cn.edu.thssdb.utils.RID;
 
+import java.util.HashSet;
 import java.util.Iterator;
 
 public class SeqScanExecutor extends Executor {
@@ -62,14 +63,17 @@ public class SeqScanExecutor extends Executor {
       rid.assign(rid_);
       return true;
     } else {
-      // 对于 RC 如果没有 next 可以提前释放获取过的锁
-      if (txn.getIsolationLevel() == IsolationLevel.READ_COMMITTED) {
-        txn.lockTxn();
-        for (RID lock_rid : txn.getSharedRowLockSet().get(tableInfo_.getTableName())) {
-          lockManager.unlockRow(txn, tableInfo_.getTableName(), lock_rid);
-        }
-        txn.unlockTxn();
-      }
+//      // 对于 RC 如果没有 next 可以提前释放获取过的锁
+//      if (txn.getIsolationLevel() == IsolationLevel.READ_COMMITTED) {
+//        txn.lockTxn();
+//        if (txn.getSharedRowLockSet().get(tableInfo_.getTableName()) != null) {
+//          HashSet<RID> rids = new HashSet<>(txn.getSharedRowLockSet().get(tableInfo_.getTableName()));
+//          for (RID lock_rid : rids) {
+//            lockManager.unlockRow(txn, tableInfo_.getTableName(), lock_rid);
+//          }
+//        }
+//        txn.unlockTxn();
+//      }
     }
     return false;
   }
