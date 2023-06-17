@@ -35,7 +35,7 @@ public class LongValue extends Value<LongType, Long> {
   @Override
   public String toString() {
     if (isNull_) {
-      return "null (long)";
+      return "null";
     }
     return Long.toString(value_);
   }

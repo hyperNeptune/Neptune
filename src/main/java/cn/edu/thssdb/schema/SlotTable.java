@@ -12,6 +12,7 @@ public class SlotTable extends Table {
     super(bufferPoolManager, firstPageId, flag);
     TablePage tablePage = fetchTablePage(bufferPoolManager_.fetchPage(firstPageId));
     slotSize_ = tablePage.getSlotSize();
+    bufferPoolManager_.unpinPage(firstPageId, false);
   }
 
   public SlotTable(BufferPoolManager bufferPoolManager, int slotSize, Table.NewFlag flag)

@@ -11,9 +11,11 @@ import java.io.IOException;
 import java.util.Iterator;
 
 public class BPlusTreeIterator implements Iterator<Pair<Value<?, ?>, RID>> {
+  // this page is pinned upon init
   private LeafPage currPage_;
   private final BufferPoolManager bpm_;
   private int currIdx_;
+  private boolean drain = false;
 
   public BPlusTreeIterator(LeafPage currPage, BufferPoolManager bpm, int currIdx) {
     currPage_ = currPage;
@@ -23,12 +25,24 @@ public class BPlusTreeIterator implements Iterator<Pair<Value<?, ?>, RID>> {
 
   @Override
   public boolean hasNext() {
+    if (drain) {
+      return false;
+    }
     // yeah, sure has next
     if (currIdx_ < currPage_.getCurrentSize()) {
       return true;
     }
     // has next page?
-    return currPage_.getNextPageId() != Global.PAGE_ID_INVALID;
+    if (currPage_.getNextPageId() == Global.PAGE_ID_INVALID) {
+      try {
+        bpm_.unpinPage(currPage_.getPageId(), false);
+        drain = true;
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      return false;
+    }
+    return true;
   }
 
   @Override
@@ -38,8 +52,8 @@ public class BPlusTreeIterator implements Iterator<Pair<Value<?, ?>, RID>> {
     if (++currIdx_ >= currPage_.getCurrentSize()
         && currPage_.getNextPageId() != Global.PAGE_ID_INVALID) {
       try {
-        bpm_.unpinPage(currPage_.getPageId(), false);
         Page nextPage = bpm_.fetchPage(currPage_.getNextPageId());
+        bpm_.unpinPage(currPage_.getPageId(), false);
         currPage_ = new LeafPage(nextPage, currPage_.keyType);
         currIdx_ = 0;
       } catch (IOException e) {

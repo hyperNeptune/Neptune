@@ -337,10 +337,11 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
     List<String> columnNames = new ArrayList<>();
     List<Expression> values = new ArrayList<>();
     Tuple[] tuples;
-    int[] uOrderToOrder = new int[tableInfo.getSchema().getColNum()];
+    // user order to column order
+    int[] uOrderTocOrder = new int[tableInfo.getSchema().getColNum()];
     // identical mapping
     for (int i = 0; i < tableInfo.getSchema().getColNum(); i++) {
-      uOrderToOrder[i] = i;
+      uOrderTocOrder[i] = i;
     }
     for (int i = 0; i < ctx.columnName().size(); i++) {
       String columnName = ctx.columnName(i).getText();
@@ -348,7 +349,7 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
       if (order == -1) {
         throw new RuntimeException("column not found");
       }
-      uOrderToOrder[order] = i;
+      uOrderTocOrder[i] = order;
     }
 
     // construct values
@@ -364,10 +365,10 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
       for (int j = 0; j < ctx.valueEntry(i).literalValue().size(); j++) {
         Expression expression = visitConstants(ctx.valueEntry(i).literalValue(j));
         if (expression instanceof ConstantExpression) {
-          tupleValues[uOrderToOrder[j]] =
+          tupleValues[uOrderTocOrder[j]] =
               tableInfo
                   .getSchema()
-                  .getColumn(uOrderToOrder[j])
+                  .getColumn(uOrderTocOrder[j])
                   .getType()
                   .castFrom(expression.evaluation(null, null));
         } else {

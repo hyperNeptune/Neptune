@@ -37,7 +37,7 @@ public class TestUtility {
     executionEngine = new ExecutionEngine(curDB, transactionManager);
 
     Column[] s = new Column[5];
-    s[0] = new Column("col1", IntType.INSTANCE, (byte) 0, (byte) 0, Global.INT_SIZE, 0);
+    s[0] = new Column("col1", IntType.INSTANCE, (byte) 1, (byte) 0, Global.INT_SIZE, 0);
     // a double
     s[1] = new Column("col2", DoubleType.INSTANCE, (byte) 0, (byte) 0, Global.DOUBLE_SIZE, 4);
     // a string
@@ -55,7 +55,7 @@ public class TestUtility {
     curDB.createTable("test", sh);
     mockTable = curDB.getTableInfo("test");
     for (int i = 0; i < 1000; i++) {
-      Value[] values = new Value[5];
+      Value<?, ?>[] values = new Value[5];
       values[0] = new IntValue(i);
       values[1] = new DoubleValue(i);
       values[2] = new StringValue("test", 10);
@@ -68,7 +68,7 @@ public class TestUtility {
 
   public void generateMockTable2() throws Exception {
     Column[] s = new Column[5];
-    s[0] = new Column("col11", IntType.INSTANCE, (byte) 0, (byte) 0, Global.INT_SIZE, 0);
+    s[0] = new Column("col11", IntType.INSTANCE, (byte) 1, (byte) 0, Global.INT_SIZE, 0);
     // a double
     s[1] = new Column("col21", DoubleType.INSTANCE, (byte) 0, (byte) 0, Global.DOUBLE_SIZE, 4);
     // a string
@@ -82,7 +82,7 @@ public class TestUtility {
     curDB.createTable("test2", shh);
     mockTable2 = curDB.getTableInfo("test2");
     for (int i = 0; i < 1000; i++) {
-      Value[] values = new Value[5];
+      Value<?, ?>[] values = new Value[5];
       values[0] = new IntValue(i);
       values[1] = new DoubleValue(i);
       values[2] = new StringValue("testthis...", 10);
@@ -95,7 +95,7 @@ public class TestUtility {
 
   public void generateMockTable3() throws Exception {
     Column[] s = new Column[5];
-    s[0] = new Column("col12", IntType.INSTANCE, (byte) 0, (byte) 0, Global.INT_SIZE, 0);
+    s[0] = new Column("col12", IntType.INSTANCE, (byte) 1, (byte) 0, Global.INT_SIZE, 0);
     // a double
     s[1] = new Column("col22", DoubleType.INSTANCE, (byte) 0, (byte) 0, Global.DOUBLE_SIZE, 4);
     // a string
@@ -109,7 +109,7 @@ public class TestUtility {
     curDB.createTable("test3", shh);
     mockTable3 = curDB.getTableInfo("test3");
     for (int i = 0; i < 1000; i++) {
-      Value[] values = new Value[5];
+      Value<?, ?>[] values = new Value[5];
       values[0] = new IntValue(i);
       values[1] = new DoubleValue(i);
       values[2] = new StringValue("testthis...", 10);

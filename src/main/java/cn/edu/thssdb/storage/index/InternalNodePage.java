@@ -194,6 +194,7 @@ public class InternalNodePage extends BPlusTreePage {
         .append("\":")
         .append(new BPlusTreePage(bpm.fetchPage(getPointer(0)), keyType).toJsonBPTP(bpm))
         .append(",");
+    bpm.unpinPage(getPointer(0), false);
     for (int i = 1; i < getCurrentSize(); i++) {
       sb.append("\"key")
           .append(getKey(i))
@@ -204,6 +205,7 @@ public class InternalNodePage extends BPlusTreePage {
           .append(getPointer(i))
           .append("\":")
           .append(new BPlusTreePage(bpm.fetchPage(getPointer(i)), keyType).toJsonBPTP(bpm));
+      bpm.unpinPage(getPointer(i), false);
       if (i < getCurrentSize() - 1) {
         sb.append(",");
       }

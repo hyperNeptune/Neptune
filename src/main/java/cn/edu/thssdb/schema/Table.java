@@ -14,11 +14,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public abstract class Table {
   // TODO: concurrency control(jyx)
   protected enum NewFlag {
-    INSTANCE;
+    INSTANCE
   }
 
   protected enum OpenFlag {
-    INSTANCE;
+    INSTANCE
   }
 
   ReentrantReadWriteLock lock;
@@ -48,6 +48,7 @@ public abstract class Table {
     slotSize_ = slotSize;
     // init the first page
     newTablePage(bufferPoolManager_.fetchPage(firstPageId_), slotSize);
+    bufferPoolManager_.unpinPage(firstPageId_, true);
   }
 
   // [out]: rid is the output parameter, return
@@ -58,28 +59,36 @@ public abstract class Table {
     }
 
     TablePage tablePage = fetchTablePage(bufferPoolManager_.fetchPage(firstPageId_));
+    tablePage.WLock();
 
-    // invariant: insertTuple failed
+    // invariant: insertTuple failed, tablePage hold WLock
     // rid is changed in insertTuple
     while (tablePage.insertTuple(tuple, rid) == -1) {
       int nextPageId = tablePage.getNextPageId();
       if (nextPageId == Global.PAGE_ID_INVALID) {
         Page p = bufferPoolManager_.newPage();
         if (p == null) {
+          tablePage.WUnlock();
           bufferPoolManager_.unpinPage(tablePage.getPageId(), false);
           return false;
         }
         TablePage newPage = newTablePage(p, slotSize_);
+        newPage.WLock();
         tablePage.setNextPageId(newPage.getPageId());
         newPage.setPrevPageId(tablePage.getPageId());
+        tablePage.WUnlock();
         bufferPoolManager_.unpinPage(tablePage.getPageId(), true);
         tablePage = newPage;
       } else {
+        TablePage nextPage = fetchTablePage(bufferPoolManager_.fetchPage(nextPageId));
+        nextPage.WLock();
+        tablePage.WUnlock();
         bufferPoolManager_.unpinPage(tablePage.getPageId(), false);
-        tablePage = fetchTablePage(bufferPoolManager_.fetchPage(nextPageId));
+        tablePage = nextPage;
       }
     }
 
+    tablePage.WUnlock();
     // unpin
     bufferPoolManager_.unpinPage(tablePage.getPageId(), true);
     return true;
@@ -91,7 +100,9 @@ public abstract class Table {
       return;
     }
     TablePage tablePage = fetchTablePage(p);
+    tablePage.WLock();
     tablePage.deleteTuple(rid.getSlotId());
+    tablePage.WUnlock();
     bufferPoolManager_.unpinPage(tablePage.getPageId(), true);
   }
 
@@ -101,7 +112,9 @@ public abstract class Table {
       return false;
     }
     TablePage tablePage = fetchTablePage(p);
+    tablePage.WLock();
     boolean ret = tablePage.updateTuple(rid.getSlotId(), tuple);
+    tablePage.WUnlock();
     bufferPoolManager_.unpinPage(tablePage.getPageId(), ret);
     return ret;
   }
@@ -118,11 +131,14 @@ public abstract class Table {
       return null;
     }
     TablePage tablePage = fetchTablePage(p);
+    tablePage.RLock();
     Tuple tuple = tablePage.getTuple(rid.getSlotId());
+    tablePage.RUnlock();
     bufferPoolManager_.unpinPage(tablePage.getPageId(), false);
     return tuple;
   }
 
+  // page is pinned
   protected TablePage getTablePage(int pageId) throws Exception {
     Page p = bufferPoolManager_.fetchPage(pageId);
     if (p == null) {
@@ -133,6 +149,7 @@ public abstract class Table {
 
   private class TableIterator implements Iterator<Pair<Tuple, RID>> {
     private Iterator<Pair<Tuple, Integer>> tablePageIterator_;
+    // this page is pinned in this class
     private TablePage tablePage_;
     private RID curRid_;
 
@@ -151,6 +168,7 @@ public abstract class Table {
       } else {
         try {
           int nextPageId = tablePage_.getNextPageId();
+          bufferPoolManager_.unpinPage(tablePage_.getPageId(), false);
           if (nextPageId == Global.PAGE_ID_INVALID) {
             return false;
           }
@@ -168,8 +186,10 @@ public abstract class Table {
 
     @Override
     public Pair<Tuple, RID> next() {
+      tablePage_.RLock();
       Pair<Tuple, Integer> pti = tablePageIterator_.next();
       curRid_ = new RID(tablePage_.getPageId(), pti.right);
+      tablePage_.RUnlock();
       return new Pair<>(pti.left, curRid_);
     }
 
