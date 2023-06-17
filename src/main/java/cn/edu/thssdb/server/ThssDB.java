@@ -42,7 +42,7 @@ public class ThssDB {
 
   private void start() throws Exception {
     handler = new HyperNeptuneInstance("tmp.db");
-    processor = new IService.Processor(handler);
+    processor = new IService.Processor<>(handler);
     Runnable setup = () -> setUp(processor);
     new Thread(setup).start();
   }

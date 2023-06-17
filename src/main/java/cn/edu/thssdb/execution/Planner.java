@@ -7,6 +7,7 @@ import cn.edu.thssdb.parser.tableBinder.*;
 import cn.edu.thssdb.schema.Catalog;
 import cn.edu.thssdb.schema.TableInfo;
 import cn.edu.thssdb.type.BoolValue;
+import cn.edu.thssdb.type.Value;
 
 public class Planner {
   private final Catalog catalog_;
@@ -74,6 +75,22 @@ public class Planner {
 
   private Executor planSelect(SelectStatement stmt) {
     Executor plan = null;
+
+    // plan index join if where contains only pk, join uses pk, and op is '='
+    Value<?, ?> joinValue;
+    if ((joinValue = stmt.useIndexJoin()) != null) {
+      plan = // big hack energy
+          new indexJoinExecutor(
+              ((RegularTableBinder) ((JoinTableBinder) stmt.getFrom()).getLeft()).getTableInfo(),
+              ((RegularTableBinder) ((JoinTableBinder) stmt.getFrom()).getRight()).getTableInfo(),
+              joinValue,
+              ctx_);
+      if (stmt.getSelectList() == null) {
+        throw new RuntimeException("unreachable. select list should not be null");
+      }
+      plan = new projectionExecutor(ctx_, plan, stmt.getSelectList());
+      return plan_ = plan;
+    }
 
     // plan index scan if where contains only pk.
     // this is a hack. I feel sorry for that, but I don't have much time to do it decently.

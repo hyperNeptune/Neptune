@@ -276,20 +276,21 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
     // comparator
     if (ctx.comparator() != null) {
       String op = ctx.comparator().getText();
-      if (op.equals("=")) {
-        return new BinaryExpression(left, right, "eq");
-      } else if (op.equals(">")) {
-        return new BinaryExpression(left, right, "gt");
-      } else if (op.equals("<")) {
-        return new BinaryExpression(left, right, "lt");
-      } else if (op.equals(">=")) {
-        return new BinaryExpression(left, right, "ge");
-      } else if (op.equals("<=")) {
-        return new BinaryExpression(left, right, "le");
-      } else if (op.equals("<>")) {
-        return new BinaryExpression(left, right, "ne");
-      } else {
-        throw new RuntimeException("unknown comparator");
+      switch (op) {
+        case "=":
+          return new BinaryExpression(left, right, "eq");
+        case ">":
+          return new BinaryExpression(left, right, "gt");
+        case "<":
+          return new BinaryExpression(left, right, "lt");
+        case ">=":
+          return new BinaryExpression(left, right, "ge");
+        case "<=":
+          return new BinaryExpression(left, right, "le");
+        case "<>":
+          return new BinaryExpression(left, right, "ne");
+        default:
+          throw new RuntimeException("unknown comparator");
       }
     }
     // and & or
@@ -421,7 +422,7 @@ public class Binder extends SQLBaseVisitor<Statement> implements Iterable<Statem
   }
 
   private TableBinder visitTableQ(SQLParser.TableQueryContext ctx) {
-    // no join, regular tablebind
+    // no join, regular table bind
     if (ctx.K_JOIN().size() == 0) {
       TableInfo tableInfo = catalog.getTableInfo(ctx.tableName().get(0).getText());
       if (tableInfo == null) {

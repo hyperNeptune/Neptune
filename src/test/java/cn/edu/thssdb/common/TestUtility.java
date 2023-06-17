@@ -3,6 +3,7 @@ package cn.edu.thssdb.common;
 import cn.edu.thssdb.buffer.BufferPoolManager;
 import cn.edu.thssdb.buffer.LRUReplacer;
 import cn.edu.thssdb.buffer.ReplaceAlgorithm;
+import cn.edu.thssdb.concurrency.LockManager;
 import cn.edu.thssdb.concurrency.TransactionManager;
 import cn.edu.thssdb.execution.ExecutionEngine;
 import cn.edu.thssdb.schema.*;
@@ -25,6 +26,7 @@ public class TestUtility {
   public Schema sh;
   public ExecutionEngine executionEngine;
   public TransactionManager transactionManager;
+  public LockManager lockManager;
 
   public static final TestUtility INSTANCE = new TestUtility();
 
@@ -35,6 +37,7 @@ public class TestUtility {
     cdi = CimetiereDesInnocents.createCDI(bufferPoolManager);
     curDB = cdi.createDatabase("test");
     executionEngine = new ExecutionEngine(curDB, transactionManager);
+    lockManager = new LockManager();
 
     Column[] s = new Column[5];
     s[0] = new Column("col1", IntType.INSTANCE, (byte) 1, (byte) 0, Global.INT_SIZE, 0);

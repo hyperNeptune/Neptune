@@ -84,7 +84,7 @@ public class nestedLoopJoinExecutor extends Executor {
       // join the two tuples
       // TODO: allow same column name, different table
       // get values
-      Value[] valueJoin = new Value[joinOutSchema_.getColNum()];
+      Value<?, ?>[] valueJoin = new Value[joinOutSchema_.getColNum()];
       int idx_join;
       Schema left_schema = left_.getOutputSchema();
       Schema right_schema = right_.getOutputSchema();

@@ -1,14 +1,15 @@
 package cn.edu.thssdb.parser.statement;
 
-import cn.edu.thssdb.parser.expression.BinaryExpression;
-import cn.edu.thssdb.parser.expression.ColumnRefExpression;
-import cn.edu.thssdb.parser.expression.Expression;
-import cn.edu.thssdb.parser.expression.ExpressionType;
+import cn.edu.thssdb.parser.expression.*;
+import cn.edu.thssdb.parser.tableBinder.JoinTableBinder;
 import cn.edu.thssdb.parser.tableBinder.RegularTableBinder;
 import cn.edu.thssdb.parser.tableBinder.TableBinder;
 import cn.edu.thssdb.parser.tableBinder.TableBinderType;
 import cn.edu.thssdb.schema.Column;
 import cn.edu.thssdb.schema.TableInfo;
+import cn.edu.thssdb.type.Value;
+
+import java.util.Objects;
 
 public class SelectStatement extends Statement {
   private final TableBinder from_;
@@ -76,5 +77,56 @@ public class SelectStatement extends Statement {
   @Override
   public String toString() {
     return "statement: select";
+  }
+
+  public Value<?, ?> useIndexJoin() {
+    // Join on pk
+    if (from_.getType() != TableBinderType.JOIN) {
+      return null;
+    }
+    JoinTableBinder joinTableBinder = (JoinTableBinder) from_;
+    if (!joinTableBinder.joinOnPK()) {
+      return null;
+    }
+
+    // where like 'pk = const'
+    if (where_ == null) {
+      return null;
+    }
+    if (where_.getType() != ExpressionType.BINARY) {
+      return null;
+    }
+    BinaryExpression binaryExpression = (BinaryExpression) where_;
+    Expression left = binaryExpression.getLeft();
+    Expression right = binaryExpression.getRight();
+    if (left.getType() != ExpressionType.COLUMN_REF) {
+      return null;
+    }
+    if (right.getType() != ExpressionType.CONSTANT) {
+      return null;
+    }
+    if (!Objects.equals(binaryExpression.getOp(), "eq")) {
+      return null;
+    }
+    ColumnRefExpression columnRefExpression = (ColumnRefExpression) left;
+    String columnName = columnRefExpression.getColumn();
+    TableBinder leftTableBinder = joinTableBinder.getLeft();
+    TableBinder rightTableBinder = joinTableBinder.getRight();
+    if (leftTableBinder.getType() != TableBinderType.REGULAR) {
+      return null;
+    }
+    if (rightTableBinder.getType() != TableBinderType.REGULAR) {
+      return null;
+    }
+    RegularTableBinder leftRegularTableBinder = (RegularTableBinder) leftTableBinder;
+    RegularTableBinder rightRegularTableBinder = (RegularTableBinder) rightTableBinder;
+    TableInfo leftTableInfo = leftRegularTableBinder.getTableInfo();
+    TableInfo rightTableInfo = rightRegularTableBinder.getTableInfo();
+    if (leftTableInfo.getSchema().getPkColumn().getFullName().equals(columnName)
+        || rightTableInfo.getSchema().getPkColumn().getFullName().equals(columnName)) {
+      ConstantExpression constantExpression = (ConstantExpression) right;
+      return constantExpression.evaluation(null, null);
+    }
+    return null;
   }
 }

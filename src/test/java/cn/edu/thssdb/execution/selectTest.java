@@ -1,6 +1,8 @@
 package cn.edu.thssdb.execution;
 
 import cn.edu.thssdb.common.TestUtility;
+import cn.edu.thssdb.concurrency.IsolationLevel;
+import cn.edu.thssdb.concurrency.Transaction;
 import cn.edu.thssdb.execution.executor.Executor;
 import cn.edu.thssdb.parser.Binder;
 import cn.edu.thssdb.parser.statement.Statement;
@@ -25,8 +27,13 @@ public class selectTest {
     Binder binder = new Binder(TestUtility.INSTANCE.curDB);
     binder.parseAndBind("select * from test where col5 > 100");
     for (Statement s : binder) {
-      // WARN(jyx): you may need to add txn here
-      ExecContext ctx = new ExecContext(null, null, null, null, null);
+      ExecContext ctx =
+          new ExecContext(
+              new Transaction(1, IsolationLevel.SERIALIZED),
+              null,
+              null,
+              TestUtility.INSTANCE.lockManager,
+              null);
       Planner planner = new Planner(TestUtility.INSTANCE.curDB, ctx);
       planner.plan(s);
       Executor executor = planner.getPlan();
