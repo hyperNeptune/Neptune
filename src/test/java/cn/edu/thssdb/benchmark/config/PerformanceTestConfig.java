@@ -2,7 +2,7 @@ package cn.edu.thssdb.benchmark.config;
 
 public class PerformanceTestConfig {
 
-  public static final int CLIENT_NUMBER = 3;
+  public static final int CLIENT_NUMBER = 5;
 
   public static final int TABLE_NUMBER = 3;
 

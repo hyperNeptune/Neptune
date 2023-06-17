@@ -1,7 +1,10 @@
 package cn.edu.thssdb.parser.statement;
 
-import cn.edu.thssdb.parser.expression.Expression;
+import cn.edu.thssdb.parser.expression.*;
 import cn.edu.thssdb.schema.TableInfo;
+import cn.edu.thssdb.type.Value;
+
+import static cn.edu.thssdb.parser.statement.UpdateStatement.findKey;
 
 public class DeleteStatement extends Statement {
   private final TableInfo table;
@@ -24,5 +27,9 @@ public class DeleteStatement extends Statement {
   @Override
   public String toString() {
     return "DeleteStatement{" + "table=" + table + ", expression=" + expression + '}';
+  }
+
+  public Value<?, ?> useIndex() {
+    return findKey(expression, table);
   }
 }

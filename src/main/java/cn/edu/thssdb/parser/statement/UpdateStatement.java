@@ -1,7 +1,8 @@
 package cn.edu.thssdb.parser.statement;
 
-import cn.edu.thssdb.parser.expression.Expression;
+import cn.edu.thssdb.parser.expression.*;
 import cn.edu.thssdb.schema.TableInfo;
+import cn.edu.thssdb.type.Value;
 import cn.edu.thssdb.utils.Pair;
 
 public class UpdateStatement extends Statement {
@@ -32,5 +33,28 @@ public class UpdateStatement extends Statement {
   @Override
   public String toString() {
     return "statement: update";
+  }
+
+  public Value<?, ?> useIndex() {
+    return findKey(where_, tableInfo_);
+  }
+
+  static Value<?, ?> findKey(Expression where, TableInfo tableInfo) {
+    if (where.getType() != ExpressionType.BINARY) {
+      return null;
+    }
+    BinaryExpression binaryExpression = (BinaryExpression) where;
+    if (binaryExpression.getLeft().getType() != ExpressionType.COLUMN_REF) {
+      return null;
+    }
+    if (binaryExpression.getRight().getType() != ExpressionType.CONSTANT) {
+      return null;
+    }
+    ColumnRefExpression columnRefExpression = (ColumnRefExpression) binaryExpression.getLeft();
+    ConstantExpression constantExpression = (ConstantExpression) binaryExpression.getRight();
+    if (columnRefExpression.getColumn().equals(tableInfo.getPKColumn().getName())) {
+      return constantExpression.evaluation(null, null);
+    }
+    return null;
   }
 }
