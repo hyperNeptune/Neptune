@@ -52,6 +52,9 @@ public class IntType extends Type {
     if (value.getType().getTypeCode() == BuiltinTypeCode.LONG.value) {
       return new IntValue(((LongValue) value).getValue().intValue());
     }
+    if (value.getType().getTypeCode() == BuiltinTypeCode.DOUBLE.value) {
+      return new IntValue(((DoubleValue) value).getValue().intValue());
+    }
     return super.castFrom(value);
   }
 }

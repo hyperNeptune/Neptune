@@ -45,6 +45,10 @@ public class Planner {
     if (tab == null) {
       throw new RuntimeException("unreachable. table should not be null");
     }
+    Value<?, ?> keyIdx;
+    if ((keyIdx = stmt.useIndex()) != null) {
+      return new indexUpdateExecutor(ctx_, stmt.getUpdateValue(), tab, keyIdx);
+    }
     plan_ = new SeqScanExecutor(tab, ctx_);
     // plan WHERE
     if (stmt.getWhere() != null) {
@@ -59,6 +63,10 @@ public class Planner {
     TableInfo tab = stmt.getTable();
     if (tab == null) {
       throw new RuntimeException("unreachable. table should not be null");
+    }
+    Value<?, ?> keyIfUseIdx;
+    if ((keyIfUseIdx = stmt.useIndex()) != null) {
+      return new indexDeleteExecutor(ctx_, keyIfUseIdx, tab);
     }
     plan_ = new SeqScanExecutor(tab, ctx_);
     // plan WHERE

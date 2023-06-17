@@ -52,6 +52,12 @@ public class FloatType extends Type {
     if (value.getType().getTypeCode() == BuiltinTypeCode.DOUBLE.value) {
       return new FloatValue(((DoubleValue) value).getValue().floatValue());
     }
+    if (value.getType().getTypeCode() == BuiltinTypeCode.LONG.value) {
+      return new FloatValue(((LongValue) value).getValue().floatValue());
+    }
+    if (value.getType().getTypeCode() == BuiltinTypeCode.INT.value) {
+      return new FloatValue(((IntValue) value).getValue().floatValue());
+    }
     return super.castFrom(value);
   }
 }
