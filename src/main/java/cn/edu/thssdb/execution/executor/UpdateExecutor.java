@@ -41,7 +41,11 @@ public class UpdateExecutor extends Executor {
     for (int i = 0; i < schema_.getColumns().length; i++) {
       values[i] = tuple.getValue(schema_, i);
     }
-    values[updatedIdx_] = updateValue_.right.evaluation(tuple, schema_);
+    values[updatedIdx_] =
+        schema_
+            .getColumn(updatedIdx_)
+            .getType()
+            .castFrom(updateValue_.right.evaluation(tuple, schema_));
     tuple.copyAssign(new Tuple(values, schema_));
     tableInfo_.getTable().update(tuple, rid);
     return true;
