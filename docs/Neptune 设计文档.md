@@ -523,6 +523,13 @@ DELETE
 
 日志恢复器可以将数据库日志反序列化，除此之外，日志恢复器还提供了两个重要的接口：重做（Redo）和撤销（Undo）。重做操作将重新完成事务的行为，撤销操作将回滚事务的行为。
 
+```java
+  public void startRecovery();
+  private void Redo(LogRecord logRecord);
+  private void Undo(LogRecord logRecord);
+  public LogRecord DeserializeLogRecord(ByteBuffer buffer);
+```
+
 我们的恢复过程将分为两个阶段执行：重做阶段和撤销阶段。在这两个阶段之前，还需要对日志文件中的数据进行反序列化以得到具体的日志对象。
 
 + **重做阶段**：正向扫描，重演事务的更新
@@ -533,6 +540,27 @@ DELETE
   + 将遇到位于撤销列表中的日志记录进行撤销
   + 将遇到位于撤销列表中的事务开始日志从撤销列表中移除，并写入事务中止日志
 
+如果启用了日志恢复，在数据库启动的时候会使用 `startRecovery` 进行恢复。
+
 
 
 ## 测试报告
+
+### 日志分析举例
+
+![](log1.png)
+
+```
+00 00 00 14 (长度 20) 00 00 00 01 (LSN) 00 00 00 01 (事务序列号) 
+FF FF FF FF (上一条LSN不存在) 00 00 00 06 (BEGIN 日志)
+```
+
+![](log2.png)
+
+```
+00 00 00 64 (长度100) 00 00 81 8E (LSN) 00 00 32 01 (事务序列号)
+00 00 81 86 (上一条LSN) 00 00 00 01 (INSERT 日志)
+00 00 00 8E (Page ID) 00 00 00 1D (Slot ID)
+00 00 00 44 (Tuple的长度) ......(Tuple 具体内容)
+```
+
