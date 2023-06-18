@@ -2,6 +2,7 @@ package cn.edu.thssdb.execution.executor;
 
 import cn.edu.thssdb.concurrency.LockManager;
 import cn.edu.thssdb.concurrency.Transaction;
+import cn.edu.thssdb.concurrency.TransactionManager;
 import cn.edu.thssdb.execution.ExecContext;
 import cn.edu.thssdb.parser.expression.Expression;
 import cn.edu.thssdb.schema.Schema;
@@ -47,9 +48,12 @@ public class UpdateExecutor extends Executor {
       values[i] = tuple.getValue(schema_, i);
     }
 
+    Tuple old_tuple = new Tuple(values, schema_);
+
     Transaction txn = getCtx().getTransaction();
     LockManager lockManager = getCtx().getLockManager();
     lockManager.lockRow(txn, LockManager.LockMode.EXCLUSIVE, tableInfo_.getTableName(), rid);
+    TransactionManager transactionManager = getCtx().getTransactionManager();
 
     values[updatedIdx_] =
         schema_
@@ -58,6 +62,8 @@ public class UpdateExecutor extends Executor {
             .castFrom(updateValue_.right.evaluation(tuple, schema_));
     tuple.copyAssign(new Tuple(values, schema_));
     tableInfo_.getTable().update(tuple, rid);
+
+    transactionManager.makeUpdateLog(txn, rid, old_tuple, new Tuple(tuple));
     return true;
   }
 

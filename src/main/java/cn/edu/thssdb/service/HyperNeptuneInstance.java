@@ -16,6 +16,7 @@ import cn.edu.thssdb.parser.statement.DropTbStatement;
 import cn.edu.thssdb.parser.statement.ShowTbStatement;
 import cn.edu.thssdb.parser.statement.Statement;
 import cn.edu.thssdb.recovery.LogManager;
+import cn.edu.thssdb.recovery.LogRecovery;
 import cn.edu.thssdb.rpc.thrift.ConnectReq;
 import cn.edu.thssdb.rpc.thrift.ConnectResp;
 import cn.edu.thssdb.rpc.thrift.DisconnectReq;
@@ -52,7 +53,9 @@ public class HyperNeptuneInstance implements IService.Iface {
   private LogManager logManager_;
   private LockManager lockManager_;
   private HashMap<Long, Transaction> transaction_session_;
-  private IsolationLevel isolationLevel_ = IsolationLevel.REPEATABLE_READ;
+  private IsolationLevel isolationLevel_ = IsolationLevel.READ_COMMITTED;
+  private boolean activate_recovery_ = false;
+  private LogRecovery logRecovery_;
 
   public HyperNeptuneInstance(String db_file_name) throws Exception {
     diskManager_ = new DiskManager(Paths.get(db_file_name));
@@ -65,7 +68,7 @@ public class HyperNeptuneInstance implements IService.Iface {
     transactionManager_ = new TransactionManager(logManager_, lockManager_);
     executionEngine_ = new ExecutionEngine(curDB_, transactionManager_);
     transaction_session_ = new HashMap<>();
-
+    logRecovery_ = new LogRecovery(diskManager_, logManager_);
     // init type system
     StringType st = new StringType();
     IntType it = new IntType();
@@ -74,6 +77,9 @@ public class HyperNeptuneInstance implements IService.Iface {
     LongType lt = new LongType();
     BoolType bt = new BoolType();
     // discard them
+    if (activate_recovery_) {
+      logRecovery_.startRecovery();
+    }
   }
 
   @Override
@@ -101,7 +107,6 @@ public class HyperNeptuneInstance implements IService.Iface {
           StatusUtil.fail("You are not connected. Please connect first."), false);
     }
     try {
-      // TODO: 如果加了分号就爆炸了，很危险
       if (req.statement.equals("begin transaction")) {
         Transaction txn = transactionManager_.create_and_begin(isolationLevel_);
         transaction_session_.put(req.getSessionId(), txn);

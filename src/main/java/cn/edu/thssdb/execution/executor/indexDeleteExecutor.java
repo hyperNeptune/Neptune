@@ -26,6 +26,15 @@ public class indexDeleteExecutor extends Executor {
     if (rid == null) {
       return;
     }
+    Transaction txn = getCtx().getTransaction();
+    LockManager lockManager = getCtx().getLockManager();
+
+    TransactionManager transactionManager = getCtx().getTransactionManager();
+    transactionManager.makeDeletionLog(txn, rid, new Tuple(tableInfo_.getTable().getTuple(rid)));
+
+    lockManager.lockTable(txn, LockManager.LockMode.INTENTION_EXCLUSIVE, tableInfo_.getTableName());
+    lockManager.lockRow(txn, LockManager.LockMode.EXCLUSIVE, tableInfo_.getTableName(), rid);
+
     tableInfo_.getTable().delete(rid);
     tableInfo_.getIndex().remove(rid, getCtx().getTransaction());
   }

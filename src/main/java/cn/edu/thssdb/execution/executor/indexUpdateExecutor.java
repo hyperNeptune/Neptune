@@ -2,6 +2,7 @@ package cn.edu.thssdb.execution.executor;
 
 import cn.edu.thssdb.concurrency.LockManager;
 import cn.edu.thssdb.concurrency.Transaction;
+import cn.edu.thssdb.concurrency.TransactionManager;
 import cn.edu.thssdb.execution.ExecContext;
 import cn.edu.thssdb.parser.expression.Expression;
 import cn.edu.thssdb.schema.Schema;
@@ -26,6 +27,10 @@ public class indexUpdateExecutor extends Executor {
     schema_ = tableInfo_.getSchema();
     updateIdx = schema_.getColumnOrder(updateValue_.left);
     updatePK_ = schema_.getPkColumn().getType().castFrom(updatePK);
+
+    Transaction txn = getCtx().getTransaction();
+    LockManager lockManager = getCtx().getLockManager();
+    lockManager.lockTable(txn, LockManager.LockMode.INTENTION_EXCLUSIVE, tableInfo_.getTableName());
   }
 
   @Override
@@ -39,8 +44,17 @@ public class indexUpdateExecutor extends Executor {
     for (int i = 0; i < schema_.getColumns().length; i++) {
       values[i] = updateTuple.getValue(schema_, i);
     }
-    values[updateIdx] = updateValue_.right.evaluation(null, null);
+    values[updateIdx] =
+        schema_.getColumn(updateIdx).getType().castFrom(updateValue_.right.evaluation(null, null));
+
+    Transaction txn = getCtx().getTransaction();
+    LockManager lockManager = getCtx().getLockManager();
+    lockManager.lockRow(txn, LockManager.LockMode.EXCLUSIVE, tableInfo_.getTableName(), id);
+
     tableInfo_.getTable().update(new Tuple(values, schema_), id);
+
+    TransactionManager transactionManager = getCtx().getTransactionManager();
+    transactionManager.makeUpdateLog(txn, id, new Tuple(updateTuple), new Tuple(values, schema_));
   }
 
   @Override

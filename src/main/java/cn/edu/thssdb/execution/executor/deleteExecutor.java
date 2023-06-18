@@ -35,7 +35,7 @@ public class deleteExecutor extends Executor {
     TransactionManager txnmgr = getCtx().getTransactionManager();
     LockManager lockManager = getCtx().getLockManager();
     Transaction txn = getCtx().getTransaction();
-    txnmgr.makeDeletionLog(txn, rid, tableInfo_.getTable().getTuple(rid));
+    txnmgr.makeDeletionLog(txn, rid, new Tuple(tableInfo_.getTable().getTuple(rid)));
     lockManager.lockRow(txn, LockManager.LockMode.EXCLUSIVE, tableInfo_.getTableName(), rid);
 
     tableInfo_.getTable().delete(rid);

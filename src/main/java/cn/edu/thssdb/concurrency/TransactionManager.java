@@ -98,6 +98,14 @@ public class TransactionManager {
     txn.setPrev_lsn(lsn);
   }
 
+  public void makeUpdateLog(Transaction txn, RID rid, Tuple old_tuple, Tuple new_tuple) {
+    LogRecord record =
+        new LogRecord(
+            txn.getTxn_id(), txn.getPrev_lsn(), LogRecordType.UPDATE, rid, old_tuple, new_tuple);
+    int lsn = logManager.appendLogRecord(record);
+    txn.setPrev_lsn(lsn);
+  }
+
   public void commit(Transaction txn) {
     releaseAllLocks(txn);
 

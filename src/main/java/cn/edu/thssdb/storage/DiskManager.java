@@ -1,6 +1,7 @@
 package cn.edu.thssdb.storage;
 
 import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.RID;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -86,4 +87,6 @@ public class DiskManager {
   public int allocatePage() {
     return numPages_++;
   }
+
+  public void forceUpdate(RID rid, Tuple tuple) {}
 }
