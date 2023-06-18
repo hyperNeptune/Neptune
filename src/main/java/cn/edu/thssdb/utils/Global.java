@@ -37,7 +37,7 @@ public class Global {
   public static final double DOUBLE_MIN = -1.7976931348623157E308;
 
   // Disk Manager Constants
-  public static final int PAGE_SIZE = 4096;
+  public static final int PAGE_SIZE = 8192;
   public static final int PAGE_ID_INVALID = -1;
 
   // buffer pool manager Constants

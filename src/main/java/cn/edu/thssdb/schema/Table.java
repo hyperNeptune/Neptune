@@ -25,6 +25,7 @@ public abstract class Table {
   protected final BufferPoolManager bufferPoolManager_;
   private final int firstPageId_;
   protected int slotSize_;
+  private int insertCurPage = 0;
 
   // new table page needs init
   protected abstract TablePage newTablePage(Page p, int slotSize);
@@ -39,12 +40,14 @@ public abstract class Table {
     this.lock = new ReentrantReadWriteLock();
     this.bufferPoolManager_ = bufferPoolManager;
     this.firstPageId_ = firstPageId;
+    insertCurPage = firstPageId;
   }
 
   public Table(BufferPoolManager bufferPoolManager, int slotSize, NewFlag flag) throws Exception {
     this.lock = new ReentrantReadWriteLock();
     this.bufferPoolManager_ = bufferPoolManager;
     this.firstPageId_ = bufferPoolManager_.newPage().getPageId();
+    insertCurPage = firstPageId_;
     slotSize_ = slotSize;
     // init the first page
     newTablePage(bufferPoolManager_.fetchPage(firstPageId_), slotSize);
@@ -58,7 +61,7 @@ public abstract class Table {
       return false;
     }
 
-    TablePage tablePage = fetchTablePage(bufferPoolManager_.fetchPage(firstPageId_));
+    TablePage tablePage = fetchTablePage(bufferPoolManager_.fetchPage(insertCurPage));
     tablePage.WLock();
 
     // invariant: insertTuple failed, tablePage hold WLock
@@ -91,6 +94,7 @@ public abstract class Table {
     tablePage.WUnlock();
     // unpin
     bufferPoolManager_.unpinPage(tablePage.getPageId(), true);
+    insertCurPage = tablePage.getPageId();
     return true;
   }
 

@@ -10,58 +10,29 @@
 
 ## 安装与运行
 
-#### **运行环境**
+### **运行环境**
 
-**操作系统：**Windows 11
+要运行这个数据库，用户需要在电脑上配备 1.8 版本的 Java 运行时环境。这个版本的 Java 又叫做 Java 8.
 
-**IDE:**  IDEA
+### 程序启动
 
-**JRE版本：**1.8
+#### 服务端  `ThssDB`
 
-#### 程序启动
+* 运行 `thssdb` 的 `jar` 包即可。
 
-##### 服务端  `ThssDB`
+#### 客户端  `Client`
 
-* 运行`cn.edu.thssdb.server.ThssDB`主类以运行服务端程序。
-* 默认命令行参数：
-  * `java C`
+* 运行客户端的 `jar` 包即可。
 
-##### 客户端  `Client`
 
-* 运行`cn.edu.thssdb.client.Client`主类以运行客户端程序。
-* 默认命令行参数：
+## 数据库管理
 
-  - `java -h 127.0.0.1 -p 6667`
-
-#### 连接与断开（客户端）
-
-##### 用户连接
-
-* 启动客户端后，输入如下命令，并输入用户名/密码以连接到服务端：
-  * **ThssDB>**`connect;`
-  * **Username:**`<username>`
-  * **Password:**`<password>`
-* 内建的管理权限用户名与密码：username/password
-
-##### 断开连接
-
-* 在已于服务端连接的情况下，输入如下命令以断开连接：
-
-  * **ThssDB>**`disconnect;`
-
-## SQL 语法
-
-* 仅在与服务器成功连接后，才可执行`SQL`语句。
-* 执行`SQL`语句，需要先输入`execute`命令，而后再输入待执行`SQL`语句：
-  * **ThssDB>**`execute;`
-  * **Statement:**`<statement>`
-
-### 创建用户
-
+在与服务器成功连接后，才可执行`SQL`语句。因为预算和时间限制，我们没有实现用户系统。所以，用户可以随便输入一个用户名和密码来登录。像这样：
 ```sql
-CREATE USER username IDENTIFIED BY password
+connect 1 1;
 ```
 
+我们的数据库是一个三级结构，一个数据库系统实例下面有多个数据库，用户在数据库中管理所有的关系表。因此，要想使用这个数据库系统，需要先创建和使用数据库，相关的语法如下所示。
 ### 创建数据库
 
 ```sql
@@ -80,7 +51,17 @@ DROP DATABASE databaseName
 USE databaseName
 ```
 
+## 关系
+
+在使用数据库之后，我们就可以在数据库中使用 `SQL` 语言定义、修改和查询关系了。
+
+默认我们会将每一个查询的语句作为一个事务，并且 `autocommit`，用户也可以使用 `begin transaction` 和 `commit` 语句手写一个事务。
+
+注意 `begin transaction` 后面必须没有分号，而 `commit` 的后面一定要有分号，也就是说写成 `commit;` 的形式。
+
 ### 创建表
+
+主键只支持一列。
 
 ```sql
 CREATE TABLE tableName(
@@ -127,44 +108,12 @@ UPDATE  tableName  SET  attrName = attrValue  WHERE  attrName = attrValue ...
 ### 查询
 
 ```sql
-SELECT  attrName1, attrName2, ..., attrNameN  FROM  tableName  WHERE  attrName1 = attrValue ... ORDER BY attrName1, ... [DESC/ASC]
-SELECT  attrName1,..., tableName1.attrName1,...  FROM  tableName1 JOIN tableName2  ON  tableName1.attrName1 = tableName2.attrName2 WHERE  attrName1 = attrValue ... ORDER BY attrName1, ... [DESC/ASC]
+SELECT  attrName1, attrName2, ..., attrNameN  FROM  tableName  WHERE  attrName1 = attrValue...;
+SELECT  attrName1,..., tableName1.attrName1,...  FROM  tableName1 JOIN tableName2  ON  tableName1.attrName1 = tableName2.attrName2 WHERE  attrName1 = attrValue...;
 ```
 
 上述语句中，`WHERE`子句支持多重`and/or`，并且关系为`<,>,<>,>=,<=,=,IS NULL`之一。
 
-`SELECT`子句包括`[tableName.]attrName,tableName.*,*,[tableName.]attrName OP CONST,CONST OP [tableName.]attrName, CONST OP CONST`以及五种聚集函数（`avg,sum,min,max,count`）、`DISTINCT/ALL`关键字，其中`OP`为加减乘除，`CONST`为常数。
+`SELECT`子句包括`[tableName.]attrName,tableName.*,*` 以及 `DISTINCT/ALL`。
 
-`JOIN`子句包括`INNER JOIN/JOIN/NATURAL JOIN/,(笛卡尔积)/LEFT OUTER JOIN/RIGHT OUTER JOIN/FULL OUTER JOIN`，至多涉及2张表，`ON` 子句支持多重`and`。
-
-`ORDER BY`子句支持多列排序，以及`DESC/ASC`关键字。
-
-### 开始事务 ？
-
-```sql
-BEGIN TRANSACTION
-```
-
-### 提交
-
-```sql
-COMMIT
-```
-
-### 保存点
-
-```sql
-SAVEPOINT savepointName
-```
-
-### 回滚
-
-```sql
-ROLLBACK [TO SAVEPOINT savepointName]
-```
-
-### 检查点
-
-```sql
-CHECKPOINT
-```
+`JOIN` 支持多表的连接，但是只能以 `FROM` 中有多张表的形式连接超过两张以上的表，`JOIN` 只能写一次，两张表。

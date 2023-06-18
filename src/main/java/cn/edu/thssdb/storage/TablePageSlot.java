@@ -150,21 +150,15 @@ public class TablePageSlot extends Page implements TablePage {
   public int insertTuple(Tuple tuple, RID rid) {
     // check if there is enough space for a new tuple
     hasEnoughSpaceResult result = hasEnoughSpace();
-    if (result == hasEnoughSpaceResult.NO_ENOUGH_SPACE) {
+    if (result == hasEnoughSpaceResult.NO_ENOUGH_SPACE
+        || result == hasEnoughSpaceResult.HAS_DELETED_SLOTS) {
       return -1;
     }
     // insert into free space
-    int slotId;
-    if (result == hasEnoughSpaceResult.HAS_ENOUGH_SPACE) {
-      setFreeSpacePointer(getFreeSpacePointer() - getTupleLength());
-      tuple.serialize(data_, getFreeSpacePointer());
-      setSlot(slotId = slotAreaSize() - 1);
-    } else {
-      // insert into deleted slots
-      slotId = findDeletedSlot();
-      tuple.serialize(data_, Global.PAGE_SIZE - (slotId + 1) * getTupleLength());
-      setSlot(slotId);
-    }
+    int slotId = -1;
+    setFreeSpacePointer(getFreeSpacePointer() - getTupleLength());
+    tuple.serialize(data_, getFreeSpacePointer());
+    setSlot(slotId = slotAreaSize() - 1);
     setTupleCount(getTupleCount() + 1);
     if (rid != null) {
       rid.setPageId(getPageId());

@@ -62,6 +62,31 @@ public class HyperNeptuneInstance implements IService.Iface {
     ReplaceAlgorithm replaceAlgorithm = new LRUReplacer(Global.DEFAULT_BUFFER_SIZE);
     bufferPoolManager_ =
         new BufferPoolManager(Global.DEFAULT_BUFFER_SIZE, diskManager_, replaceAlgorithm);
+    cdi_ = CimetiereDesInnocents.openCDI(bufferPoolManager_);
+    lockManager_ = new LockManager();
+    logManager_ = new LogManager(diskManager_);
+    transactionManager_ = new TransactionManager(logManager_, lockManager_);
+    executionEngine_ = new ExecutionEngine(curDB_, transactionManager_);
+    transaction_session_ = new HashMap<>();
+    logRecovery_ = new LogRecovery(diskManager_, logManager_);
+    // init type system
+    StringType st = new StringType();
+    IntType it = new IntType();
+    DoubleType dt = new DoubleType();
+    FloatType ft = new FloatType();
+    LongType lt = new LongType();
+    BoolType bt = new BoolType();
+    // discard them
+    if (activate_recovery_) {
+      logRecovery_.startRecovery();
+    }
+  }
+
+  public HyperNeptuneInstance() throws Exception {
+    diskManager_ = new DiskManager(Paths.get("tmp.db"));
+    ReplaceAlgorithm replaceAlgorithm = new LRUReplacer(Global.DEFAULT_BUFFER_SIZE);
+    bufferPoolManager_ =
+            new BufferPoolManager(Global.DEFAULT_BUFFER_SIZE, diskManager_, replaceAlgorithm);
     cdi_ = CimetiereDesInnocents.createCDI(bufferPoolManager_);
     lockManager_ = new LockManager();
     logManager_ = new LogManager(diskManager_);

@@ -428,6 +428,15 @@ public class LockManager {
           // Granted:"
           //           + lr.granted + ", Thread:" + lr.threadid);
           //                    }
+          //          System.out.println("[RowLock Waiting]" + "Txn: " + txn.getTxn_id() + ",
+          // Thread:" + txn.getThread_id() +
+          //                  ", waiting for " + currentQueue.requestQueue.get(0).rid);
+          //          System.out.println("[RowLock Waiting Spec] Current Waiting Queue:");
+          //          for (LockRequest lr : currentQueue.requestQueue)
+          //          {
+          //            System.out.println("\t" + lr.lockMode + ", Txn:" + lr.txn_id + ", Granted:"
+          // + lr.granted + ", Thread:" + lr.threadid);
+          //          }
           currentQueue.latchCondition.await();
         } catch (Exception e) {
           e.printStackTrace();

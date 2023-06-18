@@ -25,7 +25,11 @@ public class ThssDB {
 
   public static void main(String[] args) throws Exception {
     ThssDB server = ThssDB.INSTANCE;
-    server.start();
+    if (args.length != 0) {
+      server.start(args[0]);
+    } else {
+      server.start();
+    }
     // call handler.close() when exit
     Runtime.getRuntime()
         .addShutdownHook(
@@ -41,7 +45,14 @@ public class ThssDB {
   }
 
   private void start() throws Exception {
-    handler = new HyperNeptuneInstance("tmp.db");
+    handler = new HyperNeptuneInstance();
+    processor = new IService.Processor<>(handler);
+    Runnable setup = () -> setUp(processor);
+    new Thread(setup).start();
+  }
+
+  private void start(String fileName) throws Exception {
+    handler = new HyperNeptuneInstance(fileName);
     processor = new IService.Processor<>(handler);
     Runnable setup = () -> setUp(processor);
     new Thread(setup).start();

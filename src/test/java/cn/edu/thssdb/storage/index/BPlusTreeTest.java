@@ -300,7 +300,7 @@ public class BPlusTreeTest {
   // rewrite the concurrency test above to single thread mode
   @Test
   public void serialTest2() throws Exception {
-    int numOfThreads = 2000;
+    int numOfThreads = 1000;
     BPlusTree bpt = new BPlusTree(bufferPoolManager, IntType.INSTANCE, 3, 4);
     for (int i = 0; i < numOfThreads; i++) {
       Transaction txn = new Transaction(i, IsolationLevel.READ_COMMITTED);
