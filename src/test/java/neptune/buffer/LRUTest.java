@@ -1,5 +1,7 @@
 package neptune.buffer;
 
+import neptune.backend.buffer.LRUReplacer;
+import neptune.backend.buffer.ReplaceAlgorithm;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

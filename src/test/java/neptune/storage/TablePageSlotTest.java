@@ -1,11 +1,14 @@
 package neptune.storage;
 
-import neptune.schema.*;
-import neptune.schema.Column;
-import neptune.schema.Schema;
-import neptune.type.*;
-import neptune.utils.Global;
-import neptune.utils.RID;
+import neptune.backend.schema.Column;
+import neptune.backend.schema.Schema;
+import neptune.backend.storage.DiskManager;
+import neptune.backend.storage.Page;
+import neptune.backend.storage.TablePageSlot;
+import neptune.backend.storage.Tuple;
+import neptune.backend.type.*;
+import neptune.common.Global;
+import neptune.common.RID;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

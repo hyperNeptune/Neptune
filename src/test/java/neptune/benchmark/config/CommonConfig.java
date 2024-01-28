@@ -1,6 +1,6 @@
 package neptune.benchmark.config;
 
-import neptune.utils.Global;
+import neptune.common.Global;
 
 public class CommonConfig {
   public static final String username = "root";

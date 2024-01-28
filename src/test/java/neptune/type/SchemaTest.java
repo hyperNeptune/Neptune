@@ -1,9 +1,10 @@
 package neptune.type;
 
-import neptune.schema.Column;
-import neptune.schema.Schema;
-import neptune.storage.DiskManager;
-import neptune.storage.Page;
+import neptune.backend.schema.Column;
+import neptune.backend.schema.Schema;
+import neptune.backend.storage.DiskManager;
+import neptune.backend.storage.Page;
+import neptune.backend.type.IntType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

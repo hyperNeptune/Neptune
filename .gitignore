@@ -4,3 +4,10 @@ target
 htmlReport
 .run
 tmp.db
+*.log
+*.db
+.gradle
+gradle
+build
+gradlew
+gradlew.bat

@@ -1,9 +1,10 @@
 package neptune.type;
 
-import neptune.storage.*;
-import neptune.storage.DiskManager;
-import neptune.storage.Page;
-import neptune.utils.Global;
+import neptune.backend.storage.DiskManager;
+import neptune.backend.storage.Page;
+import neptune.backend.type.IntValue;
+import neptune.backend.type.StringValue;
+import neptune.common.Global;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

@@ -1,16 +1,15 @@
 package neptune.common;
 
-import neptune.buffer.BufferPoolManager;
-import neptune.buffer.LRUReplacer;
-import neptune.buffer.ReplaceAlgorithm;
-import neptune.concurrency.LockManager;
-import neptune.concurrency.TransactionManager;
-import neptune.execution.ExecutionEngine;
-import neptune.schema.*;
-import neptune.storage.DiskManager;
-import neptune.storage.Tuple;
-import neptune.type.*;
-import neptune.utils.Global;
+import neptune.backend.buffer.BufferPoolManager;
+import neptune.backend.buffer.LRUReplacer;
+import neptune.backend.buffer.ReplaceAlgorithm;
+import neptune.backend.concurrency.LockManager;
+import neptune.backend.concurrency.TransactionManager;
+import neptune.backend.execution.ExecutionEngine;
+import neptune.backend.schema.*;
+import neptune.backend.storage.DiskManager;
+import neptune.backend.storage.Tuple;
+import neptune.backend.type.*;
 
 import java.nio.file.Paths;
 

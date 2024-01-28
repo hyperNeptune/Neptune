@@ -1,5 +1,8 @@
 package neptune.concurrency;
 
+import neptune.backend.concurrency.IsolationLevel;
+import neptune.backend.concurrency.LockManager;
+import neptune.backend.concurrency.Transaction;
 import org.junit.Test;
 
 import java.util.concurrent.locks.ReentrantLock;

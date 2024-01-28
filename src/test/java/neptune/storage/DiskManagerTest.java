@@ -1,6 +1,8 @@
 package neptune.storage;
 
-import neptune.utils.Global;
+import neptune.backend.storage.DiskManager;
+import neptune.backend.storage.Page;
+import neptune.common.Global;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

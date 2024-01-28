@@ -1,11 +1,12 @@
 package neptune.storage;
 
-import neptune.buffer.BufferPoolManager;
-import neptune.buffer.LRUReplacer;
-import neptune.buffer.ReplaceAlgorithm;
-import neptune.schema.*;
-import neptune.type.*;
-import neptune.utils.Pair;
+import neptune.backend.buffer.BufferPoolManager;
+import neptune.backend.buffer.LRUReplacer;
+import neptune.backend.buffer.ReplaceAlgorithm;
+import neptune.backend.storage.DiskManager;
+import neptune.backend.storage.TablePageVar;
+import neptune.backend.storage.Tuple;
+import neptune.common.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

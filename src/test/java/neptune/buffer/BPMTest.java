@@ -1,7 +1,10 @@
 package neptune.buffer;
 
-import neptune.storage.DiskManager;
-import neptune.storage.Page;
+import neptune.backend.buffer.BufferPoolManager;
+import neptune.backend.buffer.LRUReplacer;
+import neptune.backend.buffer.ReplaceAlgorithm;
+import neptune.backend.storage.DiskManager;
+import neptune.backend.storage.Page;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

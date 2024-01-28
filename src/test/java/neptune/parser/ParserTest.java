@@ -1,13 +1,14 @@
 package neptune.parser;
 
-import neptune.buffer.BufferPoolManager;
-import neptune.buffer.LRUReplacer;
-import neptune.buffer.ReplaceAlgorithm;
-import neptune.parser.statement.*;
-import neptune.schema.*;
-import neptune.storage.DiskManager;
-import neptune.type.*;
-import neptune.utils.Global;
+import neptune.backend.buffer.BufferPoolManager;
+import neptune.backend.buffer.LRUReplacer;
+import neptune.backend.buffer.ReplaceAlgorithm;
+import neptune.backend.parser.Binder;
+import neptune.backend.parser.statement.*;
+import neptune.backend.schema.*;
+import neptune.backend.storage.DiskManager;
+import neptune.backend.type.*;
+import neptune.common.Global;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
