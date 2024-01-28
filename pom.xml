@@ -12,7 +12,7 @@
     <compile.version>1.8</compile.version>
     <targetJavaVersion>1.8</targetJavaVersion>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <thrift.version>0.13.0</thrift.version>
+    <thrift.version>0.14.0</thrift.version>
     <spotless.version>2.27.1</spotless.version>
   </properties>
 
