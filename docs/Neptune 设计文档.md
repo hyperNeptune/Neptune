@@ -10,21 +10,21 @@
 
 ## 总体架构
 目前，我们的数据库一共有如下模块：
-- 类型系统 `cn.edu.thssdb.type`
-- 存储系统 `cn.edu.thssdb.storage`
-	- 其中还包含索引子系统 `cn.edu.thssdb.storage.index`
-- 目录系统 `cn.edu.thssdb.schema`
-- 缓存系统 `cn.edu.thssdb.buffer`
-- 解析器 `cn.edu.thssdb.parser`
-	- 其中还包含绑定器子系统 `cn.edu.thssdb.parser.Binder`
-- 执行器 `cn.edu.thssdb.execution`
-	- 其中还包含规划器子系统 `cn.edu.thssdb.execution.Planner`
-- 事务系统 `cn.edu.thssdb.concurrency`
-	- 锁管理器子系统 `cn.edu.thssdb.concurrency.LockManager`
-	- 事务管理器子系统 `cn.edu.thssdb.concurrency.TransactionManager`
-- 恢复系统 `cn.edu.thssdb.recovery`
-  - 日志管理子系统 `cn.edu.thssdb.recovery.LogManager`
-  - 日志恢复子系统 `cn.edu.thssdb.recovery.LogRecovery`
+- 类型系统 `neptune.type`
+- 存储系统 `neptune.storage`
+	- 其中还包含索引子系统 `neptune.storage.index`
+- 目录系统 `neptune.schema`
+- 缓存系统 `neptune.buffer`
+- 解析器 `neptune.parser`
+	- 其中还包含绑定器子系统 `neptune.parser.Binder`
+- 执行器 `neptune.execution`
+	- 其中还包含规划器子系统 `neptune.execution.Planner`
+- 事务系统 `neptune.concurrency`
+	- 锁管理器子系统 `neptune.concurrency.LockManager`
+	- 事务管理器子系统 `neptune.concurrency.TransactionManager`
+- 恢复系统 `neptune.recovery`
+  - 日志管理子系统 `neptune.recovery.LogManager`
+  - 日志恢复子系统 `neptune.recovery.LogRecovery`
 
 图示如下：
 ![Structure of the Database illustrated](Pasted%20image%2020230603210308.png)
@@ -590,54 +590,54 @@ FF FF FF FF (上一条LSN不存在) 00 00 00 06 (BEGIN 日志)
 
 结果如下
 ```
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - Finish performance test after 150327 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - INSERT operation count: 124658
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - INSERT per second: 323.1281834440046
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - INSERT-0.0: 0.574863 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - INSERT-0.25: 2.626437591796875 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - INSERT-0.5: 2.9684104416666663 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - INSERT-0.75: 3.461942936303516 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - INSERT-0.9: 4.043742222222222 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - INSERT-0.99: 5.333209840000001 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - INSERT-1.0: 367.735631 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - UPDATE operation count: 25090
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - UPDATE per second: 385.27056632989996
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - UPDATE-0.0: 0.565994 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - UPDATE-0.25: 2.1535604583333336 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - UPDATE-0.5: 2.5804212888888896 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - UPDATE-0.75: 2.91859175 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - UPDATE-0.9: 3.3944575 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - UPDATE-0.99: 4.948181500000003 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - UPDATE-1.0: 14.591791 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - DELETE operation count: 24977
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - DELETE per second: 291.8215714178591
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - DELETE-0.0: 0.594279 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - DELETE-0.25: 2.3760089138888887 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - DELETE-0.5: 2.9652721666666664 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - DELETE-0.75: 4.1646415 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - DELETE-0.9: 5.3253733 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - DELETE-0.99: 8.292494520000004 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - DELETE-1.0: 369.492557 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - QUERY operation count: 50501
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - QUERY per second: 383.61012586438176
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - QUERY-0.0: 0.606292 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - QUERY-0.25: 2.184860749999998 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - QUERY-0.5: 2.6015367777777776 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - QUERY-0.75: 2.9299940625 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - QUERY-0.9: 3.356448699999999 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - QUERY-0.99: 4.547376970000003 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - QUERY-1.0: 367.125009 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - JOIN operation count: 24774
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - JOIN per second: 353.76632212628624
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - JOIN-0.0: 0.573397 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - JOIN-0.25: 2.302121 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - JOIN-0.5: 2.7004228333333335 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - JOIN-0.75: 3.129935 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - JOIN-0.9: 3.775589599999999 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - JOIN-0.99: 5.2902432600000004 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - JOIN-1.0: 367.196806 ms
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - Total operation count: 250000
-[main] INFO cn.edu.thssdb.benchmark.executor.PerformanceTestExecutor - Avg latency of all operations:2952695 ns
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - Finish performance test after 150327 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - INSERT operation count: 124658
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - INSERT per second: 323.1281834440046
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - INSERT-0.0: 0.574863 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - INSERT-0.25: 2.626437591796875 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - INSERT-0.5: 2.9684104416666663 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - INSERT-0.75: 3.461942936303516 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - INSERT-0.9: 4.043742222222222 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - INSERT-0.99: 5.333209840000001 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - INSERT-1.0: 367.735631 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - UPDATE operation count: 25090
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - UPDATE per second: 385.27056632989996
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - UPDATE-0.0: 0.565994 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - UPDATE-0.25: 2.1535604583333336 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - UPDATE-0.5: 2.5804212888888896 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - UPDATE-0.75: 2.91859175 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - UPDATE-0.9: 3.3944575 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - UPDATE-0.99: 4.948181500000003 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - UPDATE-1.0: 14.591791 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - DELETE operation count: 24977
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - DELETE per second: 291.8215714178591
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - DELETE-0.0: 0.594279 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - DELETE-0.25: 2.3760089138888887 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - DELETE-0.5: 2.9652721666666664 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - DELETE-0.75: 4.1646415 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - DELETE-0.9: 5.3253733 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - DELETE-0.99: 8.292494520000004 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - DELETE-1.0: 369.492557 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - QUERY operation count: 50501
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - QUERY per second: 383.61012586438176
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - QUERY-0.0: 0.606292 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - QUERY-0.25: 2.184860749999998 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - QUERY-0.5: 2.6015367777777776 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - QUERY-0.75: 2.9299940625 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - QUERY-0.9: 3.356448699999999 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - QUERY-0.99: 4.547376970000003 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - QUERY-1.0: 367.125009 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - JOIN operation count: 24774
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - JOIN per second: 353.76632212628624
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - JOIN-0.0: 0.573397 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - JOIN-0.25: 2.302121 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - JOIN-0.5: 2.7004228333333335 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - JOIN-0.75: 3.129935 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - JOIN-0.9: 3.775589599999999 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - JOIN-0.99: 5.2902432600000004 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - JOIN-1.0: 367.196806 ms
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - Total operation count: 250000
+[main] INFO neptune.benchmark.executor.PerformanceTestExecutor - Avg latency of all operations:2952695 ns
 
 Process finished with exit code 0
 

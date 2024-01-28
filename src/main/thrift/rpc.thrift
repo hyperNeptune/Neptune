@@ -1,4 +1,4 @@
-namespace java cn.edu.thssdb.rpc.thrift
+namespace java neptune.rpc.thrift
 
 // do not change this definition
 struct Status {
